@@ -1,0 +1,204 @@
+openapi: 3.0.3
+info:
+  title: Quests
+  description: |-
+    Quests API
+  version: 1.0.0
+paths:
+  /quests:
+    get:
+      tags:
+        - quests
+      summary: Get all quests
+      description: Get all quests (it is paginated).
+      operationId: getQuests
+      responses:
+        '200':
+          description: List of quests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '500':
+          description: Internal Server Error
+    post:
+      tags:
+        - quests
+      summary: Add a new quest
+      description: Add a new quest to the system
+      operationId: createQuest
+      requestBody:
+        description: Quest DTO
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '400':
+          description: Bad Request
+        '403':
+          description: Forbidden
+        '405':
+          description: Invalid input
+        '500':
+          description: Internal Server Error
+  /quests/{questId}:
+    get:
+      tags:
+        - quests
+      summary: Get a quest
+      description: Get a quest by ID
+      operationId: getQuest
+      parameters:
+        - name: questId
+          in: path
+          description: 'The quest ID to be fetched'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '400':
+          description: Bad Request
+        '404':
+          description: Quest not found
+        '500':
+          description: Internal Server Error
+    put:
+      tags:
+        - quests
+      summary: Update Quest
+      description: This can only be done by the auther of the quest
+      operationId: updateQuest
+      parameters:
+        - name: questId
+          in: path
+          description: 'The quest ID to be fetched'
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Quest DTO
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quest'
+        '400':
+          description: Bad Request
+        '404':
+          description: Quest not found
+        '500':
+          description: Internal Server Error
+    delete:
+      tags:
+        - quests
+      summary: Delete Quest
+      description: This can only be done by the auther of the quest
+      operationId: deleteQuest
+      parameters:
+        - name: questId
+          in: path
+          description: 'The quest ID to be fetched'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Bad Request
+        '404':
+          description: Quest not found
+        '500':
+          description: Internal Server Error
+  
+  /quests/{questId}/stats:
+  get:
+    tags:
+      - quests
+    summary: Get quest stats
+    description: This can only be done by the auther of the quest
+    operationId: getQuestStats
+    parameters:
+      - name: questId
+        in: path
+        description: 'The quest ID to be fetched'
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Successful operation
+      '400':
+        description: Bad Request
+      '403':
+        description: Forbidden
+      '404':
+        description: Quest not found
+      '500':
+        description: Internal Server Error
+    
+  /events:
+    put:
+      tags:
+        - events
+      summary: Submit a new event
+      description: Add a new pet to the store
+      operationId: addEvent
+      requestBody:
+        description: Submit a new event that can apply to any quest
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '405':
+          description: Invalid input
+components:
+  schemas:
+    Quest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 100000
+  requestBodies:
+    Quest:
+      description: Quest object that needs to be added to the system
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Quest'

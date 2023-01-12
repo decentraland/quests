@@ -1,0 +1,4 @@
+[workspace]
+members=["crates/*", "crates/db/*"]
+exclude=["crates/db"]
+

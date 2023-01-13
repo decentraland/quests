@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+async-trait = "0.1.61"
+serde = { version = "1.0.152", features = ["derive"] }
+thiserror = "1.0.38"

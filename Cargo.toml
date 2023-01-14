@@ -1,4 +1,4 @@
 [workspace]
-members=["crates/*", "crates/db/*"]
+members=["crates/*", "crates/db/db_core", "crates/db/db_migrations", "crates/db/db_sqlx"]
 exclude=["crates/db"]
 

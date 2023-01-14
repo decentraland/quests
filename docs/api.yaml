@@ -130,7 +130,7 @@ paths:
         '500':
           description: Internal Server Error
   
-  /quests/{questId}/stats:
+  /quests/{questInstanceId}/stats:
   get:
     tags:
       - quests
@@ -161,7 +161,7 @@ paths:
       tags:
         - events
       summary: Submit a new event
-      description: Add a new pet to the store
+      description: Add a new event to the system 
       operationId: addEvent
       requestBody:
         description: Submit a new event that can apply to any quest

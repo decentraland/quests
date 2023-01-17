@@ -79,7 +79,7 @@ paths:
       tags:
         - quests
       summary: Update Quest
-      description: This can only be done by the auther of the quest
+      description: This can only be done by the author of the quest
       operationId: updateQuest
       parameters:
         - name: questId
@@ -111,7 +111,7 @@ paths:
       tags:
         - quests
       summary: Delete Quest
-      description: This can only be done by the auther of the quest
+      description: This can only be done by the author of the quest
       operationId: deleteQuest
       parameters:
         - name: questId
@@ -135,7 +135,7 @@ paths:
     tags:
       - quests
     summary: Get quest stats
-    description: This can only be done by the auther of the quest
+    description: This can only be done by the author of the quest
     operationId: getQuestStats
     parameters:
       - name: questId

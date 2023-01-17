@@ -1,7 +1,7 @@
-mod metrics_token;
 mod metrics;
+mod metrics_token;
 mod tracing;
 
-pub use metrics_token::metrics_token;
+pub use self::tracing::init_telemetry;
 pub use metrics::metrics;
-pub use self::tracing::telemetry;
+pub use metrics_token::metrics_token;

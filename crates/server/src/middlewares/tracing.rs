@@ -1,12 +1,11 @@
 use opentelemetry::{
     global, runtime::TokioCurrentThread, sdk::propagation::TraceContextPropagator,
 };
-use tracing_actix_web::{TracingLogger, DefaultRootSpanBuilder};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{EnvFilter, Registry};
 
-pub fn telemetry() -> TracingLogger<DefaultRootSpanBuilder> {
+pub fn init_telemetry() {
     let app_name = "quests";
     // Start a new Jaeger trace pipeline.
     // Spans are exported in batch - recommended setup for a production application.
@@ -31,6 +30,4 @@ pub fn telemetry() -> TracingLogger<DefaultRootSpanBuilder> {
         .with(formatting_layer);
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed to install `tracing` subscriber.");
-
-    TracingLogger::default()
 }

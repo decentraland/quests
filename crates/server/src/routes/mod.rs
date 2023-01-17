@@ -1,8 +1,8 @@
 use actix_web::web::ServiceConfig;
 
 mod events;
-mod quests;
 mod health;
+mod quests;
 
 pub fn services(config: &mut ServiceConfig) {
     events::services(config);

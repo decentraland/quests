@@ -1,4 +1,4 @@
-use config::{self, ConfigError, File};
+use config::{self, ConfigError};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -20,7 +20,6 @@ const ENV_VAR: &str = "ENV";
 impl Config {
     pub fn new() -> Result<Self, ConfigError> {
         let config = config::Config::builder()
-            .add_source(File::with_name("configuration"))
             .add_source(
                 config::Environment::with_prefix("HTTP") // => For HTTP_SERVER_PORT in WCK ENV
                     .separator("_")

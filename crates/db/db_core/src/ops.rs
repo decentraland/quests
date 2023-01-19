@@ -2,9 +2,11 @@ use async_trait::async_trait;
 
 use crate::{errors::DBResult, QuestsDatabase};
 
+// TODO: Recheck if it's actually needed
 /// Database operations trait(migrations, pool creation and fetching connection from pool)
 pub trait DBOps: GetConnection + Migrate {}
 
+// TODO: Recheck if it's actually needed
 /// Get database connection
 #[async_trait]
 pub trait GetConnection {

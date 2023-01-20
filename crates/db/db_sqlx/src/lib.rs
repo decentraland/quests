@@ -3,7 +3,7 @@ use std::str::FromStr;
 use quests_db_core::{
     errors::{DBError, DBResult},
     ops::{Connect, Migrate},
-    CreateQuest, Quest, QuestInstance, QuestsDatabase, UpdateQuest,
+    CreateQuest, QuestInstance, QuestsDatabase, StoredQuest, UpdateQuest,
 };
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
@@ -12,13 +12,13 @@ use sqlx::{
 
 pub struct DatabaseOptions {
     url: String,
-    pool_options: PgPoolOptions,
+    pub pool_options: PgPoolOptions,
 }
 
 impl DatabaseOptions {
-    pub fn new(url: String) -> Self {
+    pub fn new(url: &str) -> Self {
         Self {
-            url,
+            url: url.to_string(),
             pool_options: PgPoolOptions::new(),
         }
     }
@@ -61,6 +61,36 @@ impl QuestsDatabase for Database {
         } else {
             false
         }
+    }
+
+    async fn get_quests(&self, offset: u64, limit: u64) -> DBResult<Vec<StoredQuest>> {
+        let query_result = sqlx::query("SELECT * FROM quests OFFSET $1 LIMIT $2")
+            .bind(format!("{offset}"))
+            .bind(format!("{limit}"))
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|err| DBError::CreateQuestFailed(Box::new(err)))?;
+
+        let mut quests = vec![];
+
+        for row in query_result {
+            quests.push(StoredQuest {
+                id: row
+                    .try_get("id")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                name: row
+                    .try_get("name")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                description: row
+                    .try_get("description")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                definition: row
+                    .try_get("definition")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            })
+        }
+
+        Ok(quests)
     }
 
     async fn create_quest(&self, quest: &quests_db_core::CreateQuest) -> DBResult<String> {
@@ -110,14 +140,14 @@ impl QuestsDatabase for Database {
         Ok(())
     }
 
-    async fn get_quest(&self, id: &str) -> DBResult<Quest> {
+    async fn get_quest(&self, id: &str) -> DBResult<StoredQuest> {
         let query_result = sqlx::query("SELECT * FROM quests WHERE id = $1")
             .bind(id)
             .fetch_one(&self.pool)
             .await
             .map_err(|err| DBError::GetQuestFailed(Box::new(err)))?;
 
-        Ok(Quest {
+        Ok(StoredQuest {
             id: id.to_string(),
             name: query_result.try_get("name").unwrap(),
             description: query_result.try_get("description").unwrap(),

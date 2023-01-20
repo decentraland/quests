@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 actix-rt = "2"
-sqlx = { version = "0.6", features = [ "runtime-actix-native-tls" , "postgres", "uuid", "json", "chrono" ] }
+sqlx.workspace = true

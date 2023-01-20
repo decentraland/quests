@@ -6,19 +6,19 @@ use serde::{Deserialize, Serialize};
 
 #[async_trait]
 pub trait QuestsDatabase: Send + Sync + CloneDatabase {
-    fn ping(&self) -> DBResult<bool>;
+    async fn ping(&self) -> bool;
 
-    fn create_quest(&self, quest: &CreateQuest) -> DBResult<()>;
-    fn update_quest(&self, quest_id: &str, quest: &UpdateQuest) -> DBResult<()>;
-    fn get_quest(&self, id: &str) -> DBResult<()>;
-    fn delete_quest(&self, id: &str) -> DBResult<()>;
-    fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<()>;
+    async fn create_quest(&self, quest: &CreateQuest) -> DBResult<String>;
+    async fn update_quest(&self, quest_id: &str, quest: &UpdateQuest) -> DBResult<()>;
+    async fn get_quest(&self, id: &str) -> DBResult<Quest>;
+    async fn delete_quest(&self, id: &str) -> DBResult<()>;
+    async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String>;
 
-    fn get_quest_instance(&self, id: &str) -> DBResult<QuestInstance>;
-    fn get_user_quest_instances(&self, user_address: &str) -> DBResult<Vec<QuestInstance>>;
+    async fn get_quest_instance(&self, id: &str) -> DBResult<QuestInstance>;
+    async fn get_user_quest_instances(&self, user_address: &str) -> DBResult<Vec<QuestInstance>>;
 
-    fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()>;
-    fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>>;
+    async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()>;
+    async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>>;
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
@@ -32,7 +32,7 @@ pub struct Event {
     pub id: String,
     pub user_address: String,
     pub quest_instance_id: String,
-    pub timestamp: usize,
+    pub timestamp: i64,
     pub event: Vec<u8>,
 }
 
@@ -41,7 +41,7 @@ pub struct QuestInstance {
     pub id: String,
     pub quest_id: String,
     pub user_address: String,
-    pub start_timestamp: usize,
+    pub start_timestamp: i64,
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
@@ -53,9 +53,16 @@ pub struct UpdateQuest<'a> {
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
 pub struct CreateQuest<'a> {
-    pub id: &'a str,
     pub name: &'a str,
     pub description: &'a str,
+    pub definition: Vec<u8>,
+}
+
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+pub struct Quest {
+    pub id: String,
+    pub name: String,
+    pub description: String,
     pub definition: Vec<u8>,
 }
 

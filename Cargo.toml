@@ -2,3 +2,5 @@
 members=["crates/*", "crates/db/db_core", "crates/db/db_migrations", "crates/db/db_sqlx"]
 exclude=["crates/db"]
 
+[workspace.dependencies]
+sqlx = { version = "0.6", features = [ "runtime-actix-native-tls" , "postgres", "uuid", "json", "chrono" ] }

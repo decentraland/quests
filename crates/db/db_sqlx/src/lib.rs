@@ -101,7 +101,7 @@ impl QuestsDatabase for Database {
             .bind(name)
             .bind(description)
             .bind(definition)
-            .bind(sqlx::types::chrono::Utc::now())
+            .bind(sqlx::types::chrono::Utc::now().naive_utc())
             .bind(quest_id)
             .execute(&self.pool)
             .await

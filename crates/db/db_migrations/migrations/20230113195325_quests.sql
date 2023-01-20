@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS quests (
   name TEXT NOT NULL,
   description TEXT NOT NULL,
   definition bytea NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP NOT NULL DEFAULT now(),
   -- // TODO: should we add the creator id (address)?
 );
 
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS quest_instances (
   ID SERIAL PRIMARY KEY NOT NULL, -- TODO: Should be a UUID?
   quest_id INT references quests(ID) ON DELETE CASCADE,
   user_address TEXT NOT NULL,
-  started timestamptz NOT NULL DEFAULT now()
+  started TIMESTAMP NOT NULL DEFAULT now()
 );
 
 -- Create events table

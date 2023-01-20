@@ -63,22 +63,28 @@ impl QuestsDatabase for Database {
         }
     }
 
-    async fn create_quest(&self, quest: &quests_db_core::CreateQuest) -> DBResult<()> {
+    async fn create_quest(&self, quest: &quests_db_core::CreateQuest) -> DBResult<String> {
         let CreateQuest {
             name,
             description,
             definition,
         } = quest;
 
-        sqlx::query("INSERT INTO quests (name, description, definition) VALUES ($1, $2, $3)")
-            .bind(name)
-            .bind(description)
-            .bind(definition)
-            .execute(&self.pool)
-            .await
-            .map_err(|err| DBError::CreateQuestFailed(Box::new(err)))?;
+        let query_result = sqlx::query(
+            "INSERT INTO quests (name, description, definition) VALUES ($1, $2, $3) RETURNING id",
+        )
+        .bind(name)
+        .bind(description)
+        .bind(definition)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::CreateQuestFailed(Box::new(err)))?;
 
-        Ok(())
+        let id: i64 = query_result
+            .try_get(0)
+            .map_err(|err| DBError::RowCorrupted(Box::new(err)))?;
+
+        Ok(format!("{id}"))
     }
 
     async fn update_quest(
@@ -129,7 +135,7 @@ impl QuestsDatabase for Database {
         Ok(())
     }
 
-    async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<()> {
+    async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String> {
         sqlx::query("INSERT INTO quest_instances (quest_id, user_address) VALUES ($1, $2)")
             .bind(quest_id)
             .bind(user_address)
@@ -137,7 +143,20 @@ impl QuestsDatabase for Database {
             .await
             .map_err(|err| DBError::StartQuestFailed(Box::new(err)))?;
 
-        Ok(())
+        let row_result = sqlx::query(
+            "SELECT id FROM quest_instances (quest_id, user_address) VALUES ($1, $2) RETURNING id",
+        )
+        .bind(quest_id)
+        .bind(user_address)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::StartQuestFailed(Box::new(err)))?;
+
+        let id: i64 = row_result
+            .try_get(0)
+            .map_err(|err| DBError::RowCorrupted(Box::new(err)))?;
+
+        Ok(format!("{id}"))
     }
 
     async fn get_quest_instance(&self, id: &str) -> DBResult<QuestInstance> {

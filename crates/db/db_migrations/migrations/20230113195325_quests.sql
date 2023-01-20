@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS quests (
   definition bytea NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
+  -- // TODO: should we add the creator id (address)?
 );
 
 -- Create quest_instances table

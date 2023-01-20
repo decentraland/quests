@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn ping(&self) -> bool;
 
-    async fn create_quest(&self, quest: &CreateQuest) -> DBResult<()>;
+    async fn create_quest(&self, quest: &CreateQuest) -> DBResult<String>;
     async fn update_quest(&self, quest_id: &str, quest: &UpdateQuest) -> DBResult<()>;
     async fn get_quest(&self, id: &str) -> DBResult<Quest>;
     async fn delete_quest(&self, id: &str) -> DBResult<()>;
-    async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<()>;
+    async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String>;
 
     async fn get_quest_instance(&self, id: &str) -> DBResult<QuestInstance>;
     async fn get_user_quest_instances(&self, user_address: &str) -> DBResult<Vec<QuestInstance>>;

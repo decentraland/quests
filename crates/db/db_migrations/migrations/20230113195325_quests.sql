@@ -3,8 +3,9 @@ CREATE TABLE IF NOT EXISTS quests (
   ID SERIAL PRIMARY KEY NOT NULL, -- TODO: Should be a UUID?
   name TEXT NOT NULL,
   description TEXT NOT NULL,
-  definition bytea NOT NULL
-  -- TODO: Add timestamps? (created_at, updated_at)
+  definition bytea NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
 );
 
 -- Create quest_instances table

@@ -91,10 +91,11 @@ impl QuestsDatabase for Database {
             description,
             definition,
         } = quest;
-        sqlx::query("UPDATE quests SET name = $1, description = $2, definition = $3 WHERE id = $4")
+        sqlx::query("UPDATE quests SET name = $1, description = $2, definition = $3, updated_at = $4 WHERE id = $5")
             .bind(name)
             .bind(description)
             .bind(definition)
+            .bind(sqlx::types::chrono::Utc::now())
             .bind(quest_id)
             .execute(&self.pool)
             .await

@@ -7,3 +7,7 @@ edition = "2021"
 async-trait = "0.1.61"
 serde = { version = "1.0.152", features = ["derive"] }
 thiserror = "1.0.38"
+
+[features]
+default = []
+test = []

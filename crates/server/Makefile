@@ -31,3 +31,6 @@ destroydb:
 
 query:
 	@docker exec -it quests_db bash -c "psql -U postgres -d quests_db"
+
+rundb:
+	@$(RUN_LOCAL_DB)

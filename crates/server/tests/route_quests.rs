@@ -4,8 +4,8 @@ use actix_web::{
     web::Data,
 };
 pub use common::*;
-use quests_db_core::{CreateQuest, QuestsDatabase};
-use quests_db_sqlx::create_quests_db_component;
+use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
+use quests_db::create_quests_db_component;
 use quests_definitions::quests::Quest;
 use quests_server::{get_app_router, routes::ErrorResponse};
 

@@ -6,8 +6,9 @@ mod health;
 mod quests;
 
 use errors::CommonError;
+pub use errors::{query_extractor_config, ErrorResponse};
 
-pub fn services(config: &mut ServiceConfig) {
+pub(crate) fn services(config: &mut ServiceConfig) {
     events::services(config);
     quests::services(config);
     health::services(config);

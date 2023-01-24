@@ -2,14 +2,8 @@ use config::{self, ConfigError};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct Server {
-    pub host: String,
-    pub port: u16,
-}
-
-#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
-    pub server: Server,
+    pub server_port: u16,
     pub database_url: String, // Using the URL directly has benefits for SQLX macros and it can be built in deploy time
     pub env: String,
     pub wkc_metrics_bearer_token: String,
@@ -35,8 +29,7 @@ impl Config {
                     .with_list_parse_key(DATABASE_URL)
                     .try_parsing(true),
             )
-            .set_default("server.host", "0.0.0.0")? // We use the default because it should not often change
-            .set_default("server.port", 8080)? // It should be empty for local development
+            .set_default("server_port", 8080)? // It should be empty for local development
             .set_default("env", "dev")?
             .set_default("wkc_metrics_bearer_token", "")?
             .set_default(

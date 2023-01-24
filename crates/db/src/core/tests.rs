@@ -1,4 +1,7 @@
-use crate::{errors::DBError, AddEvent, CreateQuest, QuestsDatabase, UpdateQuest};
+use super::{
+    definitions::{AddEvent, CreateQuest, QuestsDatabase, UpdateQuest},
+    errors::DBError,
+};
 
 pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQuest<'_>) {
     assert!(db.ping().await);

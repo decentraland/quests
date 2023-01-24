@@ -1694,29 +1694,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "quests_db_core"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "quests_db_migrations"
+name = "quests_db"
 version = "0.1.0"
 dependencies = [
  "actix-rt",
- "sqlx",
-]
-
-[[package]]
-name = "quests_db_sqlx"
-version = "0.1.0"
-dependencies = [
  "async-trait",
- "quests_db_core",
+ "serde",
  "sqlx",
+ "thiserror",
  "tokio",
  "uuid",
 ]
@@ -1747,8 +1732,7 @@ dependencies = [
  "log",
  "opentelemetry",
  "opentelemetry-jaeger",
- "quests_db_core",
- "quests_db_sqlx",
+ "quests_db",
  "quests_definitions",
  "serde",
  "thiserror",

@@ -5,7 +5,7 @@ use actix_web::{
     App, HttpServer,
 };
 use env_logger::init as initialize_logger;
-use quests_db_sqlx::{create_quests_db_component, Database};
+use quests_db::{create_quests_db_component, Database};
 use tracing_actix_web::TracingLogger;
 
 pub mod configuration;

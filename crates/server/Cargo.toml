@@ -5,8 +5,7 @@ edition = "2021"
 
 [dependencies]
 quests_definitions = { path = "../definitions/" }
-quests_db_sqlx = { path = "../db/db_sqlx/" }
-quests_db_core = { path = "../db/db_core/" }
+quests_db = { path = "../db" }
 actix-web = "4.2.1"
 config = "0.13"
 serde = "1.0.136"

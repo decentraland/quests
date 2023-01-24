@@ -1,5 +1,5 @@
-use quests_db_core::ops::{Connect, GetConnection, Migrate};
-use quests_db_sqlx::{DatabaseOptions, Executor};
+use quests_db::core::ops::{Connect, GetConnection, Migrate};
+use quests_db::{DatabaseOptions, Executor};
 use quests_server::configuration::Config;
 
 pub async fn get_configuration() -> Config {

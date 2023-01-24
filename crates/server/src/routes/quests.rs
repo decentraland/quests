@@ -5,8 +5,11 @@ use actix_web::{
     web::{self, ServiceConfig},
     HttpResponse,
 };
-use quests_db_core::{errors::DBError, CreateQuest, QuestsDatabase, StoredQuest, UpdateQuest};
-use quests_db_sqlx::Database;
+use quests_db::{
+    core::definitions::{CreateQuest, QuestsDatabase, StoredQuest, UpdateQuest},
+    core::errors::DBError,
+    Database,
+};
 use quests_definitions::quests::Quest;
 use serde::Deserialize;
 

@@ -1,6 +1,5 @@
 [workspace]
-members=["crates/*", "crates/db/db_core", "crates/db/db_migrations", "crates/db/db_sqlx"]
-exclude=["crates/db"]
+members=["crates/*"]
 
 [workspace.dependencies]
 sqlx = { version = "0.6", features = [ "runtime-actix-native-tls" , "postgres", "uuid", "json", "chrono" ] }

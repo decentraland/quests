@@ -1,28 +1,28 @@
 -- Create quests table
 CREATE TABLE IF NOT EXISTS quests (
-  ID SERIAL PRIMARY KEY NOT NULL, -- TODO: Should be a UUID?
+  ID UUID PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
   description TEXT NOT NULL,
   definition bytea NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP NOT NULL DEFAULT now(),
-  -- // TODO: should we add the creator id (address)?
+  updated_at TIMESTAMP NOT NULL DEFAULT now()
+  -- TODO: should we add the creator id (address)?
 );
 
 -- Create quest_instances table
 CREATE TABLE IF NOT EXISTS quest_instances (
-  ID SERIAL PRIMARY KEY NOT NULL, -- TODO: Should be a UUID?
-  quest_id INT references quests(ID) ON DELETE CASCADE,
+  ID UUID PRIMARY KEY NOT NULL,
+  quest_id UUID references quests(ID) ON DELETE CASCADE,  -- TODO: should not be a FK?
   user_address TEXT NOT NULL,
   started TIMESTAMP NOT NULL DEFAULT now()
 );
 
 -- Create events table
 CREATE TABLE IF NOT EXISTS events ( 
-  ID SERIAL PRIMARY KEY NOT NULL, -- TODO: Should be a UUID?
-  quest_instance_id INT references quests(ID) ON DELETE CASCADE, -- TODO: should not be a FK?
+  ID UUID PRIMARY KEY NOT NULL,
+  quest_instance_id UUID references quest_instances(ID) ON DELETE CASCADE, -- TODO: should not be a FK?
   user_address TEXT NOT NULL,
   event bytea NOT NULL,
-  timestamp timestamptz NOT NULL DEFAULT now()
+  timestamp TIMESTAMP NOT NULL DEFAULT now()
 );
 

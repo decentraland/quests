@@ -32,6 +32,12 @@ pub enum DBError {
 
     #[error("Row has incorrect data: {0}")]
     RowCorrupted(BoxDynError),
+
+    #[error("Not a UUID given")]
+    NotUUID,
+
+    #[error("Not found")]
+    RowNotFound,
 }
 
 /// Convenience type alias for grouping driver-specific errors

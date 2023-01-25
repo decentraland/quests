@@ -1,11 +1,11 @@
 use std::env;
 
-use quests_db_core::{
-    ops::{Connect, Migrate},
-    tests::quest_database_works,
-    CreateQuest,
+use quests_db::{
+    core::definitions::CreateQuest,
+    core::ops::{Connect, Migrate},
+    core::tests::quest_database_works,
+    DatabaseOptions,
 };
-use quests_db_sqlx::DatabaseOptions;
 
 #[tokio::test]
 async fn quests_database_works() {

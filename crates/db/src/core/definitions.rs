@@ -1,10 +1,5 @@
-pub mod errors;
-pub mod ops;
-#[cfg(feature = "test")]
-pub mod tests;
-
+use super::errors::DBResult;
 use async_trait::async_trait;
-use errors::DBResult;
 use serde::{Deserialize, Serialize};
 
 #[async_trait]

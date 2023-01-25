@@ -1,9 +1,13 @@
+pub mod core;
+
 use std::str::FromStr;
 
-use quests_db_core::{
+use crate::core::{
+    definitions::{
+        AddEvent, CreateQuest, Event, QuestInstance, QuestsDatabase, StoredQuest, UpdateQuest,
+    },
     errors::{DBError, DBResult},
     ops::{Connect, GetConnection, Migrate},
-    CreateQuest, QuestInstance, QuestsDatabase, StoredQuest, UpdateQuest,
 };
 use sqlx::{
     pool::PoolConnection,
@@ -112,7 +116,7 @@ impl QuestsDatabase for Database {
         Ok(quests)
     }
 
-    async fn create_quest(&self, quest: &quests_db_core::CreateQuest) -> DBResult<String> {
+    async fn create_quest(&self, quest: &CreateQuest) -> DBResult<String> {
         let CreateQuest {
             name,
             description,
@@ -134,11 +138,7 @@ impl QuestsDatabase for Database {
         Ok(id)
     }
 
-    async fn update_quest(
-        &self,
-        quest_id: &str,
-        quest: &quests_db_core::UpdateQuest,
-    ) -> DBResult<()> {
+    async fn update_quest(&self, quest_id: &str, quest: &UpdateQuest) -> DBResult<()> {
         let UpdateQuest {
             name,
             description,
@@ -230,10 +230,7 @@ impl QuestsDatabase for Database {
         })
     }
 
-    async fn get_user_quest_instances(
-        &self,
-        user_address: &str,
-    ) -> DBResult<Vec<quests_db_core::QuestInstance>> {
+    async fn get_user_quest_instances(&self, user_address: &str) -> DBResult<Vec<QuestInstance>> {
         let query_result = sqlx::query("SELECT * FROM quest_instances WHERE user_address = $1")
             .bind(user_address)
             .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
@@ -244,7 +241,7 @@ impl QuestsDatabase for Database {
 
         for row in query_result {
             // not using functional methods due to "question mark"
-            quests.push(quests_db_core::QuestInstance {
+            quests.push(QuestInstance {
                 id: parse_uuid_to_str(
                     row.try_get("id")
                         .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
@@ -265,11 +262,7 @@ impl QuestsDatabase for Database {
         Ok(quests)
     }
 
-    async fn add_event(
-        &self,
-        event: &quests_db_core::AddEvent,
-        quest_instance_id: &str,
-    ) -> DBResult<()> {
+    async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()> {
         let id = Uuid::new_v4().to_string();
         sqlx::query(
             "INSERT INTO events (id, user_address, event, quest_instance_id) VALUES ($1, $2, $3, $4)",
@@ -285,7 +278,7 @@ impl QuestsDatabase for Database {
         Ok(())
     }
 
-    async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<quests_db_core::Event>> {
+    async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>> {
         let query_result = sqlx::query("SELECT * FROM events WHERE quest_instance_id = $1")
             .bind(parse_str_to_uuid(quest_instance_id)?)
             .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
@@ -296,7 +289,7 @@ impl QuestsDatabase for Database {
 
         for row in query_result {
             // not using functional methods due to "question mark"
-            events.push(quests_db_core::Event {
+            events.push(Event {
                 id: parse_uuid_to_str(
                     row.try_get("id")
                         .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
@@ -325,10 +318,7 @@ impl QuestsDatabase for Database {
 #[async_trait::async_trait]
 impl Migrate for Database {
     async fn migrate(&self) -> DBResult<()> {
-        if let Err(err) = sqlx::migrate!("../../db/db_migrations/migrations")
-            .run(&self.pool)
-            .await
-        {
+        if let Err(err) = sqlx::migrate!("./migrations").run(&self.pool).await {
             return Err(DBError::MigrationError(Box::new(err)));
         }
 

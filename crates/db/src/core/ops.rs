@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::{errors::DBResult, QuestsDatabase};
+use super::{definitions::QuestsDatabase, errors::DBResult};
 
 // TODO: Recheck if it's actually needed
 /// Database operations trait(migrations, pool creation and fetching connection from pool)

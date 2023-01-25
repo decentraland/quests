@@ -21,7 +21,7 @@ pub async fn run_server() -> Result<Server, std::io::Error> {
     init_telemetry();
 
     let config = configuration::Config::new().expect("Unable to build up the config");
-    let quests_database = create_quests_db_component(&config.database_url)
+    let quests_database = create_quests_db_component(&config.database_url.as_str())
         .await
         .expect("unable to run the migrations"); // we know that the migrations failed because if connection fails, the app panics
 

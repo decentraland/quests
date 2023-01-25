@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  postgres:
+    container_name: "quests_db"
+    image: 'postgres:latest'
+    restart: always
+    user: postgres
+    volumes:
+      - quests_db_volume:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=quests_db
+    ports:
+      - '3500:5432'
+volumes:
+  quests_db_volume:

@@ -1,5 +1,8 @@
 pub mod errors;
 pub mod ops;
+#[cfg(feature = "test")]
+pub mod tests;
+
 use async_trait::async_trait;
 use errors::DBResult;
 use serde::{Deserialize, Serialize};
@@ -8,9 +11,10 @@ use serde::{Deserialize, Serialize};
 pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn ping(&self) -> bool;
 
+    async fn get_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>>;
     async fn create_quest(&self, quest: &CreateQuest) -> DBResult<String>;
     async fn update_quest(&self, quest_id: &str, quest: &UpdateQuest) -> DBResult<()>;
-    async fn get_quest(&self, id: &str) -> DBResult<Quest>;
+    async fn get_quest(&self, id: &str) -> DBResult<StoredQuest>;
     async fn delete_quest(&self, id: &str) -> DBResult<()>;
     async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String>;
 
@@ -59,7 +63,7 @@ pub struct CreateQuest<'a> {
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
-pub struct Quest {
+pub struct StoredQuest {
     pub id: String,
     pub name: String,
     pub description: String,

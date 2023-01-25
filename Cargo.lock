@@ -385,6 +385,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1708,11 +1717,16 @@ dependencies = [
  "async-trait",
  "quests_db_core",
  "sqlx",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
 name = "quests_definitions"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "quests_message_broker"
@@ -1726,20 +1740,25 @@ dependencies = [
  "actix-web-lab",
  "actix-web-prom",
  "async-trait",
+ "bincode",
  "config",
  "env_logger",
  "futures-util",
  "log",
  "opentelemetry",
  "opentelemetry-jaeger",
+ "quests_db_core",
+ "quests_db_sqlx",
  "quests_definitions",
  "serde",
+ "thiserror",
  "tracing",
  "tracing-actix-web",
  "tracing-bunyan-formatter",
  "tracing-log",
  "tracing-opentelemetry",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
@@ -2307,9 +2326,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.24.1"
+version = "1.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d9f76183f91ecfb55e1d7d5602bd1d979e38a3a522fe900241cf195624d67ae"
+checksum = "597a12a59981d9e3c38d216785b0c37399f6e415e8d0712047620f189371b0bb"
 dependencies = [
  "autocfg",
  "bytes",

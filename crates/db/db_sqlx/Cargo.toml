@@ -6,6 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-quests_db_core = { path = "../db_core" }
+quests_db_core = { path = "../db_core", features = ["test"] }
 async-trait = "0.1.61"
+uuid = {version = "1.2.2", features = ["v4"]}
 sqlx.workspace = true
+
+[dev-dependencies]
+tokio = {version = "1.24.2", features = ["macros", "test-util"]}

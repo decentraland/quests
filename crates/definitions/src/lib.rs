@@ -1,11 +1,14 @@
 pub mod quests {
+    use serde::{Deserialize, Serialize};
 
+    #[derive(Serialize, Deserialize, Debug)]
     pub struct Quest {
         pub name: String,
         pub description: String,
         pub steps: Vec<Step>,
     }
 
+    #[derive(Serialize, Deserialize, Debug)]
     pub struct Step {
         pub id: String,
         pub description: String,
@@ -14,6 +17,7 @@ pub mod quests {
         pub on_complete_hook: Option<String>,
     }
 
+    #[derive(Serialize, Deserialize, Debug)]
     pub struct Task {
         pub title: String,
         pub description: String,
@@ -21,14 +25,17 @@ pub mod quests {
         pub action_items: Vec<Action>,
     }
 
+    #[derive(Serialize, Deserialize)]
     pub struct Event {
         pub address: String,
         pub timestamp: usize,
         pub action: Action,
     }
 
+    #[derive(Serialize, Deserialize, Debug)]
     pub struct Coordinates(usize, usize);
 
+    #[derive(Serialize, Deserialize, Debug)]
     pub enum Action {
         Location {
             coordinates: Coordinates,

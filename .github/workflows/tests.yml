@@ -1,0 +1,41 @@
+name: Tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validations:
+    runs-on: ubuntu-latest
+
+    services: # We use GH services because we cannot mount a volume as we do in the docker-compose
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: quests_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        working-directory: ./crates
+        run: cargo build --verbose
+      - name: Test quests_server
+        working-directory: ./crates
+        run: cargo test --package quests_server --verbose
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
+      - name: Test quests_db
+        working-directory: ./crates
+        run: cargo test --package quests_db --verbose
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
+# other packages should be added here when they are ready to be tested 

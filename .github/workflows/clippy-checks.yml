@@ -4,9 +4,11 @@ jobs:
   clippy_check:
     runs-on: ubuntu-latest
     steps:
-        working-directory: ./crates
+      - name: Installing Clippy
       - uses: actions/checkout@v1
       - run: rustup component add clippy
+      - name: Running Clippy
+        working-directory: ./crates
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -26,15 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build
-        # working-directory: ./crates
         run: cargo build --verbose
       - name: Test quests_server
-        # working-directory: ./crates
         run: cargo test --package quests_server --verbose
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
       - name: Test quests_db
-        # working-directory: ./crates
         run: cargo test --package quests_db --verbose
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db

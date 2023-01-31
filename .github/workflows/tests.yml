@@ -28,6 +28,8 @@ jobs:
       - uses: Swatinem/rust-cache@v1.3.0
       - name: Build
         run: cargo build --verbose
+      - name: Test quests_definitions
+        run: cargo test --package quests_definitions --verbose
       - name: Test quests_server
         run: cargo test --package quests_server --verbose
         env:
@@ -36,4 +38,3 @@ jobs:
         run: cargo test --package quests_db --verbose
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
-# other packages should be added here when they are ready to be tested 

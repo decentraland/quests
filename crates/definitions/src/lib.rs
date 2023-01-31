@@ -17,14 +17,21 @@ pub mod quests {
         pub description: String,
         pub tasks: Tasks,
         /// Starting point containing the next step id. If it's none, it's just another step.
-        pub starting_point: Option<StartingPoint>,
+        pub pivot_point: Option<PivotPoint>,
         /// Allow hooks on every completed step
         pub on_complete_hook: Option<String>,
     }
 
     #[derive(Serialize, Deserialize, Debug)]
-    pub struct StartingPoint {
-        pub next_steps_id: Vec<String>,
+    pub struct PivotPoint {
+        pub next_steps_id: PivotType,
+        pub is_starting_point: bool,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub enum PivotType {
+        OnePath(Vec<String>),
+        MultiPath(Vec<String>),
     }
 
     #[derive(Serialize, Deserialize, Debug)]
@@ -83,7 +90,11 @@ pub mod quests {
 pub mod quest_graph {
 
     use super::quests::*;
-    use daggy::{self, Dag, NodeIndex, Walker};
+    use daggy::{
+        self,
+        petgraph::dot::{Config, Dot},
+        Dag, NodeIndex, Walker,
+    };
 
     pub struct QuestGraph {
         graph: Dag<String, u32>,
@@ -137,6 +148,10 @@ pub mod quest_graph {
                 }
             })
         }
+
+        pub fn get_quest_draw(&self) -> Dot<&Dag<String, u32>> {
+            Dot::with_config(&self.graph, &[Config::EdgeNoLabel])
+        }
     }
 
     fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
@@ -146,45 +161,88 @@ pub mod quest_graph {
             description: "COMMON START NODE".to_string(),
             tasks: Tasks::None,
             on_complete_hook: None,
-            starting_point: None,
+            pivot_point: None,
         };
         let ending_step = Step {
             id: END_STEP_ID.to_string(),
             description: "COMMON END NODE".to_string(),
             tasks: Tasks::None,
             on_complete_hook: None,
-            starting_point: None,
+            pivot_point: None,
         };
 
         let start_node = dag.add_node(starting_step.id);
         let end_node = dag.add_node(ending_step.id);
 
-        let starting_points = quest
-            .steps
-            .iter()
-            .filter(|step| step.starting_point.is_some());
+        let starting_points = quest.steps.iter().filter(|step| {
+            if let Some(pivot_point) = &step.pivot_point {
+                pivot_point.is_starting_point
+            } else {
+                false
+            }
+        });
 
+        // Attach Quest's Starting points
         for starting_step_point in starting_points {
             let (_, current_start_node) = dag.add_child(
                 start_node,
                 start_node.index() as u32,
                 starting_step_point.id.clone(),
             );
-            if let Some(StartingPoint { next_steps_id }) = &starting_step_point.starting_point {
-                let mut last_node = current_start_node;
-                for id in next_steps_id {
-                    let step = quest.steps.iter().find(|step| *step.id == *id);
-                    if let Some(step) = step {
-                        let (_, end) =
-                            dag.add_child(last_node, last_node.index() as u32, step.id.clone());
-                        last_node = end;
-                    }
-                }
-                dag.add_edge(last_node, end_node, 0).unwrap();
+            if let Some(PivotPoint {
+                next_steps_id,
+                is_starting_point: _,
+            }) = &starting_step_point.pivot_point
+            {
+                build_pivot_points(current_start_node, end_node, quest, &mut dag, next_steps_id)
             }
         }
 
         dag
+    }
+
+    fn build_pivot_points(
+        current_start_node: NodeIndex,
+        end_node: NodeIndex,
+        quest: &Quest,
+        dag: &mut Dag<String, u32>,
+        next_step_ids: &PivotType,
+    ) {
+        match next_step_ids {
+            PivotType::OnePath(next_ids) => {
+                let mut last_node = current_start_node;
+                for id in next_ids {
+                    let step = quest.steps.iter().find(|step| *step.id == *id);
+                    if let Some(step) = step {
+                        let (_, current) =
+                            dag.add_child(last_node, last_node.index() as u32, step.id.clone());
+                        last_node = current;
+                    }
+                }
+                dag.add_edge(last_node, end_node, 0).unwrap();
+            }
+            PivotType::MultiPath(next_ids) => {
+                for id in next_ids {
+                    let step = quest.steps.iter().find(|step| *step.id == *id);
+                    if let Some(step) = step {
+                        let (_, current) = dag.add_child(
+                            current_start_node,
+                            current_start_node.index() as u32,
+                            step.id.clone(),
+                        );
+                        if let Some(PivotPoint {
+                            next_steps_id,
+                            is_starting_point: _,
+                        }) = &step.pivot_point
+                        {
+                            build_pivot_points(current, end_node, quest, dag, next_steps_id)
+                        } else {
+                            dag.add_edge(current, end_node, 0).unwrap();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[cfg(test)]
@@ -205,8 +263,13 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: Some(StartingPoint {
-                            next_steps_id: vec!["B".to_string(), "C".to_string(), "D".to_string()],
+                        pivot_point: Some(PivotPoint {
+                            next_steps_id: PivotType::OnePath(vec![
+                                "B".to_string(),
+                                "C".to_string(),
+                                "D".to_string(),
+                            ]),
+                            is_starting_point: true,
                         }),
                     },
                     Step {
@@ -217,7 +280,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                     Step {
                         id: "C".to_string(),
@@ -227,7 +290,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                     Step {
                         id: "D".to_string(),
@@ -237,7 +300,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                 ],
             };
@@ -272,8 +335,12 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: Some(StartingPoint {
-                            next_steps_id: vec!["B".to_string(), "C".to_string()],
+                        pivot_point: Some(PivotPoint {
+                            next_steps_id: PivotType::OnePath(vec![
+                                "B".to_string(),
+                                "C".to_string(),
+                            ]),
+                            is_starting_point: true,
                         }),
                     },
                     Step {
@@ -284,8 +351,9 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: Some(StartingPoint {
-                            next_steps_id: vec!["D".to_string(), END_STEP_ID.to_string()],
+                        pivot_point: Some(PivotPoint {
+                            next_steps_id: PivotType::OnePath(vec!["D".to_string()]),
+                            is_starting_point: true,
                         }),
                     },
                     Step {
@@ -296,7 +364,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                     Step {
                         id: "C".to_string(),
@@ -306,7 +374,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                     Step {
                         id: "D".to_string(),
@@ -316,7 +384,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                 ],
             };
@@ -348,6 +416,112 @@ pub mod quest_graph {
         }
 
         #[test]
+        fn build_quest_graph_with_multiple_pivot_points() {
+            let quest = Quest {
+                name: "CUSTOM_QUEST".to_string(),
+                description: "".to_string(),
+                steps: vec![
+                    Step {
+                        id: "A".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                            repeat: None,
+                        },
+                        on_complete_hook: None,
+                        pivot_point: Some(PivotPoint {
+                            next_steps_id: PivotType::MultiPath(vec![
+                                "B1".to_string(),
+                                "B2".to_string(),
+                                "B3".to_string(),
+                            ]),
+                            is_starting_point: true,
+                        }),
+                    },
+                    Step {
+                        id: "B1".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                            repeat: None,
+                        },
+                        on_complete_hook: None,
+                        pivot_point: Some(PivotPoint {
+                            next_steps_id: PivotType::OnePath(vec![
+                                "C".to_string(),
+                                "D".to_string(),
+                            ]),
+                            is_starting_point: false,
+                        }),
+                    },
+                    Step {
+                        id: "B2".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                            repeat: None,
+                        },
+                        on_complete_hook: None,
+                        pivot_point: None,
+                    },
+                    Step {
+                        id: "B3".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                            repeat: None,
+                        },
+                        on_complete_hook: None,
+                        pivot_point: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                            repeat: None,
+                        },
+                        on_complete_hook: None,
+                        pivot_point: None,
+                    },
+                    Step {
+                        id: "D".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                            repeat: None,
+                        },
+                        on_complete_hook: None,
+                        pivot_point: None,
+                    },
+                ],
+            };
+
+            let graph = QuestGraph::from_quest(quest);
+            let next = graph.next(START_STEP_ID).unwrap();
+            assert_eq!(next, vec!["A"]);
+            let next = graph.next("A").unwrap();
+            assert_eq!(next.len(), 3);
+            assert!(next.contains(&"B1".to_string()));
+            assert!(next.contains(&"B2".to_string()));
+            assert!(next.contains(&"B3".to_string()));
+
+            // Path B1
+            let next = graph.next("B1").unwrap();
+            assert_eq!(next, vec!["C"]);
+            let next = graph.next("C").unwrap();
+            assert_eq!(next, vec!["D"]);
+            let next = graph.next("D").unwrap();
+            assert_eq!(next, vec![END_STEP_ID]);
+            // Path B2
+            let next = graph.next("B2").unwrap();
+            assert_eq!(next, vec![END_STEP_ID]);
+            // Path B3
+            let next = graph.next("B3").unwrap();
+            assert_eq!(next, vec![END_STEP_ID]);
+        }
+
+        #[test]
         fn quest_graph_prev_works_properly() {
             let quest = Quest {
                 name: "CUSTOM_QUEST".to_string(),
@@ -361,8 +535,12 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: Some(StartingPoint {
-                            next_steps_id: vec!["B".to_string(), "C".to_string()],
+                        pivot_point: Some(PivotPoint {
+                            next_steps_id: PivotType::OnePath(vec![
+                                "B".to_string(),
+                                "C".to_string(),
+                            ]),
+                            is_starting_point: true,
                         }),
                     },
                     Step {
@@ -373,8 +551,9 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: Some(StartingPoint {
-                            next_steps_id: vec!["D".to_string(), END_STEP_ID.to_string()],
+                        pivot_point: Some(PivotPoint {
+                            next_steps_id: PivotType::OnePath(vec!["D".to_string()]),
+                            is_starting_point: true,
                         }),
                     },
                     Step {
@@ -385,7 +564,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                     Step {
                         id: "C".to_string(),
@@ -395,7 +574,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                     Step {
                         id: "D".to_string(),
@@ -405,7 +584,7 @@ pub mod quest_graph {
                             repeat: None,
                         },
                         on_complete_hook: None,
-                        starting_point: None,
+                        pivot_point: None,
                     },
                 ],
             };

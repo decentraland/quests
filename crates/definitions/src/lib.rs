@@ -16,14 +16,23 @@ pub mod quests {
     }
 
     impl Quest {
-        pub fn contanins_step(&self, step_id: &str) -> bool {
-            self.definition.steps.iter().any(|step| step.id == step_id)
+        /// Check if the quest has a step defined by its id
+        pub fn contanins_step(&self, step_id: &StepID) -> bool {
+            self.definition.steps.iter().any(|step| step.id == *step_id)
         }
 
-        pub fn get_step(&self, step_id: &str) -> Option<&Step> {
-            self.definition.steps.iter().find(|step| step.id == step_id)
+        /// Get step defined in the quest by its id
+        pub fn get_step(&self, step_id: &StepID) -> Option<&Step> {
+            self.definition
+                .steps
+                .iter()
+                .find(|step| step.id == *step_id)
         }
 
+        /// Get all steps in `connections` that don't have a connection defined in which they are the `from` pointing to other node.
+        ///
+        /// We use this in order to know which steps point to the end node
+        ///
         pub fn get_steps_without_to(&self) -> HashSet<StepID> {
             let mut steps = HashSet::new();
             for connection in &self.definition.connections {
@@ -40,6 +49,10 @@ pub mod quests {
             steps
         }
 
+        /// Get all steps in `connections` that don't have a connection defined in which they are the `to`.
+        ///
+        /// We use this in order to know which steps are possible starting points
+        ///
         pub fn get_steps_without_from(&self) -> HashSet<StepID> {
             let mut steps = HashSet::new();
             for connection in &self.definition.connections {
@@ -55,6 +68,13 @@ pub mod quests {
 
             steps
         }
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct QuestDefinition {
+        pub steps: Vec<Step>,
+        /// Connections between steps
+        pub connections: Vec<(StepID, StepID)>,
     }
 
     #[derive(Serialize, Deserialize, Debug)]
@@ -116,11 +136,6 @@ pub mod quests {
         Custom {
             id: String,
         },
-    }
-    #[derive(Serialize, Deserialize, Debug)]
-    pub struct QuestDefinition {
-        pub steps: Vec<Step>,
-        pub connections: Vec<(StepID, StepID)>,
     }
 
     #[cfg(test)]

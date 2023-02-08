@@ -32,7 +32,7 @@ impl Quest {
     ///
     /// We use this in order to know which steps point to the end node
     ///
-    pub fn get_steps_without_to(&self) -> HashSet<StepID> {
+    pub(crate) fn get_steps_without_to(&self) -> HashSet<StepID> {
         let mut steps = HashSet::new();
         for connection in &self.definition.connections {
             if self
@@ -52,7 +52,7 @@ impl Quest {
     ///
     /// We use this in order to know which steps are possible starting points
     ///
-    pub fn get_steps_without_from(&self) -> HashSet<StepID> {
+    pub(crate) fn get_steps_without_from(&self) -> HashSet<StepID> {
         let mut steps = HashSet::new();
         for connection in &self.definition.connections {
             if self
@@ -67,12 +67,70 @@ impl Quest {
 
         steps
     }
+
+    pub fn is_valid(&self) -> Result<(), QuestValidationError> {
+        if self.definition.connections.is_empty() || self.definition.steps.is_empty() {
+            return Err(QuestValidationError::InvalidDefinition);
+        }
+        let starting_nodes = self.get_steps_without_from();
+        // Has at least one node for starting.
+        // Note: This should be impossible
+        if starting_nodes.is_empty() {
+            return Err(QuestValidationError::NoStartingNode);
+        }
+        // All starting nodes should be defined as Step
+        for step_id in starting_nodes {
+            if !self.contanins_step(&step_id) {
+                return Err(QuestValidationError::MissingStepForStartingNode(step_id));
+            }
+        }
+        let end_nodes = self.get_steps_without_to();
+        // Has at least one node pointing to end
+        // Note: This should be impossible
+        if end_nodes.is_empty() {
+            return Err(QuestValidationError::NoEndNode);
+        }
+        // All end nodes should be defined as Step
+        for step_id in end_nodes {
+            if !self.contanins_step(&step_id) {
+                return Err(QuestValidationError::MissingStepForEndNode(step_id));
+            }
+        }
+
+        // All steps have at least one defined connection
+        for step in &self.definition.steps {
+            if !self
+                .definition
+                .connections
+                .iter()
+                .any(|connection| connection.0 == step.id || connection.1 == step.id)
+            {
+                return Err(QuestValidationError::NoConnectionDefinedForStep(
+                    step.id.clone(),
+                ));
+            }
+        }
+
+        // All connection halfs have a defined step
+        for (from_id, to_id) in &self.definition.connections {
+            if !self.contanins_step(from_id) || !self.contanins_step(to_id) {
+                return Err(QuestValidationError::NoStepDefinedForConnectionHalf((
+                    from_id.clone(),
+                    to_id.clone(),
+                )));
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct QuestDefinition {
     pub steps: Vec<Step>,
     /// Connections between steps
+    ///
+    /// First position in the tuple is for `from` and second one `to`
     pub connections: Vec<(StepID, StepID)>,
 }
 
@@ -137,6 +195,27 @@ pub enum Action {
     },
 }
 
+pub enum QuestValidationError {
+    /// Definition is not valid because it has defined no connections or steps
+    InvalidDefinition,
+    /// No node to start the quest
+    ///
+    /// Note: This should be impossible but we do the check
+    NoStartingNode,
+    /// No node pointing to end
+    ///
+    /// Note: This should be impossible but we do the check
+    NoEndNode,
+    /// One starting node doesn't have a defined step
+    MissingStepForStartingNode(StepID),
+    /// One end node doesn't have a defined step
+    MissingStepForEndNode(StepID),
+    /// A Step doesn't have a defined connection
+    NoConnectionDefinedForStep(StepID),
+    /// A Half of a connection tuple doesn't have a step defined
+    NoStepDefinedForConnectionHalf((StepID, StepID)),
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,4 +264,7 @@ mod tests {
         assert!(steps_pointing_to_end.contains(&"D".to_string()));
         assert!(steps_pointing_to_end.contains(&"E".to_string()));
     }
+
+    #[test]
+    fn quest_should_be_valid() {}
 }

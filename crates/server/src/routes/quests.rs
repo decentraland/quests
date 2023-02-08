@@ -10,7 +10,7 @@ use quests_db::{
     core::errors::DBError,
     Database,
 };
-use quests_definitions::quests::Quest;
+use quests_definitions::quests::{Quest, QuestDefinition};
 use serde::Deserialize;
 
 use super::{errors::QuestError, CommonError};
@@ -60,7 +60,7 @@ async fn create_quest_controller<DB: QuestsDatabase>(
     let quest_creation = CreateQuest {
         name: &quest.name,
         description: &quest.description,
-        definition: bincode::serialize(&quest.steps).unwrap(),
+        definition: bincode::serialize(&quest.definition).unwrap(),
     };
     match db.create_quest(&quest_creation).await {
         Ok(quest_id) => Ok(quest_id),
@@ -90,7 +90,7 @@ async fn update_quest_controller<DB: QuestsDatabase>(
     let update = UpdateQuest {
         name: &quest.name,
         description: &quest.description,
-        definition: bincode::serialize(&quest.steps).unwrap(),
+        definition: bincode::serialize(&quest.definition).unwrap(),
     };
     match db.update_quest(&id, &update).await {
         Ok(_) => Ok(quest),
@@ -144,14 +144,16 @@ async fn get_quest_controller<DB: QuestsDatabase>(
 ) -> Result<Quest, QuestError> {
     match db.get_quest(&id).await {
         Ok(stored_quest) => {
+            let definition: QuestDefinition =
+                if let Ok(definition) = bincode::deserialize(&stored_quest.definition) {
+                    definition
+                } else {
+                    return Err(QuestError::StepsDeserialization);
+                };
             let quest = Quest {
                 name: stored_quest.name,
                 description: stored_quest.description,
-                steps: if let Ok(steps) = bincode::deserialize(&stored_quest.definition) {
-                    steps
-                } else {
-                    return Err(QuestError::StepsDeserialization);
-                },
+                definition,
             };
             Ok(quest)
         }

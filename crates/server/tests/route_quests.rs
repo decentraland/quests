@@ -25,6 +25,7 @@ async fn create_quest_should_be_200() {
             connections: vec![
                 ("A".to_string(), "B".to_string()),
                 ("B".to_string(), "C".to_string()),
+                ("C".to_string(), "D".to_string()),
             ],
             steps: vec![
                 Step {
@@ -66,6 +67,39 @@ async fn create_quest_should_be_200() {
 }
 
 #[actix_web::test]
+async fn create_quest_should_be_400_quest_validation_error() {
+    let config = get_configuration().await;
+    let db = create_quests_db_component(&config.database_url)
+        .await
+        .unwrap();
+
+    let app = init_service(get_app_router(&Data::new(config), &Data::new(db))).await;
+
+    let quest_definition = Quest {
+        name: "QUEST-1".to_string(),
+        description: "Grab some apples".to_string(),
+        definition: QuestDefinition {
+            connections: vec![],
+            steps: vec![],
+        },
+    };
+
+    let req = TestRequest::post()
+        .uri("/quests")
+        .set_json(quest_definition)
+        .to_request();
+
+    let response = call_service(&app, req).await;
+
+    assert!(response.status().is_client_error());
+    let body: ErrorResponse = read_body_json(response).await;
+    assert_eq!(body.code, 400);
+    assert!(body
+        .message
+        .contains("Quest Validation Error: Missing the defintion for the quest"));
+}
+
+#[actix_web::test]
 async fn get_quests_should_be_200() {
     let config = get_configuration().await;
     let db = create_quests_db_component(&config.database_url)
@@ -81,6 +115,7 @@ async fn get_quests_should_be_200() {
             connections: vec![
                 ("A".to_string(), "B".to_string()),
                 ("B".to_string(), "C".to_string()),
+                ("C".to_string(), "D".to_string()),
             ],
             steps: vec![
                 Step {
@@ -179,6 +214,7 @@ async fn update_quest_should_be_200() {
             connections: vec![
                 ("A".to_string(), "B".to_string()),
                 ("B".to_string(), "C".to_string()),
+                ("C".to_string(), "D".to_string()),
             ],
             steps: vec![
                 Step {
@@ -226,6 +262,7 @@ async fn update_quest_should_be_200() {
             connections: vec![
                 ("A-Updated".to_string(), "B".to_string()),
                 ("B".to_string(), "C".to_string()),
+                ("C".to_string(), "D".to_string()),
             ],
             steps: vec![
                 Step {
@@ -278,7 +315,72 @@ async fn update_quest_should_be_200() {
 }
 
 #[actix_web::test]
-async fn update_quest_should_be_400() {
+async fn update_quest_should_be_400_uuid_bad_format() {
+    let config = get_configuration().await;
+    let db = create_quests_db_component(&config.database_url)
+        .await
+        .unwrap();
+
+    let quest_definition = Quest {
+        name: "QUEST-1".to_string(),
+        description: "Grab some apples".to_string(),
+        definition: QuestDefinition {
+            connections: vec![
+                ("A".to_string(), "B".to_string()),
+                ("B".to_string(), "C".to_string()),
+                ("C".to_string(), "D".to_string()),
+            ],
+            steps: vec![
+                Step {
+                    id: "A".to_string(),
+                    tasks: Tasks::None,
+                    on_complete_hook: None,
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "B".to_string(),
+                    tasks: Tasks::None,
+                    on_complete_hook: None,
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "C".to_string(),
+                    tasks: Tasks::None,
+                    on_complete_hook: None,
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "D".to_string(),
+                    tasks: Tasks::None,
+                    on_complete_hook: None,
+                    description: "".to_string(),
+                },
+            ],
+        },
+    };
+
+    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
+
+    let quest_update = Quest {
+        name: "QUEST-1_UPDATE".to_string(),
+        ..quest_definition
+    };
+
+    let req = TestRequest::put()
+        .uri("/quests/1aa")
+        .set_json(quest_update)
+        .to_request();
+
+    let response = call_service(&app, req).await;
+
+    assert_eq!(response.status(), 400);
+    let body: ErrorResponse = read_body_json(response).await;
+    assert_eq!(body.code, 400);
+    assert!(body.message.contains("Bad Request:"));
+}
+
+#[actix_web::test]
+async fn update_quest_should_be_400_quest_validation_error() {
     let config = get_configuration().await;
     let db = create_quests_db_component(&config.database_url)
         .await
@@ -301,7 +403,7 @@ async fn update_quest_should_be_400() {
     };
 
     let req = TestRequest::put()
-        .uri("/quests/1aa")
+        .uri("/quests/whatever-uuid-because-it-fails-due-to-validation")
         .set_json(quest_update)
         .to_request();
 
@@ -310,7 +412,9 @@ async fn update_quest_should_be_400() {
     assert_eq!(response.status(), 400);
     let body: ErrorResponse = read_body_json(response).await;
     assert_eq!(body.code, 400);
-    assert!(body.message.contains("Bad Request:"));
+    assert!(body
+        .message
+        .contains("Quest Validation Error: Missing the defintion for the quest"));
 }
 
 #[actix_web::test]

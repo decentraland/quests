@@ -1799,8 +1799,10 @@ name = "quests_message_broker"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bincode",
  "config",
  "deadpool-redis",
+ "futures-util",
  "log",
  "quests_db",
  "quests_definitions",

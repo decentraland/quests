@@ -6,8 +6,9 @@ use quests_definitions::quests::Event;
 
 use quests_message_broker::{
     events_queue::EventsQueue,
-    quests_channel::{QuestUpdate, QuestsChannel, QuestState},
+    quests_channel::{QuestState, QuestUpdate, QuestsChannel},
 };
+use tokio::sync::Mutex;
 
 pub enum ProcessEventResult {
     NewState(QuestState),
@@ -16,7 +17,7 @@ pub enum ProcessEventResult {
 
 pub async fn process_event(
     event: Event,
-    quests_channel: Arc<impl QuestsChannel>,
+    quests_channel: Arc<Mutex<impl QuestsChannel>>,
     database: Arc<impl QuestsDatabase>,
     events_queue: Arc<impl EventsQueue>,
 ) {
@@ -36,12 +37,14 @@ pub async fn process_event(
                         };
                         database.add_event(&add_event, &quest_instance.id).await;
                         quests_channel
+                            .lock()
+                            .await
                             .publish(&quest_instance.id, QuestUpdate { state: quest_state })
                             .await;
                     }
                     ProcessEventResult::Ignored => info!(
-                        "Event {:?} for quest instance {} was ignored",
-                        event, &quest_instance.id
+                        "Event for quest instance {} was ignored",
+                        &quest_instance.id
                     ),
                 }
             }
@@ -65,10 +68,13 @@ async fn process_event_for_quest_instance(
     database: Arc<impl QuestsDatabase>,
 ) -> ProcessEventResult {
     // try to apply event to every instance
-    let events = database.get_events(&quest_instance.id).await;
-    let quest = database.get_quest(&quest_instance.quest_id).await.expect("Can retrieve quest"); // TODO: error handling
-    let quest_definition = bincode::deserialize::<Quest>(&quest.definition);
-    let initial_state = quest_definition.get_initial_state();
+    let events = database.get_events(&quest_instance.id).await.unwrap(); // TODO: error handling
+    let quest = database
+        .get_quest(&quest_instance.quest_id)
+        .await
+        .expect("Can retrieve quest"); // TODO: error handling
+    // let quest_definition = bincode::deserialize::<Quest>(&quest.definition);
+    // let initial_state = quest_definition.get_initial_state();
     for event in events {
         // apply event and get new state
         // definitions::apply_event(state, event) -> state

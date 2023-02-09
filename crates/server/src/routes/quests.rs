@@ -64,10 +64,9 @@ async fn create_quest_controller<DB: QuestsDatabase>(
                 description: &quest.description,
                 definition: bincode::serialize(&quest.definition).unwrap(),
             };
-            match db.create_quest(&quest_creation).await {
-                Ok(quest_id) => Ok(quest_id),
-                Err(_) => Err(QuestError::CommonError(CommonError::Unknown)),
-            }
+            db.create_quest(&quest_creation)
+                .await
+                .map_err(|_| QuestError::CommonError(CommonError::Unknown))
         }
         Err(error) => Err(QuestError::QuestValidation(error.to_string())),
     }

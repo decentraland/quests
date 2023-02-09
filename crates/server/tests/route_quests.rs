@@ -96,7 +96,7 @@ async fn create_quest_should_be_400_quest_validation_error() {
     assert_eq!(body.code, 400);
     assert!(body
         .message
-        .contains("Quest Validation Error: Missing the defintion for the quest"));
+        .contains("Quest Validation Error: Missing the definition for the quest"));
 }
 
 #[actix_web::test]
@@ -414,7 +414,7 @@ async fn update_quest_should_be_400_quest_validation_error() {
     assert_eq!(body.code, 400);
     assert!(body
         .message
-        .contains("Quest Validation Error: Missing the defintion for the quest"));
+        .contains("Quest Validation Error: Missing the definition for the quest"));
 }
 
 #[actix_web::test]

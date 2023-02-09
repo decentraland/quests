@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use quests_definitions::quests::*;
 
-use crate::Redis;
+use crate::redis::Redis;
 
 #[async_trait]
 pub trait EventsQueue {
@@ -15,7 +15,7 @@ pub struct RedisEventsQueue {
     redis: Arc<Redis>,
 }
 
-impl<'a> RedisEventsQueue {
+impl RedisEventsQueue {
     pub fn new(redis: Arc<Redis>) -> Self {
         Self { redis }
     }

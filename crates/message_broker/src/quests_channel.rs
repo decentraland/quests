@@ -3,10 +3,11 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use deadpool_redis::redis::aio::PubSub;
 
-use crate::Redis;
-
-pub enum QuestUpdate {}
-
+use crate::redis::Redis;
+pub struct QuestState {}
+pub struct QuestUpdate {
+    state: QuestState,
+} // TODO: move to definitions
 pub type OnUpdate = Box<dyn Fn(QuestUpdate) + Send + Sync>;
 
 #[async_trait]

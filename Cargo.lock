@@ -1839,6 +1839,17 @@ dependencies = [
 [[package]]
 name = "quests_system"
 version = "0.1.0"
+dependencies = [
+ "bincode",
+ "config",
+ "log",
+ "quests_db",
+ "quests_definitions",
+ "quests_message_broker",
+ "serde",
+ "serde_json",
+ "tokio",
+]
 
 [[package]]
 name = "quote"

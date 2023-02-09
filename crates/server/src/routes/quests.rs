@@ -56,15 +56,20 @@ async fn create_quest(data: web::Data<Database>, quest: web::Json<Quest>) -> Htt
 async fn create_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     quest: Quest,
-) -> Result<String, CommonError> {
-    let quest_creation = CreateQuest {
-        name: &quest.name,
-        description: &quest.description,
-        definition: bincode::serialize(&quest.definition).unwrap(),
-    };
-    match db.create_quest(&quest_creation).await {
-        Ok(quest_id) => Ok(quest_id),
-        Err(_) => Err(CommonError::Unknown),
+) -> Result<String, QuestError> {
+    match quest.is_valid() {
+        Ok(_) => {
+            let quest_creation = CreateQuest {
+                name: &quest.name,
+                description: &quest.description,
+                definition: bincode::serialize(&quest.definition).unwrap(),
+            };
+            match db.create_quest(&quest_creation).await {
+                Ok(quest_id) => Ok(quest_id),
+                Err(_) => Err(QuestError::CommonError(CommonError::Unknown)),
+            }
+        }
+        Err(error) => Err(QuestError::QuestValidation(error.to_string())),
     }
 }
 
@@ -86,21 +91,26 @@ async fn update_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     id: String,
     quest: Quest,
-) -> Result<Quest, CommonError> {
-    let update = UpdateQuest {
-        name: &quest.name,
-        description: &quest.description,
-        definition: bincode::serialize(&quest.definition).unwrap(),
-    };
-    match db.update_quest(&id, &update).await {
-        Ok(_) => Ok(quest),
-        Err(error) => match error {
-            DBError::NotUUID => Err(CommonError::BadRequest(
-                "the ID given is not a valid".to_string(),
-            )),
-            DBError::RowNotFound => Err(CommonError::NotFound),
-            _ => Err(CommonError::Unknown),
-        },
+) -> Result<Quest, QuestError> {
+    match quest.is_valid() {
+        Ok(_) => {
+            let update = UpdateQuest {
+                name: &quest.name,
+                description: &quest.description,
+                definition: bincode::serialize(&quest.definition).unwrap(),
+            };
+            match db.update_quest(&id, &update).await {
+                Ok(_) => Ok(quest),
+                Err(error) => match error {
+                    DBError::NotUUID => Err(QuestError::CommonError(CommonError::BadRequest(
+                        "the ID given is not a valid".to_string(),
+                    ))),
+                    DBError::RowNotFound => Err(QuestError::CommonError(CommonError::NotFound)),
+                    _ => Err(QuestError::CommonError(CommonError::NotFound)),
+                },
+            }
+        }
+        Err(error) => Err(QuestError::QuestValidation(error.to_string())),
     }
 }
 

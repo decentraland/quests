@@ -21,7 +21,7 @@ impl Config {
             )
             .set_default("redis_url", "127.0.0.1:6379")?
             .set_default(
-                "db_url",
+                "database_url",
                 "postgres://postgres:postgres@localhost:3500/quests_db",
             )? // => Default for local development
             .build()?;

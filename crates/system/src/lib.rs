@@ -3,10 +3,10 @@ mod event_processing;
 
 use configuration::Config;
 use event_processing::process_event;
-use events_queue::{EventsQueue, RedisEventsQueue};
-use quests_channel::RedisQuestsChannel;
 use quests_db::create_quests_db_component;
-use redis::Redis;
+use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
+use quests_message_broker::quests_channel::RedisQuestsChannel;
+use quests_message_broker::redis::Redis;
 use std::sync::Arc;
 
 pub type Error = String;

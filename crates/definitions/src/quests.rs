@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use thiserror::Error;
 
 use serde::{Deserialize, Serialize};
 
@@ -117,11 +118,16 @@ impl Quest {
 
         // All connection halfs have a defined step
         for (from_id, to_id) in &self.definition.connections {
-            if !self.contanins_step(from_id) || !self.contanins_step(to_id) {
-                return Err(QuestValidationError::NoStepDefinedForConnectionHalf((
+            if !self.contanins_step(from_id) {
+                return Err(QuestValidationError::NoStepDefinedForConnectionHalf(
                     from_id.clone(),
+                ));
+            }
+
+            if !self.contanins_step(to_id) {
+                return Err(QuestValidationError::NoStepDefinedForConnectionHalf(
                     to_id.clone(),
-                )));
+                ));
             }
         }
 
@@ -199,25 +205,35 @@ pub enum Action {
     },
 }
 
+#[derive(Error, Debug)]
 pub enum QuestValidationError {
     /// Definition is not valid because it has defined no connections or steps
+    #[error("Missing the defintion for the quest")]
     InvalidDefinition,
     /// No node to start the quest
     ///
     /// Note: This should be impossible but we do the check
+    #[error("Missing a starting node for the quest")]
     NoStartingNode,
     /// No node pointing to end
     ///
     /// Note: This should be impossible but we do the check
+    #[error("Missing a end node for the quest")]
     NoEndNode,
     /// One starting node doesn't have a defined step
+    #[error(
+        "Missing a definited step for the starting node defined in connections - Step ID: {0}"
+    )]
     MissingStepForStartingNode(StepID),
     /// One end node doesn't have a defined step
+    #[error("Missing a definited step for the end node defined in connections - Step ID: {0}")]
     MissingStepForEndNode(StepID),
     /// A Step doesn't have a defined connection
+    #[error("Step has no connection - Step ID: {0}")]
     NoConnectionDefinedForStep(StepID),
     /// A Half of a connection tuple doesn't have a step defined
-    NoStepDefinedForConnectionHalf((StepID, StepID)),
+    #[error("Connection half has no defined step - Step ID: {0}")]
+    NoStepDefinedForConnectionHalf(StepID),
 }
 
 #[cfg(test)]
@@ -415,10 +431,7 @@ mod tests {
                 ],
             },
         };
-        let _err = QuestValidationError::NoStepDefinedForConnectionHalf((
-            "B".to_string(),
-            "C".to_string(),
-        ));
+        let _err = QuestValidationError::NoStepDefinedForConnectionHalf("C".to_string());
         let assert = matches!(quest.is_valid().unwrap_err(), _err);
         assert!(assert);
     }

@@ -208,7 +208,7 @@ pub enum Action {
 #[derive(Error, Debug)]
 pub enum QuestValidationError {
     /// Definition is not valid because it has defined no connections or steps
-    #[error("Missing the defintion for the quest")]
+    #[error("Missing the definition for the quest")]
     InvalidDefinition,
     /// No node to start the quest
     ///

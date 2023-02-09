@@ -8,6 +8,7 @@ use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
 use quests_message_broker::quests_channel::RedisQuestsChannel;
 use quests_message_broker::redis::Redis;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub type Error = String;
 pub type EventProcessingResult<T> = Result<T, Error>;
@@ -32,7 +33,7 @@ pub async fn start_event_processing() -> EventProcessingResult<()> {
 
     // Create quests channel
     let quests_channel = RedisQuestsChannel::new(redis.clone()).await;
-    let quests_channel = Arc::new(quests_channel);
+    let quests_channel = Arc::new(Mutex::new(quests_channel));
 
     // Create DB
     let database = create_quests_db_component(&config.db_url)

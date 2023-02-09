@@ -68,6 +68,10 @@ impl Quest {
         steps
     }
 
+    /// Validates a Quest struct to check if it meets all the requirements to be a valid quests
+    ///
+    /// *TODO: add validations for Tasks, Actions, and `on_complete_hook`*
+    ///
     pub fn is_valid(&self) -> Result<(), QuestValidationError> {
         if self.definition.connections.is_empty() || self.definition.steps.is_empty() {
             return Err(QuestValidationError::InvalidDefinition);
@@ -266,5 +270,156 @@ mod tests {
     }
 
     #[test]
-    fn quest_should_be_valid() {}
+    fn quest_should_be_valid() {
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A1".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A1".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+
+        assert!(quest.is_valid().is_ok())
+    }
+
+    #[test]
+    fn quest_should_not_be_valid() {
+        // Should not be valid because of missing connections and steps
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![],
+                steps: vec![], // not needed for test
+            },
+        };
+        let assert = matches!(
+            quest.is_valid().unwrap_err(),
+            QuestValidationError::InvalidDefinition
+        );
+        assert!(assert);
+
+        // Should not be valid because of missing step for starting ndoe
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![("A1".to_string(), "B".to_string())],
+                steps: vec![Step {
+                    id: "B".to_string(),
+                    description: "".to_string(),
+                    tasks: Tasks::None,
+                    on_complete_hook: None,
+                }],
+            },
+        };
+        let _err = QuestValidationError::MissingStepForStartingNode("A1".to_string());
+        let assert = matches!(quest.is_valid().unwrap_err(), _err);
+        assert!(assert);
+
+        // Should not be valid because of missing step for end ndoe
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![("A1".to_string(), "B".to_string())],
+                steps: vec![Step {
+                    id: "A1".to_string(),
+                    description: "".to_string(),
+                    tasks: Tasks::None,
+                    on_complete_hook: None,
+                }],
+            },
+        };
+        let _err = QuestValidationError::MissingStepForEndNode("B".to_string());
+        let assert = matches!(quest.is_valid().unwrap_err(), _err);
+        assert!(assert);
+
+        // Should not be valid because of missing connection for a defined step
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![("B".to_string(), "C".to_string())],
+                steps: vec![
+                    Step {
+                        id: "A1".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+        let _err = QuestValidationError::NoConnectionDefinedForStep("A1".to_string());
+        let assert = matches!(quest.is_valid().unwrap_err(), _err);
+        assert!(assert);
+
+        // Should not be valid because of missing step for a defined connection
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A1".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A1".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+        let _err = QuestValidationError::NoStepDefinedForConnectionHalf((
+            "B".to_string(),
+            "C".to_string(),
+        ));
+        let assert = matches!(quest.is_valid().unwrap_err(), _err);
+        assert!(assert);
+    }
 }

@@ -2,7 +2,7 @@ use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ErrorResponse {
     pub code: u16,
     pub message: String,
@@ -44,6 +44,8 @@ pub enum QuestError {
     CommonError(CommonError),
     #[error("Quest Definition issue")]
     StepsDeserialization,
+    #[error("Quest Validation Error: {0}")]
+    QuestValidation(String),
 }
 
 impl ResponseError for QuestError {
@@ -51,6 +53,7 @@ impl ResponseError for QuestError {
         match self {
             Self::StepsDeserialization => StatusCode::NOT_FOUND,
             Self::CommonError(base) => base.status_code(),
+            Self::QuestValidation(_) => StatusCode::BAD_REQUEST,
         }
     }
 

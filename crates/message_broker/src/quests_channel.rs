@@ -17,7 +17,7 @@ pub struct QuestState {}
 
 #[derive(Serialize, Deserialize)]
 pub struct QuestUpdate {
-    state: QuestState,
+    pub state: QuestState,
 } // TODO: move to definitions
 pub type OnUpdate = Box<dyn Fn(QuestUpdate) + Send + Sync>;
 

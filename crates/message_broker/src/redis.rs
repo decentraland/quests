@@ -1,4 +1,7 @@
-use deadpool_redis::{Connection, CreatePoolError, Pool, Runtime};
+use deadpool_redis::{
+    redis::{cmd, RedisResult},
+    Connection, CreatePoolError, Pool, Runtime,
+};
 
 #[derive(Clone)]
 pub struct Redis {
@@ -30,6 +33,16 @@ impl Redis {
             Err(err) => {
                 log::error!("Error getting connection from redis: {:?}", err);
                 None
+            }
+        }
+    }
+
+    pub async fn ping(&self) -> bool {
+        match self.get_async_connection().await {
+            None => false,
+            Some(mut conn) => {
+                let result: RedisResult<String> = cmd("PING").query_async(&mut conn).await;
+                matches!(result, Ok(_))
             }
         }
     }

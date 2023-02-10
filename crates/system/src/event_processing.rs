@@ -56,7 +56,7 @@ pub async fn process_event(
             );
 
             // TODO: should we retry here?
-            events_queue.push(event).await;
+            events_queue.push(&event).await;
         }
     }
 }
@@ -73,8 +73,8 @@ async fn process_event_for_quest_instance(
         .get_quest(&quest_instance.quest_id)
         .await
         .expect("Can retrieve quest"); // TODO: error handling
-    // let quest_definition = bincode::deserialize::<Quest>(&quest.definition);
-    // let initial_state = quest_definition.get_initial_state();
+                                       // let quest_definition = bincode::deserialize::<Quest>(&quest.definition);
+                                       // let initial_state = quest_definition.get_initial_state();
     for event in events {
         // apply event and get new state
         // definitions::apply_event(state, event) -> state

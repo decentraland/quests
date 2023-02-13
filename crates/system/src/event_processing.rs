@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use log::info;
 use quests_db::core::definitions::{AddEvent, QuestInstance, QuestsDatabase};
-use quests_definitions::quests::Event;
+use quests_definitions::{
+    quest_graph::QuestGraph,
+    quests::{Event, Quest, QuestDefinition},
+};
 
 use quests_message_broker::{
     events_queue::EventsQueue,
@@ -73,11 +76,19 @@ async fn process_event_for_quest_instance(
         .get_quest(&quest_instance.quest_id)
         .await
         .expect("Can retrieve quest"); // TODO: error handling
-    // let quest_definition = bincode::deserialize::<Quest>(&quest.definition);
-    // let initial_state = quest_definition.get_initial_state();
-    for event in events {
-        // apply event and get new state
-        // definitions::apply_event(state, event) -> state
+    let quest_definition = bincode::deserialize::<QuestDefinition>(&quest.definition).unwrap(); // TODO: error handling
+    let quest = Quest {
+        name: quest.name,
+        description: quest.description,
+        definition: quest_definition,
+    };
+    let mut quest_graph = QuestGraph::from_quest(quest);
+    let mut state = quest_graph.initial_state();
+    for db_event in events {
+        // Turns DB Event into Quest Definition Event
+        let quest_event = bincode::deserialize::<Event>(&db_event.event).unwrap(); // TODO: error handling
+        let new_state = quest_graph.apply_event(state, quest_event).unwrap(); // TODO: handle None
+        state = new_state
     }
     // get all quest instance events
     // apply all of them to get current state

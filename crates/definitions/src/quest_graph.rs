@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::quests::*;
 use daggy::{
@@ -12,14 +12,18 @@ use daggy::{
 
 pub struct QuestGraph {
     graph: Dag<String, u32>,
+    content: HashMap<StepID, Tasks>,
 }
 
 impl QuestGraph {
     pub fn from_quest(quest: Quest) -> Self {
-        let graph = build_graph_from_quest_definition(&quest);
-        Self { graph }
+        Self {
+            graph: build_graph_from_quest_definition(&quest),
+            content: build_content_from_quest_definition(&quest),
+        }
     }
 
+    /// Returns the step after `from`
     pub fn next(&self, from: &str) -> Option<Vec<String>> {
         let index = self.get_node_index_by_step_name(from);
         if let Some(index) = index {
@@ -36,6 +40,7 @@ impl QuestGraph {
         }
     }
 
+    /// Returns the step before `from`
     pub fn prev(&self, from: &str) -> Option<Vec<String>> {
         let index = self.get_node_index_by_step_name(from);
         if let Some(index) = index {
@@ -52,6 +57,21 @@ impl QuestGraph {
         }
     }
 
+    /// Returns steps required for the end of the quests. It returns the steps that directly point to the END, not all the path
+    pub fn required_for_end(&self) -> Option<Vec<StepID>> {
+        self.prev(END_STEP_ID)
+    }
+
+    /// Returns the initial state of the Quest as it's not initialized
+    pub fn initial_state(&self) -> QuestState {
+        QuestState {
+            steps_left: (self.graph.node_count() as u32 - 2), // - 2 becsase START_STEP_ID and END_STEP_ID are also nodes
+            required_steps: vec![],                           // All steps at this point
+            steps_completed: HashSet::default(),
+            next_possible_steps: HashMap::default(),
+        }
+    }
+
     fn get_node_index_by_step_name(&self, step: &str) -> Option<NodeIndex> {
         self.graph.graph().node_indices().find(|idx| {
             let item = self.graph.node_weight(*idx);
@@ -65,6 +85,112 @@ impl QuestGraph {
 
     pub fn get_quest_draw(&self) -> Dot<&Dag<String, u32>> {
         Dot::with_config(&self.graph, &[Config::EdgeNoLabel])
+    }
+
+    pub fn apply_event(&self, state: QuestState, event: Event) -> Option<QuestState> {
+        // if next_possible_steps.contains(&END_STEP_ID.to_string()) && next_possible_steps.len() == 1
+        // {
+        //     let reboot_state = self.initial_state();
+        //     state = QuestState {
+        //         steps_left: state.steps_left,
+        //         ..reboot_state
+        //     };
+        //     next_possible_steps = self.next(&state.step_id).unwrap_or_default();
+        // }
+
+        let mut cloned_possible = state.next_possible_steps.clone();
+        let mut steps_completed = state.steps_completed.clone();
+
+        for (step_id, step_content) in state.next_possible_steps {
+            match &step_content.todos {
+                Tasks::Single { action_items } => {
+                    let mut action_items_cloned = action_items.clone();
+                    let matched_action_index = action_items
+                        .iter()
+                        .position(|action| matches_action((action.clone(), event.action.clone())))
+                        .unwrap();
+
+                    action_items_cloned.remove(matched_action_index);
+
+                    if action_items_cloned.is_empty() {
+                        cloned_possible.remove(&step_id);
+                        let next_current_step_possible_steps =
+                            self.next(&step_id).unwrap_or_default();
+                        next_current_step_possible_steps.iter().for_each(|step_id| {
+                            let step_content = StepContent {
+                                todos: self.content.get(step_id).unwrap().clone(),
+                                current_subtask: None,
+                                subtasks: None,
+                            };
+                            cloned_possible.insert(step_id.clone(), step_content);
+                        });
+                        steps_completed.insert(step_id.clone());
+                    } else {
+                        let step_content = cloned_possible.entry(step_id);
+                        step_content.and_modify(|e| {
+                            e.todos = Tasks::Single {
+                                action_items: action_items_cloned,
+                            }
+                        });
+                    }
+                }
+                Tasks::Multiple(subtasks) => {
+                    if let Some(task_id) = step_content.current_subtask {
+                        if let Some(subtask) = subtasks
+                            .iter_mut()
+                            .find(|subtask| subtask.id == task_id.clone())
+                        {
+                            let subtask_action = subtask.action_items.remove(0);
+                            if matches_action((subtask_action, event.action.clone())) {
+                                if subtask.action_items.is_empty() {
+                                    subtasks.remove(0);
+                                    if let Some(new_current_subtask) = subtasks.get(0) {
+                                        // step.current_subtask = Some(new_current_subtask.id.clone());
+                                        return Some(QuestState {
+                                            next_possible_steps: state.next_possible_steps,
+                                            steps_left: state.steps_left,
+                                            required_steps: self
+                                                .required_for_end()
+                                                .unwrap_or_default(),
+                                            steps_completed: HashSet::default(),
+                                        });
+                                    } else {
+                                        return Some(QuestState {
+                                            next_possible_steps: HashMap::default(),
+                                            steps_left: state.steps_left - 1,
+                                            required_steps: self
+                                                .required_for_end()
+                                                .unwrap_or_default(),
+                                            steps_completed: HashSet::default(),
+                                        });
+                                    }
+                                } else {
+                                    return Some(QuestState {
+                                        next_possible_steps: state.next_possible_steps,
+                                        steps_left: state.steps_left,
+                                        required_steps: self.required_for_end().unwrap_or_default(),
+                                        steps_completed: HashSet::default(),
+                                    });
+                                }
+                            }
+                        }
+                    } else if let Some(task) = subtasks.get_mut(0) {
+                        let subtask_action = task.action_items.remove(0);
+                        if matches_action((subtask_action, event.action.clone())) {
+                            // step.current_subtask = Some(task.id.clone());
+                            return Some(QuestState {
+                                next_possible_steps: state.next_possible_steps,
+                                steps_left: state.steps_left,
+                                required_steps: vec![],
+                                steps_completed: HashSet::default(),
+                            });
+                        }
+                    }
+                }
+                Tasks::None => {} // TODO: Should be removed asap
+            };
+        }
+        None
     }
 }
 
@@ -121,6 +247,19 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     dag
 }
 
+fn build_content_from_quest_definition(quest: &Quest) -> HashMap<StepID, Tasks> {
+    let mut content_map = HashMap::new();
+    for step in &quest.definition.steps {
+        let content = step.tasks.clone();
+        content_map.insert(step.id.clone(), content);
+    }
+    content_map
+}
+
+fn matches_action((action, event_action): (Action, Action)) -> bool {
+    action == event_action
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,7 +281,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -151,7 +289,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -160,7 +297,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -169,7 +305,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -210,7 +345,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -219,7 +353,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -228,7 +361,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -237,7 +369,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -246,7 +377,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -299,7 +429,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -308,7 +437,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -317,7 +445,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -326,7 +453,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -335,7 +461,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -344,7 +469,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -393,7 +517,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -402,7 +525,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -411,7 +533,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -420,7 +541,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -429,7 +549,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -445,5 +564,450 @@ mod tests {
         assert_eq!(prev_step, vec!["A1"]);
         let prev_step = graph.prev("D").unwrap();
         assert_eq!(prev_step, vec!["A2"])
+    }
+
+    #[test]
+    fn quest_graph_steps_required_for_end() {
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A1".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                    ("A2".to_string(), "D".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A1".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "A2".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "D".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+
+        assert!(quest.is_valid().is_ok());
+        let graph = QuestGraph::from_quest(quest);
+        let steps_required_for_end = graph.required_for_end().unwrap();
+        assert!(steps_required_for_end.contains(&"D".to_string()));
+        assert!(steps_required_for_end.contains(&"C".to_string()));
+    }
+
+    #[test]
+    fn matches_action_works() {
+        let result = matches_action((
+            Action::Location {
+                coordinates: Coordinates(10, 10),
+            },
+            Action::Location {
+                coordinates: Coordinates(10, 10),
+            },
+        ));
+        assert!(result);
+
+        let result = matches_action((
+            Action::Location {
+                coordinates: Coordinates(10, 10),
+            },
+            Action::Location {
+                coordinates: Coordinates(10, 20),
+            },
+        ));
+        assert!(!result);
+
+        let result = matches_action((
+            Action::Location {
+                coordinates: Coordinates(10, 10),
+            },
+            Action::Jump {
+                coordinates: Coordinates(10, 10),
+            },
+        ));
+        assert!(!result);
+    }
+
+    #[test]
+    fn quest_graph_apply_event_task_simple_works() {
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A1".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                    ("A2".to_string(), "D".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A1".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![
+                                Action::Location {
+                                    coordinates: Coordinates(10, 10),
+                                },
+                                Action::Jump {
+                                    coordinates: Coordinates(10, 11),
+                                },
+                            ],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "A2".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::NPCInteraction {
+                                npc_id: "NPC_IDEN".to_string(),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Jump {
+                                coordinates: Coordinates(20, 10),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Jump {
+                                coordinates: Coordinates(20, 20),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "D".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::NPCInteraction {
+                                npc_id: "OTHER_NPC".to_string(),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+
+        let mut quest_graph = QuestGraph::from_quest(quest);
+        let mut events = vec![
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111111,
+                action: Action::Location {
+                    coordinates: Coordinates(10, 10),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111115,
+                action: Action::Jump {
+                    coordinates: Coordinates(10, 11),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::Jump {
+                    coordinates: Coordinates(20, 10),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::Jump {
+                    coordinates: Coordinates(20, 20),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::NPCInteraction {
+                    npc_id: "NPC_IDEN".to_string(),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::NPCInteraction {
+                    npc_id: "OTHER_NPC".to_string(),
+                },
+            },
+        ];
+        let mut state = quest_graph.initial_state();
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.step_id, START_STEP_ID);
+        // println!("{state:?}");
+        // // assert!(state.next_possible_steps.contains(&"A1".to_string()));
+        // // assert!(state.next_possible_steps.contains(&"A2".to_string()));
+        // assert_eq!(state.steps_left, 5);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.step_id, "A1");
+        // println!("{state:?}");
+        // // assert!(state.next_possible_steps.contains(&"B".to_string()));
+        // assert_eq!(state.steps_left, 4);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.step_id, "B");
+        // println!("{state:?}");
+        // // assert!(state.next_possible_steps.contains(&"C".to_string()));
+        // assert_eq!(state.steps_left, 3);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.step_id, "C");
+        // println!("{state:?}");
+        // // assert!(state.next_possible_steps.contains(&END_STEP_ID.to_string()));
+        // assert_eq!(state.steps_left, 2);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.step_id, "A2");
+        // println!("{state:?}");
+        // // assert!(state.next_possible_steps.contains(&"D".to_string()));
+        // assert_eq!(state.steps_left, 1);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.step_id, "D");
+        // println!("{state:?}");
+        // // assert!(state.next_possible_steps.contains(&END_STEP_ID.to_string()));
+        // assert_eq!(state.steps_left, 0);
+    }
+
+    #[test]
+    fn quest_graph_apply_event_task_multiple_works() {
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Multiple(vec![
+                            SubTask {
+                                id: "A_1".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![
+                                    Action::Jump {
+                                        coordinates: Coordinates(10, 10),
+                                    },
+                                    Action::Location {
+                                        coordinates: Coordinates(15, 10),
+                                    },
+                                ],
+                            },
+                            SubTask {
+                                id: "A_2".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![
+                                    Action::NPCInteraction {
+                                        npc_id: "NPC_ID".to_string(),
+                                    },
+                                    Action::Location {
+                                        coordinates: Coordinates(15, 14),
+                                    },
+                                ],
+                            },
+                        ]),
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Multiple(vec![
+                            SubTask {
+                                id: "B_1".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![
+                                    Action::Jump {
+                                        coordinates: Coordinates(10, 20),
+                                    },
+                                    Action::Location {
+                                        coordinates: Coordinates(23, 14),
+                                    },
+                                ],
+                            },
+                            SubTask {
+                                id: "B_2".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![
+                                    Action::Custom {
+                                        id: "a".to_string(),
+                                    },
+                                    Action::Location {
+                                        coordinates: Coordinates(40, 10),
+                                    },
+                                ],
+                            },
+                        ]),
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Jump {
+                                coordinates: Coordinates(20, 20),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+
+        let mut quest_graph = QuestGraph::from_quest(quest);
+        let mut events = vec![
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111111,
+                action: Action::Jump {
+                    coordinates: Coordinates(10, 10),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111115,
+                action: Action::Location {
+                    coordinates: Coordinates(15, 10),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::NPCInteraction {
+                    npc_id: "NPC_ID".to_string(),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111115,
+                action: Action::Location {
+                    coordinates: Coordinates(15, 14),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::Jump {
+                    coordinates: Coordinates(10, 20),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::Location {
+                    coordinates: Coordinates(23, 14),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::Custom {
+                    id: "a".to_string(),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::Location {
+                    coordinates: Coordinates(40, 10),
+                },
+            },
+            Event {
+                address: "0xA".to_string(),
+                timestamp: 111118,
+                action: Action::Jump {
+                    coordinates: Coordinates(20, 20),
+                },
+            },
+        ];
+        let mut state = quest_graph.initial_state();
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        println!("{state:?}");
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.current_step_id, "A1");
+        // assert_eq!(state.next_current_subtask, None);
+        // assert!(state.next_possible_steps.contains(&"B".to_string()));
+        // assert_eq!(state.steps_left, 4);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.current_step_id, "B");
+        // assert_eq!(state.next_current_subtask, None);
+        // assert!(state.next_possible_steps.contains(&"C".to_string()));
+        // assert_eq!(state.steps_left, 3);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.current_step_id, "C");
+        // assert_eq!(state.next_current_subtask, None);
+        // assert!(state.next_possible_steps.contains(&END_STEP_ID.to_string()));
+        // assert_eq!(state.steps_left, 2);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.current_step_id, "A2");
+        // assert_eq!(state.next_current_subtask, None);
+        // assert!(state.next_possible_steps.contains(&"D".to_string()));
+        // assert_eq!(state.steps_left, 1);
+        // state = quest_graph.apply_event(state, events.remove(0)).unwrap();
+        // assert_eq!(state.current_step_id, "D");
+        // assert_eq!(state.next_current_subtask, None);
+        // assert!(state.next_possible_steps.contains(&END_STEP_ID.to_string()));
+        // assert_eq!(state.steps_left, 0);
     }
 }

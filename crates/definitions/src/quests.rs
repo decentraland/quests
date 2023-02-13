@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
 use serde::{Deserialize, Serialize};
@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 pub const START_STEP_ID: &str = "_START_";
 pub const END_STEP_ID: &str = "_END_";
 
-type StepID = String;
+pub type StepID = String;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Quest {
@@ -153,26 +153,22 @@ pub struct Step {
     pub on_complete_hook: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Tasks {
     Single {
         /// Required actions to complete the task
-        action_items: Vec<Action>,
-        /// Looping task
-        repeat: Option<u32>,
+        action_items: Vec<Action>, // Loop = Multiple Actions
     },
     Multiple(Vec<SubTask>),
     None,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SubTask {
-    pub title: String,
+    pub id: String,
     pub description: String,
     /// Required actions to complete the task
     pub action_items: Vec<Action>,
-    /// Looping task
-    pub repeat: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -182,10 +178,10 @@ pub struct Event {
     pub action: Action,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Coordinates(usize, usize);
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Coordinates(pub usize, pub usize);
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     Location {
         coordinates: Coordinates,
@@ -234,6 +230,25 @@ pub enum QuestValidationError {
     /// A Half of a connection tuple doesn't have a step defined
     #[error("Connection half has no defined step - Step ID: {0}")]
     NoStepDefinedForConnectionHalf(StepID),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct QuestState {
+    /// Next possible steps
+    pub next_possible_steps: HashMap<StepID, StepContent>,
+    /// Steps left to complete the Quest
+    pub steps_left: u32,
+    /// Required Steps for END
+    pub required_steps: Vec<StepID>,
+    pub steps_completed: HashSet<StepID>,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct StepContent {
+    pub todos: Tasks,
+    /// refers to subtask id
+    pub current_subtask: Option<String>,
+    pub subtasks: Option<Vec<SubTask>>,
 }
 
 #[cfg(test)]

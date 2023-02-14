@@ -68,7 +68,7 @@ impl QuestGraph {
             steps_left: (self.graph.node_count() as u32 - 2), // - 2 becsase START_STEP_ID and END_STEP_ID are also nodes
             required_steps: vec![],                           // All steps at this point
             steps_completed: HashSet::default(),
-            next_possible_steps: HashMap::default(),
+            current_steps: HashMap::default(),
         }
     }
 
@@ -88,66 +88,49 @@ impl QuestGraph {
     }
 
     pub fn apply_event(&self, state: QuestState, event: Event) -> Option<QuestState> {
-        // if next_possible_steps.contains(&END_STEP_ID.to_string()) && next_possible_steps.len() == 1
-        // {
-        //     let reboot_state = self.initial_state();
-        //     state = QuestState {
-        //         steps_left: state.steps_left,
-        //         ..reboot_state
-        //     };
-        //     next_possible_steps = self.next(&state.step_id).unwrap_or_default();
-        // }
+        let mut steps_to_add = vec![];
+        let mut steps_to_remove = vec![];
+        let mut modified_steps = vec![];
 
-        let mut cloned_possible = state.next_possible_steps.clone();
-        let mut steps_completed = state.steps_completed.clone();
-
-        for (step_id, step_content) in state.next_possible_steps {
-            match &step_content.todos {
-                Tasks::Single { action_items } => {
-                    let mut action_items_cloned = action_items.clone();
-                    let matched_action_index = action_items
+        for (step_id, step_content) in state.current_steps {
+            match step_content.todos {
+                Tasks::Single { mut action_items } => {
+                    match action_items
                         .iter()
-                        .position(|action| matches_action((action.clone(), event.action.clone())))
-                        .unwrap();
+                        .position(|action| matches_action(action, &event.action))
+                    {
+                        Some(action_index) => {
+                            action_items.remove(action_index);
 
-                    action_items_cloned.remove(matched_action_index);
-
-                    if action_items_cloned.is_empty() {
-                        cloned_possible.remove(&step_id);
-                        let next_current_step_possible_steps =
-                            self.next(&step_id).unwrap_or_default();
-                        next_current_step_possible_steps.iter().for_each(|step_id| {
-                            let step_content = StepContent {
-                                todos: self.content.get(step_id).unwrap().clone(),
-                                current_subtask: None,
-                                subtasks: None,
-                            };
-                            cloned_possible.insert(step_id.clone(), step_content);
-                        });
-                        steps_completed.insert(step_id.clone());
-                    } else {
-                        let step_content = cloned_possible.entry(step_id);
-                        step_content.and_modify(|e| {
-                            e.todos = Tasks::Single {
-                                action_items: action_items_cloned,
+                            if action_items.is_empty() {
+                                // find next steps and make them current in the new quest state
+                                steps_to_remove.push(step_id);
+                                let next_steps = self.next(&step_id).unwrap_or_default();
+                                steps_to_add.append(&mut next_steps);
                             }
-                        });
+                            modified_steps.push((step_id, step_content));
+                        }
+                        // Ignore event
+                        None => return None,
                     }
                 }
-                Tasks::Multiple(subtasks) => {
+
+                Tasks::Multiple(mut subtasks) => {
                     if let Some(task_id) = step_content.current_subtask {
-                        if let Some(subtask) = subtasks
+                        if let Some(subtask) = step_content
+                            .subtasks
                             .iter_mut()
                             .find(|subtask| subtask.id == task_id.clone())
                         {
-                            let subtask_action = subtask.action_items.remove(0);
-                            if matches_action((subtask_action, event.action.clone())) {
+                            let subtask_action =
+                                step_content.current_subtask.action_items.remove(0);
+                            if matches_action(&subtask_action, &event.action) {
                                 if subtask.action_items.is_empty() {
                                     subtasks.remove(0);
                                     if let Some(new_current_subtask) = subtasks.get(0) {
                                         // step.current_subtask = Some(new_current_subtask.id.clone());
                                         return Some(QuestState {
-                                            next_possible_steps: state.next_possible_steps,
+                                            current_steps: state.current_steps,
                                             steps_left: state.steps_left,
                                             required_steps: self
                                                 .required_for_end()
@@ -156,7 +139,7 @@ impl QuestGraph {
                                         });
                                     } else {
                                         return Some(QuestState {
-                                            next_possible_steps: HashMap::default(),
+                                            current_steps: HashMap::default(),
                                             steps_left: state.steps_left - 1,
                                             required_steps: self
                                                 .required_for_end()
@@ -166,7 +149,7 @@ impl QuestGraph {
                                     }
                                 } else {
                                     return Some(QuestState {
-                                        next_possible_steps: state.next_possible_steps,
+                                        current_steps: state.current_steps,
                                         steps_left: state.steps_left,
                                         required_steps: self.required_for_end().unwrap_or_default(),
                                         steps_completed: HashSet::default(),
@@ -176,10 +159,10 @@ impl QuestGraph {
                         }
                     } else if let Some(task) = subtasks.get_mut(0) {
                         let subtask_action = task.action_items.remove(0);
-                        if matches_action((subtask_action, event.action.clone())) {
+                        if matches_action(&subtask_action, &event.action) {
                             // step.current_subtask = Some(task.id.clone());
                             return Some(QuestState {
-                                next_possible_steps: state.next_possible_steps,
+                                current_steps: state.current_steps,
                                 steps_left: state.steps_left,
                                 required_steps: vec![],
                                 steps_completed: HashSet::default(),
@@ -192,6 +175,8 @@ impl QuestGraph {
         }
         None
     }
+
+    // TODO: build new state based on steps_to_add, steps_completed and modified_steps
 }
 
 fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
@@ -256,7 +241,7 @@ fn build_content_from_quest_definition(quest: &Quest) -> HashMap<StepID, Tasks> 
     content_map
 }
 
-fn matches_action((action, event_action): (Action, Action)) -> bool {
+fn matches_action(action: &Action, event_action: &Action) -> bool {
     action == event_action
 }
 

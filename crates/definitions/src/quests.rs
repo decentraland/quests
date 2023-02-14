@@ -235,7 +235,7 @@ pub enum QuestValidationError {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct QuestState {
     /// Next possible steps
-    pub next_possible_steps: HashMap<StepID, StepContent>,
+    pub current_steps: HashMap<StepID, StepContent>,
     /// Steps left to complete the Quest
     pub steps_left: u32,
     /// Required Steps for END

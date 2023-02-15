@@ -62,7 +62,7 @@ pub async fn process_event(
             );
 
             // TODO: should we retry here?
-            events_queue.push(event).await;
+            events_queue.push(&event).await;
         }
     }
 }

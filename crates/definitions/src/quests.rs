@@ -201,7 +201,7 @@ pub struct SubTask {
     pub action_items: Vec<Action>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub address: String,
     pub timestamp: usize,
@@ -211,7 +211,7 @@ pub struct Event {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Coordinates(pub usize, pub usize);
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Action {
     Location {
         coordinates: Coordinates,

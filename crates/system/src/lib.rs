@@ -3,6 +3,7 @@ mod event_processing;
 
 use configuration::Config;
 use event_processing::process_event;
+use log::error;
 use quests_db::create_quests_db_component;
 use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
 use quests_message_broker::quests_channel::RedisQuestsChannel;
@@ -44,12 +45,17 @@ pub async fn start_event_processing() -> EventProcessingResult<()> {
     loop {
         // Read items from events queue
         let event = events_queue.pop().await;
-        // - Spawn task to process the event
-        tokio::spawn(process_event(
-            event,
-            quests_channel.clone(),
-            database.clone(),
-            events_queue.clone(),
-        ));
+        match event {
+            Ok(event) => {
+                // - Spawn task to process the event
+                tokio::spawn(process_event(
+                    event,
+                    quests_channel.clone(),
+                    database.clone(),
+                    events_queue.clone(),
+                ));
+            }
+            Err(reason) => error!("Pop event error: {}", reason),
+        }
     }
 }

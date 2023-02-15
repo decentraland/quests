@@ -101,7 +101,7 @@ impl Quest {
         }
 
         for step in &self.definition.steps {
-            // All steps do not contains Tasks::None used for START and END nodes
+            // All steps should not contain Tasks::None used for START and END nodes
             if matches!(step.tasks, Tasks::None) {
                 return Err(QuestValidationError::MissingTasksForStep(step.id.clone()));
             }

@@ -6,7 +6,7 @@ use actix_web::{
 pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_definitions::quests::{Quest, QuestDefinition, Step, Tasks};
+use quests_definitions::quests::{Action, Coordinates, Quest, QuestDefinition, Step, Tasks};
 use quests_server::{get_app_router, routes::ErrorResponse};
 
 #[actix_web::test]
@@ -30,25 +30,41 @@ async fn create_quest_should_be_200() {
             steps: vec![
                 Step {
                     id: "A".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "B".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(13, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "C".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 24),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "D".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(40, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
@@ -120,25 +136,41 @@ async fn get_quests_should_be_200() {
             steps: vec![
                 Step {
                     id: "A".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "B".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(30, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "C".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 23),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "D".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(14, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
@@ -219,25 +251,41 @@ async fn update_quest_should_be_200() {
             steps: vec![
                 Step {
                     id: "A".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "B".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(30, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "C".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(40, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "D".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(40, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
@@ -267,25 +315,41 @@ async fn update_quest_should_be_200() {
             steps: vec![
                 Step {
                     id: "A-Updated".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "B".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "C".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "D".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
@@ -333,25 +397,41 @@ async fn update_quest_should_be_400_uuid_bad_format() {
             steps: vec![
                 Step {
                     id: "A".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "B".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "C".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "D".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
@@ -491,25 +571,41 @@ async fn get_quest_should_be_200() {
             steps: vec![
                 Step {
                     id: "A".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "B".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "C".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "D".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 20),
+                        }],
+                    },
                     on_complete_hook: None,
                     description: "".to_string(),
                 },

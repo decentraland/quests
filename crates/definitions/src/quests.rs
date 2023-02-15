@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use thiserror::Error;
 
 use serde::{Deserialize, Serialize};
@@ -71,8 +71,6 @@ impl Quest {
 
     /// Validates a Quest struct to check if it meets all the requirements to be a valid quests
     ///
-    /// *TODO: add validations for Tasks, Actions, and `on_complete_hook`*
-    ///
     pub fn is_valid(&self) -> Result<(), QuestValidationError> {
         if self.definition.connections.is_empty() || self.definition.steps.is_empty() {
             return Err(QuestValidationError::InvalidDefinition);
@@ -102,8 +100,37 @@ impl Quest {
             }
         }
 
-        // All steps have at least one defined connection
         for step in &self.definition.steps {
+            // All steps do not contains Tasks::None used for START and END nodes
+            if matches!(step.tasks, Tasks::None) {
+                return Err(QuestValidationError::MissingTasksForStep(step.id.clone()));
+            }
+
+            // All steps has an unique ID
+            if self
+                .definition
+                .steps
+                .iter()
+                .filter(|other_step| step.id == other_step.id)
+                .count()
+                > 1
+            {
+                return Err(QuestValidationError::NotUniqueIDForStep(step.id.clone()));
+            }
+
+            // All steps subtasks (if there) have unique ID
+            // TODO: Find a way to check uniqueness between all steps' subtasks
+            if let Tasks::Multiple(subtasks) = &step.tasks {
+                for subtask in subtasks {
+                    if subtasks.iter().filter(|s| s.id == subtask.id).count() > 1 {
+                        return Err(QuestValidationError::NotUniqueIDForStepSubtask(
+                            step.id.clone(),
+                        ));
+                    }
+                }
+            }
+
+            // All steps have at least one defined connection
             if !self
                 .definition
                 .connections
@@ -155,11 +182,14 @@ pub struct Step {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Tasks {
+    /// Step with only one stask
     Single {
         /// Required actions to complete the task
         action_items: Vec<Action>, // Loop = Multiple Actions
     },
+    /// Step with multiple tasks to do in order to be completed
     Multiple(Vec<SubTask>),
+    /// We only use this type for START and END nodes because we consider them as "Step"
     None,
 }
 
@@ -201,7 +231,7 @@ pub enum Action {
     },
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum QuestValidationError {
     /// Definition is not valid because it has defined no connections or steps
     #[error("Missing the definition for the quest")]
@@ -230,25 +260,15 @@ pub enum QuestValidationError {
     /// A Half of a connection tuple doesn't have a step defined
     #[error("Connection half has no defined step - Step ID: {0}")]
     NoStepDefinedForConnectionHalf(StepID),
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct QuestState {
-    /// Next possible steps
-    pub next_possible_steps: HashMap<StepID, StepContent>,
-    /// Steps left to complete the Quest
-    pub steps_left: u32,
-    /// Required Steps for END
-    pub required_steps: Vec<StepID>,
-    pub steps_completed: HashSet<StepID>,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct StepContent {
-    pub todos: Tasks,
-    /// refers to subtask id
-    pub current_subtask: Option<String>,
-    pub subtasks: Option<Vec<SubTask>>,
+    /// Not unique ID for the Step
+    #[error("Step ID is not unique - Step ID: {0}")]
+    NotUniqueIDForStep(StepID),
+    /// Not unique ID for the Subtask
+    #[error("Step's Subtask ID is not unique - Step ID: {0}")]
+    NotUniqueIDForStepSubtask(StepID),
+    /// Step should not has Tasks::None
+    #[error("Step {0} doesn't have tasks defined")]
+    MissingTasksForStep(StepID),
 }
 
 #[cfg(test)]
@@ -314,19 +334,31 @@ mod tests {
                     Step {
                         id: "A1".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::None,
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 10),
+                            }],
+                        },
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::None,
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 15),
+                            }],
+                        },
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::None,
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 20),
+                            }],
+                        },
                         on_complete_hook: None,
                     },
                 ],
@@ -362,14 +394,17 @@ mod tests {
                 steps: vec![Step {
                     id: "B".to_string(),
                     description: "".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 15),
+                        }],
+                    },
                     on_complete_hook: None,
                 }],
             },
         };
-        let _err = QuestValidationError::MissingStepForStartingNode("A1".to_string());
-        let assert = matches!(quest.is_valid().unwrap_err(), _err);
-        assert!(assert);
+        let err = QuestValidationError::MissingStepForStartingNode("A1".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
 
         // Should not be valid because of missing step for end ndoe
         let quest = Quest {
@@ -380,14 +415,17 @@ mod tests {
                 steps: vec![Step {
                     id: "A1".to_string(),
                     description: "".to_string(),
-                    tasks: Tasks::None,
+                    tasks: Tasks::Single {
+                        action_items: vec![Action::Location {
+                            coordinates: Coordinates(10, 15),
+                        }],
+                    },
                     on_complete_hook: None,
                 }],
             },
         };
-        let _err = QuestValidationError::MissingStepForEndNode("B".to_string());
-        let assert = matches!(quest.is_valid().unwrap_err(), _err);
-        assert!(assert);
+        let err = QuestValidationError::MissingStepForEndNode("B".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
 
         // Should not be valid because of missing connection for a defined step
         let quest = Quest {
@@ -399,27 +437,38 @@ mod tests {
                     Step {
                         id: "A1".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::None,
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 15),
+                            }],
+                        },
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::None,
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(20, 15),
+                            }],
+                        },
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::None,
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 25),
+                            }],
+                        },
                         on_complete_hook: None,
                     },
                 ],
             },
         };
-        let _err = QuestValidationError::NoConnectionDefinedForStep("A1".to_string());
-        let assert = matches!(quest.is_valid().unwrap_err(), _err);
-        assert!(assert);
+        let err = QuestValidationError::NoConnectionDefinedForStep("A1".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
 
         // Should not be valid because of missing step for a defined connection
         let quest = Quest {
@@ -434,20 +483,140 @@ mod tests {
                     Step {
                         id: "A1".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::None,
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(20, 15),
+                            }],
+                        },
                         on_complete_hook: None,
                     },
                     Step {
-                        id: "B".to_string(),
+                        id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::None,
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(30, 15),
+                            }],
+                        },
                         on_complete_hook: None,
                     },
                 ],
             },
         };
-        let _err = QuestValidationError::NoStepDefinedForConnectionHalf("C".to_string());
-        let assert = matches!(quest.is_valid().unwrap_err(), _err);
-        assert!(assert);
+        let err = QuestValidationError::NoStepDefinedForConnectionHalf("B".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
+
+        // Should not be valid because of repeated ID for step
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 15),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(20, 15),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 2),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "A".to_string(),
+                        description: "Another A".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(1, 15),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+        let err = QuestValidationError::NotUniqueIDForStep("A".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
+
+        // Should not be valid because of repeated ID on subtasks
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Multiple(vec![
+                            SubTask {
+                                id: "A_1".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![Action::Location {
+                                    coordinates: Coordinates(10, 20),
+                                }],
+                            },
+                            SubTask {
+                                id: "A_1".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![Action::Jump {
+                                    coordinates: Coordinates(30, 20),
+                                }],
+                            },
+                        ]),
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(20, 15),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 2),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+        let err = QuestValidationError::NotUniqueIDForStepSubtask("A".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
     }
 }

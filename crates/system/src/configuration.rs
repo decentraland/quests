@@ -4,7 +4,7 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub redis_url: String,
-    pub db_url: String,
+    pub database_url: String,
 }
 
 const REDIS_HOST: &str = "REDIS_HOST";
@@ -19,10 +19,10 @@ impl Config {
                     .with_list_parse_key(DATABASE_URL)
                     .try_parsing(true),
             )
-            .set_default("redis_url", "127.0.0.1:6379")?
+            .set_default("redis_url", "quests_redis:6379")?
             .set_default(
                 "database_url",
-                "postgres://postgres:postgres@localhost:3500/quests_db",
+                "postgres://postgres:postgres@quests_db:5432/quests_db",
             )? // => Default for local development
             .build()?;
         config.try_deserialize()

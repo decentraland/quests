@@ -34,7 +34,7 @@ impl Config {
             .set_default("wkc_metrics_bearer_token", "")?
             .set_default(
                 "database_url",
-                "postgres://postgres:postgres@localhost:3500/quests_db",
+                "postgres://postgres:postgres@quests_db:5432/quests_db",
             )? // => Default for local development
             .build()?;
 

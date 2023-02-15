@@ -1845,6 +1845,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "config",
+ "env_logger",
  "log",
  "quests_db",
  "quests_definitions",

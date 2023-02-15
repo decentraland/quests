@@ -3,13 +3,14 @@ mod event_processing;
 
 use configuration::Config;
 use event_processing::process_event;
-use log::error;
+use log::{error, info};
 use quests_db::create_quests_db_component;
 use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
 use quests_message_broker::quests_channel::RedisQuestsChannel;
 use quests_message_broker::redis::Redis;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use env_logger::init as initialize_logger;
 
 pub type Error = String;
 pub type EventProcessingResult<T> = Result<T, Error>;
@@ -19,6 +20,8 @@ pub type EventProcessingResult<T> = Result<T, Error>;
 ///
 /// Panics if can't parse the config
 pub async fn start_event_processing() -> EventProcessingResult<()> {
+    initialize_logger();
+
     // TODO: read from config
     let config = Config::new().expect("Can parse config");
 
@@ -37,11 +40,12 @@ pub async fn start_event_processing() -> EventProcessingResult<()> {
     let quests_channel = Arc::new(Mutex::new(quests_channel));
 
     // Create DB
-    let database = create_quests_db_component(&config.db_url)
+    let database = create_quests_db_component(&config.database_url)
         .await
         .map_err(|_| "Couldn't connect to the database".to_string())?;
     let database = Arc::new(database);
 
+    info!("Listening to events to process...");
     loop {
         // Read items from events queue
         let event = events_queue.pop().await;

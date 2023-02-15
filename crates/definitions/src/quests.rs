@@ -175,17 +175,17 @@ pub struct SubTask {
     pub repeat: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub address: String,
     pub timestamp: usize,
     pub action: Action,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Coordinates(usize, usize);
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct Coordinates(pub usize, pub usize);
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Action {
     Location {
         coordinates: Coordinates,

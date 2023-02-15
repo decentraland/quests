@@ -11,7 +11,7 @@ INSTALL_WATCH = cargo install cargo-watch
 
 export DATABASE_URL=postgres://postgres:postgres@localhost:3500/quests_db # due to docker-compose.local.yml
 
-rundb:
+runservices:
 ifeq ($(DOCKER_COMPOSE_EXISTS), 1)
 	@$(RUN_LOCAL_DB)
 else
@@ -27,26 +27,41 @@ destroydb:
 test-db:
 ifeq ($(LOCAL_DB), 1)
 	@make destroydb
-	@make rundb
+	@make runservices
 	-@cargo test --package quests_db
 	@docker stop quests_db
 	@make destroydb
 else
-	@make rundb
+	@make runservices
 	-@cargo test --package quests_db
 	@make destroydb
 endif
 
 # run tests locally
+test-message-broker:
+ifeq ($(LOCAL_DB), 1)
+	@make destroydb
+	@make runservices
+	-@cargo test --package quests_message_broker
+	@docker stop quests_db
+	@make destroydb
+else
+	@make runservices
+	-@cargo test --package quests_message_broker
+	@make destroydb
+endif
+
+
+# run tests locally
 test-server:
 ifeq ($(LOCAL_DB), 1)
 	@make destroydb
-	@make rundb
+	@make runservices 
 	-@cargo test --package quests_server
 	@docker stop quests_db
 	@make destroydb
 else
-	@make rundb
+	@make runservices
 	-@cargo test --package quests_server
 	@make destroydb
 endif
@@ -56,19 +71,19 @@ test-definitions:
 	-@cargo test --package quests_definitions
 
 # run tests locally
-tests: test-db test-server test-definitions
+tests: test-db test-server test-message-broker test-definitions # TODO: change to setup services only once for all packages and run cargo test for the whole project
 
 run-devserver:
 ifeq ($(WATCH_EXISTS), 1)
-	@make rundb
+	@make runservices
 	@$(CARGO_RUN_SERVER_WATCH)
 else
 	@echo "cargo-watch not found. installing..."
 	@$(INSTALL_WATCH)
-	@make rundb
+	@make runservices
 	@$(CARGO_RUN_SERVER_WATCH)
 endif
 
 run-server:
-	@make rundb
+	@make runservices
 	@$(CARGO_RUN)

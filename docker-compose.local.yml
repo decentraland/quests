@@ -12,5 +12,11 @@ services:
       - POSTGRES_DB=quests_db
     ports:
       - '3500:5432'
+  redis:
+    image: 'redis:latest'
+    restart: always
+    user: redis
+    ports:
+      - '6379:6379'
 volumes:
   quests_db_volume:

@@ -2,11 +2,14 @@ use std::sync::Arc;
 
 use log::info;
 use quests_db::core::definitions::{AddEvent, QuestInstance, QuestsDatabase};
-use quests_definitions::quests::Event;
+use quests_definitions::{
+    quest_graph::{QuestGraph, QuestState},
+    quests::{Event, Quest, QuestDefinition},
+};
 
 use quests_message_broker::{
     events_queue::EventsQueue,
-    quests_channel::{QuestState, QuestUpdate, QuestsChannel},
+    quests_channel::{QuestUpdate, QuestsChannel},
 };
 use tokio::sync::Mutex;
 
@@ -35,7 +38,10 @@ pub async fn process_event(
                             user_address: &event.address,
                             event: bincode::serialize(&event).expect("can serialize event"), // TODO: error handling
                         };
-                        database.add_event(&add_event, &quest_instance.id).await;
+                        database
+                            .add_event(&add_event, &quest_instance.id)
+                            .await
+                            .unwrap(); // TODO: Error handling
                         quests_channel
                             .lock()
                             .await
@@ -73,13 +79,27 @@ async fn process_event_for_quest_instance(
         .get_quest(&quest_instance.quest_id)
         .await
         .expect("Can retrieve quest"); // TODO: error handling
-                                       // let quest_definition = bincode::deserialize::<Quest>(&quest.definition);
-                                       // let initial_state = quest_definition.get_initial_state();
-    for event in events {
-        // apply event and get new state
-        // definitions::apply_event(state, event) -> state
+    let quest_definition = bincode::deserialize::<QuestDefinition>(&quest.definition).unwrap(); // TODO: error handling
+    let quest = Quest {
+        name: quest.name,
+        description: quest.description,
+        definition: quest_definition,
+    };
+    let quest_graph = QuestGraph::from_quest(&quest);
+    let mut state = quest_graph.initial_state();
+    for db_event in events {
+        // Turns DB Event into Quest Definition Event
+        let quest_event = bincode::deserialize::<Event>(&db_event.event).unwrap();
+        // TODO: error handling
+        state = quest_graph.apply_event(state, &quest_event);
     }
-    // get all quest instance events
-    // apply all of them to get current state
-    todo!()
+
+    // We clone the state here in order to be able to compare them
+    let new_state = quest_graph.apply_event(state.clone(), event);
+
+    if state == new_state {
+        ProcessEventResult::Ignored
+    } else {
+        ProcessEventResult::NewState(state)
+    }
 }

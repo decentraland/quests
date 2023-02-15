@@ -6,14 +6,13 @@ use futures_util::StreamExt as _;
 use log::debug;
 use log::error;
 use log::info;
+use quests_definitions::quest_graph::QuestState;
 use serde::Deserialize;
 use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::redis::Redis;
-#[derive(Serialize, Deserialize)]
-pub struct QuestState {}
 
 #[derive(Serialize, Deserialize)]
 pub struct QuestUpdate {

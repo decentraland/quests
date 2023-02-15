@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use deadpool_redis::redis::{cmd, AsyncCommands, RedisResult, self};
+use deadpool_redis::redis::AsyncCommands;
 use quests_definitions::quests::*;
 
 use crate::redis::Redis;
@@ -38,7 +38,7 @@ impl EventsQueue for RedisEventsQueue {
         let queue_size: usize = connection
             .rpush(EVENTS_QUEUE, event)
             .await
-            .map_err(|err| format!("Failed to send push command: {}", err))?;
+            .map_err(|err| format!("Failed to send push command: {err}"))?;
 
         Ok(queue_size)
     }
@@ -54,7 +54,7 @@ impl EventsQueue for RedisEventsQueue {
         let result: Vec<Vec<u8>> = connection
             .blpop(EVENTS_QUEUE, 0)
             .await
-            .map_err(|err| format!("Couldn't get an element from the events queue: {}", err))?;
+            .map_err(|err| format!("Couldn't get an element from the events queue: {err}"))?;
 
         let event = bincode::deserialize::<Event>(&result[1])
             .map_err(|_| "Couldn't deserialize response as an Event")?;

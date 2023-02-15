@@ -10,7 +10,7 @@ pub struct Redis {
 
 impl Redis {
     pub async fn new(redis_url: &str) -> Result<Self, CreatePoolError> {
-        let url = format!("redis://{}", redis_url);
+        let url = format!("redis://{redis_url}");
         log::debug!("Redis URL: {}", url);
 
         let pool = deadpool_redis::Config::from_url(url).create_pool(Some(Runtime::Tokio1))?;

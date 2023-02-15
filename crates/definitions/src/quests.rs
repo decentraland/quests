@@ -618,5 +618,58 @@ mod tests {
         };
         let err = QuestValidationError::NotUniqueIDForStepSubtask("A".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
+
+        // Should not be valid because of tasks:None
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Multiple(vec![
+                            SubTask {
+                                id: "A_1".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![Action::Location {
+                                    coordinates: Coordinates(10, 20),
+                                }],
+                            },
+                            SubTask {
+                                id: "A_2".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![Action::Jump {
+                                    coordinates: Coordinates(30, 20),
+                                }],
+                            },
+                        ]),
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::None,
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![Action::Location {
+                                coordinates: Coordinates(10, 2),
+                            }],
+                        },
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+        let err = QuestValidationError::MissingTasksForStep("B".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
     }
 }

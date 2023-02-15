@@ -211,7 +211,7 @@ pub struct Event {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Coordinates(pub usize, pub usize);
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub enum Action {
     Location {
         coordinates: Coordinates,

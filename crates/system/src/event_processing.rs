@@ -82,6 +82,7 @@ pub async fn process_event(
             Ok(event_applied_to_instances)
         }
         Err(_) => {
+            println!("FAIL");
             info!(
                 "Couldn't retrieve quests for user with address {:?}",
                 event.address

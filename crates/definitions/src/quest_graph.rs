@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use super::quests::*;
 use daggy::{
@@ -9,7 +9,6 @@ use daggy::{
     },
     Dag, NodeIndex, Walker,
 };
-use serde::{Deserialize, Serialize};
 
 pub struct QuestGraph {
     graph: Dag<String, u32>,
@@ -75,145 +74,6 @@ impl QuestGraph {
     pub fn get_quest_draw(&self) -> Dot<&Dag<String, u32>> {
         Dot::with_config(&self.graph, &[Config::EdgeNoLabel])
     }
-
-    pub fn apply_event(&self, state: QuestState, event: &Event) -> QuestState {
-        // We do many clones because we don't want to mutate the state given directly. And also, we don't want to keep a state in the QuestGraph
-        // We clone the next possible steps in order to mutate this instance for the new state
-        let mut next_possible_steps_cloned = state.next_possible_steps.clone();
-        // We clone the current completed steps in order to add the new ones for the event given
-        let mut steps_completed = state.steps_completed.clone();
-        // We move the current completed subtasks in order to add new ones for the event given
-        let mut quest_subtasks_completed = state.subtasks_completed;
-
-        for (step_id, step_content) in state.next_possible_steps {
-            match &step_content.todos {
-                Tasks::Single { action_items } => {
-                    let mut action_items_cloned = action_items.clone();
-                    match action_items
-                        .iter()
-                        .position(|action| matches_action((action.clone(), event.action.clone())))
-                    {
-                        Some(matched_action_index) => {
-                            action_items_cloned.remove(matched_action_index);
-                            if action_items_cloned.is_empty() {
-                                next_possible_steps_cloned.remove(&step_id);
-                                let next_current_step_possible_steps =
-                                    self.next(&step_id).unwrap_or_default();
-                                next_current_step_possible_steps.iter().for_each(|step_id| {
-                                    if step_id != END_STEP_ID {
-                                        let step_content = StepContent {
-                                            todos: self.tasks_by_step.get(step_id).unwrap().clone(),
-                                        };
-                                        next_possible_steps_cloned
-                                            .insert(step_id.clone(), step_content);
-                                    }
-                                });
-                                steps_completed.insert(step_id.clone());
-                            } else {
-                                let step_content = next_possible_steps_cloned.entry(step_id);
-                                step_content.and_modify(|e| {
-                                    e.todos = Tasks::Single {
-                                        action_items: action_items_cloned,
-                                    }
-                                });
-                            }
-                        }
-                        None => continue,
-                    }
-                }
-                Tasks::Multiple(subtasks) => {
-                    let mut subtasks_cloned = subtasks.clone();
-                    for (i, subtask) in subtasks.iter().enumerate() {
-                        let mut actions_items_cloned = subtask.action_items.clone();
-                        match subtask.action_items.iter().position(|action| {
-                            matches_action((action.clone(), event.action.clone()))
-                        }) {
-                            Some(matched_action_index) => {
-                                actions_items_cloned.remove(matched_action_index);
-
-                                if actions_items_cloned.is_empty() {
-                                    if let Some(current_subtasks_completed) =
-                                        &mut quest_subtasks_completed
-                                    {
-                                        current_subtasks_completed.insert(subtask.id.clone());
-                                    } else {
-                                        let mut subtasks = HashSet::new();
-                                        subtasks.insert(subtask.id.clone());
-                                        quest_subtasks_completed = Some(subtasks)
-                                    }
-                                    subtasks_cloned.remove(i);
-                                } else {
-                                    subtasks_cloned[i] = SubTask {
-                                        id: subtask.id.clone(),
-                                        description: subtask.description.clone(),
-                                        action_items: actions_items_cloned,
-                                    };
-                                }
-                            }
-                            None => continue,
-                        }
-                    }
-                    if subtasks_cloned.is_empty() {
-                        next_possible_steps_cloned.remove(&step_id);
-                        let next_current_step_possible_steps =
-                            self.next(&step_id).unwrap_or_default();
-                        next_current_step_possible_steps.iter().for_each(|step_id| {
-                            if step_id != END_STEP_ID {
-                                let step_content = StepContent {
-                                    todos: self.tasks_by_step.get(step_id).unwrap().clone(),
-                                };
-                                next_possible_steps_cloned.insert(step_id.clone(), step_content);
-                            }
-                        });
-                        steps_completed.insert(step_id.clone());
-                    } else {
-                        let step = next_possible_steps_cloned.get_mut(&step_id).unwrap();
-                        step.todos = Tasks::Multiple(subtasks_cloned)
-                    }
-                }
-                // We use this type for the START and END nodes because we consider them as "Step"
-                Tasks::None => {}
-            };
-        }
-
-        QuestState {
-            next_possible_steps: next_possible_steps_cloned,
-            steps_left: (self.total_steps() - steps_completed.len()) as u32,
-            required_steps: state.required_steps,
-            steps_completed,
-            subtasks_completed: quest_subtasks_completed,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct QuestState {
-    /// Next possible steps
-    pub next_possible_steps: HashMap<StepID, StepContent>,
-    /// Steps left to complete the Quest
-    pub steps_left: u32,
-    /// Required Steps for END
-    pub required_steps: Vec<StepID>,
-    /// Quest Steps Completed
-    pub steps_completed: HashSet<StepID>,
-    /// Subtasks completed. Inner Step tasks
-    ///
-    /// String in key refers to SubTask ID
-    ///
-    pub subtasks_completed: Option<HashSet<String>>,
-}
-
-impl QuestState {
-    pub fn is_completed(&self) -> bool {
-        self.required_steps
-            .iter()
-            .all(|step| self.steps_completed.contains(step))
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
-pub struct StepContent {
-    pub todos: Tasks,
 }
 
 impl From<&Quest> for QuestGraph {

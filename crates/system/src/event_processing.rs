@@ -3,7 +3,8 @@ use std::sync::Arc;
 use log::info;
 use quests_db::core::definitions::{AddEvent, QuestInstance, QuestsDatabase};
 use quests_definitions::{
-    quest_graph::{QuestGraph, QuestState},
+    quest_graph::QuestGraph,
+    quest_state::{get_state, QuestState},
     quests::{Event, Quest, QuestDefinition},
 };
 
@@ -20,20 +21,23 @@ pub enum ProcessEventResult {
 
 pub async fn process_event(
     event: Event,
-    quests_channel: Arc<Mutex<impl QuestsChannel>>,
-    database: Arc<impl QuestsDatabase>,
-    events_queue: Arc<impl EventsQueue>,
+    quests_channel: Arc<Mutex<impl QuestsChannel + ?Sized>>,
+    database: Arc<impl QuestsDatabase + ?Sized>,
+    events_queue: Arc<impl EventsQueue + ?Sized>,
 ) {
     // get user quest instances
     let quest_instances = database.get_user_quest_instances(&event.address).await;
 
+    println!("about to process event");
     match quest_instances {
         Ok(quest_instances) => {
+            println!("quest instances: {}", quest_instances.len());
             for quest_instance in quest_instances {
                 match process_event_for_quest_instance(&quest_instance, &event, database.clone())
                     .await
                 {
                     ProcessEventResult::NewState(quest_state) => {
+                        println!("Event processed and there is a new state");
                         let add_event = AddEvent {
                             user_address: &event.address,
                             event: bincode::serialize(&event).expect("can serialize event"), // TODO: error handling
@@ -56,13 +60,14 @@ pub async fn process_event(
             }
         }
         Err(_) => {
+            println!("FAIL");
             info!(
                 "Couldn't retrieve quests for user with address {:?}",
                 event.address
             );
 
             // TODO: should we retry here?
-            events_queue.push(&event).await;
+            let _ = events_queue.push(&event).await;
         }
     }
 }
@@ -71,7 +76,7 @@ pub async fn process_event(
 async fn process_event_for_quest_instance(
     quest_instance: &QuestInstance,
     event: &Event,
-    database: Arc<impl QuestsDatabase>,
+    database: Arc<impl QuestsDatabase + ?Sized>,
 ) -> ProcessEventResult {
     // try to apply event to every instance
     let events = database.get_events(&quest_instance.id).await.unwrap(); // TODO: error handling
@@ -85,21 +90,19 @@ async fn process_event_for_quest_instance(
         description: quest.description,
         definition: quest_definition,
     };
+
+    let events = events
+        .iter()
+        .map(|event| bincode::deserialize::<Event>(&event.event).unwrap())
+        .collect();
+
     let quest_graph = QuestGraph::from_quest(&quest);
-    let mut state = quest_graph.initial_state();
-    for db_event in events {
-        // Turns DB Event into Quest Definition Event
-        let quest_event = bincode::deserialize::<Event>(&db_event.event).unwrap();
-        // TODO: error handling
-        state = quest_graph.apply_event(state, &quest_event);
-    }
+    let current_state = get_state(&quest, events);
+    let new_state = current_state.apply_event(&quest_graph, event);
 
-    // We clone the state here in order to be able to compare them
-    let new_state = quest_graph.apply_event(state.clone(), event);
-
-    if state == new_state {
+    if current_state == new_state {
         ProcessEventResult::Ignored
     } else {
-        ProcessEventResult::NewState(state)
+        ProcessEventResult::NewState(new_state)
     }
 }

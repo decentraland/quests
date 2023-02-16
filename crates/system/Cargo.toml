@@ -14,3 +14,7 @@ config = { workspace = true }
 log = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 bincode = { workspace = true }
+
+[dev-dependencies]
+async-trait = "0.1.57"
+uuid = {version = "1.2.2", features = ["v4"]}

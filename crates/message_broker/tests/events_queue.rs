@@ -16,7 +16,7 @@ fn build_location_event(coordinates: Coordinates) -> Event {
 }
 #[tokio::test]
 async fn can_send_event_to_the_queue() {
-    let redis = build_redis().await;
+    let redis = build_redis(0).await;
     let events_queue = RedisEventsQueue::new(redis);
 
     let event = build_location_event(Coordinates(0, 0));
@@ -30,7 +30,7 @@ async fn can_send_event_to_the_queue() {
 
 #[tokio::test]
 async fn can_send_multiple_events_to_the_queue() {
-    let redis = build_redis().await;
+    let redis = build_redis(1).await;
     let events_queue = RedisEventsQueue::new(redis);
 
     let event = build_location_event(Coordinates(0, 0));
@@ -44,7 +44,7 @@ async fn can_send_multiple_events_to_the_queue() {
 
 #[tokio::test]
 async fn can_receive_event_from_the_queue() {
-    let redis = build_redis().await;
+    let redis = build_redis(2).await;
     let events_queue = RedisEventsQueue::new(redis);
 
     let event = build_location_event(Coordinates(0, 0));
@@ -59,7 +59,7 @@ async fn can_receive_event_from_the_queue() {
 
 #[tokio::test]
 async fn can_receive_multiple_events_from_the_queue() {
-    let redis = build_redis().await;
+    let redis = build_redis(3).await;
     let events_queue = RedisEventsQueue::new(redis);
 
     let first_event = build_location_event(Coordinates(0, 0));
@@ -70,14 +70,16 @@ async fn can_receive_multiple_events_from_the_queue() {
     let result = events_queue.push(&second_event).await;
     assert!(result.is_ok(), "should be able to push events");
 
-    let result = events_queue.pop().await;
-    assert!(result.is_ok(), "should be able to pop event");
-    let received_event = result.unwrap();
+    let first_pop = events_queue.pop().await;
+    let second_pop = events_queue.pop().await;
+
+    assert!(first_pop.is_ok(), "should be able to pop event");
+    assert!(second_pop.is_ok(), "should be able to pop event");
+
+    let received_event = first_pop.unwrap();
     assert_eq!(first_event, received_event);
     assert_ne!(second_event, received_event);
 
-    let result = events_queue.pop().await;
-    assert!(result.is_ok(), "should be able to pop event");
-    let received_event = result.unwrap();
+    let received_event = second_pop.unwrap();
     assert_eq!(second_event, received_event);
 }

@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS quest_instances (
   ID UUID PRIMARY KEY NOT NULL,
   quest_id UUID references quests(ID) ON DELETE CASCADE,  -- TODO: should not be a FK?
   user_address TEXT NOT NULL,
-  started TIMESTAMP NOT NULL DEFAULT now()
+  start_timestamp TIMESTAMP NOT NULL DEFAULT now()
 );
 
 -- Create events table

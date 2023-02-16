@@ -11,8 +11,9 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=quests_db
     ports:
-      - '3500:5432'
+      - '5432:5432'
   redis:
+    container_name: "quests_redis"
     image: 'redis:latest'
     restart: always
     user: redis

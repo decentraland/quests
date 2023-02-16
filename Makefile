@@ -9,7 +9,7 @@ CARGO_RUN_SERVER = RUST_LOG=debug cargo run --bin quests_server --
 WATCH_EXISTS = $(shell which cargo-watch > /dev/null && echo 1 || echo 0)
 INSTALL_WATCH = cargo install cargo-watch
 
-export DATABASE_URL=postgres://postgres:postgres@localhost:3500/quests_db # due to docker-compose.local.yml
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/quests_db # due to docker-compose.local.yml
 
 runservices:
 ifeq ($(DOCKER_COMPOSE_EXISTS), 1)
@@ -19,51 +19,53 @@ else
 	@exit 1;
 endif
 
-destroydb:
+destroyservices:
 	-@docker stop quests_db
+	-@docker stop quests_redis
 	-@docker rm quests_db
+	-@docker rm quests_redis 
 	-@docker volume rm quests_quests_db_volume
 # run tests locally
 test-db:
 ifeq ($(LOCAL_DB), 1)
-	@make destroydb
+	@make destroyservices
 	@make runservices
 	-@cargo test --package quests_db
 	@docker stop quests_db
-	@make destroydb
+	@make destroyservices
 else
 	@make runservices
 	-@cargo test --package quests_db
-	@make destroydb
+	@make destroyservices
 endif
 
 # run tests locally
 test-message-broker:
 ifeq ($(LOCAL_DB), 1)
-	@make destroydb
+	@make destroyservices
 	@make runservices
 	-@cargo test --package quests_message_broker
 	@docker stop quests_db
-	@make destroydb
+	@make destroyservices
 else
 	@make runservices
 	-@cargo test --package quests_message_broker
-	@make destroydb
+	@make destroyservices
 endif
 
 
 # run tests locally
 test-server:
 ifeq ($(LOCAL_DB), 1)
-	@make destroydb
+	@make destroyservices
 	@make runservices 
 	-@cargo test --package quests_server
 	@docker stop quests_db
-	@make destroydb
+	@make destroyservices
 else
 	@make runservices
 	-@cargo test --package quests_server
-	@make destroydb
+	@make destroyservices
 endif
 
 # run tests locally

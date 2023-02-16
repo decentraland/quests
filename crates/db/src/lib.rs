@@ -246,9 +246,10 @@ impl QuestsDatabase for Database {
                     row.try_get("id")
                         .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
                 ),
-                quest_id: row
-                    .try_get("quest_id")
-                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                quest_id: parse_uuid_to_str(
+                    row.try_get("quest_id")
+                        .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                ),
                 user_address: row
                     .try_get("user_address")
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,

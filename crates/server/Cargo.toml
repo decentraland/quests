@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 quests_definitions = { path = "../definitions/" }
 quests_db = { path = "../db" }
+quests_message_broker = { path = "../message_broker/" }
 actix-web = "4.2.1"
 config = "0.13"
 serde = "1.0.136"

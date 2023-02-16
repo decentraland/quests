@@ -1,22 +1,15 @@
 mod common;
-use actix_web::{
-    test::{call_service, init_service, read_body_json, TestRequest},
-    web::Data,
-};
+use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
 use quests_definitions::quests::{Action, Coordinates, Quest, QuestDefinition, Step, Tasks};
-use quests_server::{get_app_router, routes::ErrorResponse};
+use quests_server::routes::ErrorResponse;
 
 #[actix_web::test]
 async fn create_quest_should_be_200() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db))).await;
+    let app = init_service(build_app(&config).await).await;
 
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
@@ -85,12 +78,7 @@ async fn create_quest_should_be_200() {
 #[actix_web::test]
 async fn create_quest_should_be_400_quest_validation_error() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db))).await;
-
+    let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
@@ -118,12 +106,7 @@ async fn create_quest_should_be_400_quest_validation_error() {
 #[actix_web::test]
 async fn get_quests_should_be_200() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db))).await;
-
+    let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
         name: "QUEST-2".to_string(),
         description: "Grab some pies".to_string(),
@@ -199,12 +182,7 @@ async fn get_quests_should_be_200() {
 #[actix_web::test]
 async fn get_quests_should_be_400() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db))).await;
-
+    let app = init_service(build_app(&config).await).await;
     let req = TestRequest::get().uri("/quests?offset=0aa").to_request();
 
     let response = call_service(&app, req).await;
@@ -239,6 +217,7 @@ async fn update_quest_should_be_200() {
         .await
         .unwrap();
 
+    let app = init_service(build_app(&config).await).await;
     let quest = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
@@ -300,8 +279,6 @@ async fn update_quest_should_be_200() {
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
 
     let quest_update = Quest {
         name: "QUEST-1_UPDATE".to_string(),
@@ -381,10 +358,7 @@ async fn update_quest_should_be_200() {
 #[actix_web::test]
 async fn update_quest_should_be_400_uuid_bad_format() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
+    let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
@@ -439,8 +413,6 @@ async fn update_quest_should_be_400_uuid_bad_format() {
         },
     };
 
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
-
     let quest_update = Quest {
         name: "QUEST-1_UPDATE".to_string(),
         ..quest_definition
@@ -462,10 +434,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
 #[actix_web::test]
 async fn update_quest_should_be_400_quest_validation_error() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
+    let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
@@ -474,8 +443,6 @@ async fn update_quest_should_be_400_quest_validation_error() {
             steps: vec![],       // not needed for this test
         },
     };
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
 
     let quest_update = Quest {
         name: "QUEST-1_UPDATE".to_string(),
@@ -521,8 +488,7 @@ async fn delete_quest_should_be_200() {
 
     let id = db.create_quest(&create_quest).await.unwrap();
 
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
-
+    let app = init_service(build_app(&config).await).await;
     let req = TestRequest::delete()
         .uri(format!("/quests/{}", id).as_str())
         .to_request();
@@ -537,12 +503,7 @@ async fn delete_quest_should_be_200() {
 #[actix_web::test]
 async fn delete_quest_should_be_400() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
-
+    let app = init_service(build_app(&config).await).await;
     let req = TestRequest::delete().uri("/quests/1aab").to_request();
 
     let response = call_service(&app, req).await;
@@ -560,6 +521,7 @@ async fn get_quest_should_be_200() {
         .await
         .unwrap();
 
+    let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
@@ -621,8 +583,6 @@ async fn get_quest_should_be_200() {
 
     let id = db.create_quest(&create_quest).await.unwrap();
 
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
-
     let req = TestRequest::get()
         .uri(format!("/quests/{}", id).as_str())
         .to_request();
@@ -649,12 +609,7 @@ async fn get_quest_should_be_200() {
 #[actix_web::test]
 async fn get_quest_should_be_400() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
-
+    let app = init_service(build_app(&config).await).await;
     let req = TestRequest::get().uri("/quests/1aaa").to_request();
 
     let response = call_service(&app, req).await;
@@ -667,13 +622,7 @@ async fn get_quest_should_be_400() {
 
 #[actix_web::test]
 async fn get_quest_should_be_404() {
-    let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
-        .await
-        .unwrap();
-
-    let app = init_service(get_app_router(&Data::new(config), &Data::new(db.clone()))).await;
-
+    let app = init_service(build_app(&config).await).await;
     let id = uuid::Uuid::new_v4().to_string();
 
     let req = TestRequest::get()

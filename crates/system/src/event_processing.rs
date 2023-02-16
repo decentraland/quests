@@ -28,16 +28,13 @@ pub async fn process_event(
     // get user quest instances
     let quest_instances = database.get_user_quest_instances(&event.address).await;
 
-    println!("about to process event");
     match quest_instances {
         Ok(quest_instances) => {
-            println!("quest instances: {}", quest_instances.len());
             for quest_instance in quest_instances {
                 match process_event_for_quest_instance(&quest_instance, &event, database.clone())
                     .await
                 {
                     ProcessEventResult::NewState(quest_state) => {
-                        println!("Event processed and there is a new state");
                         let add_event = AddEvent {
                             user_address: &event.address,
                             event: bincode::serialize(&event).expect("can serialize event"), // TODO: error handling

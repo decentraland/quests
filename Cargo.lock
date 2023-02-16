@@ -1806,7 +1806,6 @@ dependencies = [
  "log",
  "quests_db",
  "quests_definitions",
- "rand",
  "serde",
  "serde_json",
  "tokio",

@@ -212,7 +212,7 @@ impl QuestsDatabase for Database {
         // QuestInstance uses a number as the timestamp (unix time) but SQLX returns a specific type (chrono)
         let start_timestamp = date_time_to_unix(
             query_result
-                .try_get("started")
+                .try_get("start_timestamp")
                 .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
         );
 

@@ -33,6 +33,9 @@ services:
     ports: 
       - "8080:8080"
     restart: always
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@quests_db:5432/quests_db
+      - REDIS_URL=quests_redis:6379
     depends_on:
       - postgres 
       - redis 
@@ -44,6 +47,9 @@ services:
     depends_on:
       - postgres
       - redis 
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@quests_db:5432/quests_db
+      - REDIS_URL=quests_redis:6379
 
 volumes:
   quests_db_volume:

@@ -144,18 +144,18 @@ async fn delete_quest_controller<DB: QuestsDatabase>(
 #[derive(Serialize, Deserialize, Debug)]
 struct StartQuest {
     user_address: String,
+    quest_id: String,
 }
 
-#[put("/quests/{quest_id}")]
+#[post("/quests/instances")]
 async fn start_quest(
     data: web::Data<Database>,
-    quest_id: web::Path<String>,
     start_quest: web::Json<StartQuest>,
 ) -> HttpResponse {
     let db = data.into_inner();
 
     match db
-        .start_quest(&quest_id.into_inner(), &start_quest.user_address)
+        .start_quest(&start_quest.quest_id, &start_quest.user_address)
         .await
     {
         Ok(quest_instance_id) => HttpResponse::Ok().json(quest_instance_id),

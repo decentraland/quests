@@ -5,6 +5,7 @@ use serde::Deserialize;
 pub struct Config {
     pub server_port: u16,
     pub database_url: String, // Using the URL directly has benefits for SQLX macros and it can be built in deploy time
+    pub redis_url: String,
     pub env: String,
     pub wkc_metrics_bearer_token: String,
 }
@@ -12,6 +13,7 @@ pub struct Config {
 const METRICS_TOKEN: &str = "WKC_METRICS_BEARER_TOKEN"; // WCK ENV
 const ENV_VAR: &str = "ENV";
 const DATABASE_URL: &str = "DATABASE_URL";
+const REDIS_URL: &str = "REDIS_URL";
 
 impl Config {
     pub fn new() -> Result<Self, ConfigError> {
@@ -27,6 +29,7 @@ impl Config {
                     .with_list_parse_key(METRICS_TOKEN)
                     .with_list_parse_key(ENV_VAR)
                     .with_list_parse_key(DATABASE_URL)
+                    .with_list_parse_key(REDIS_URL)
                     .try_parsing(true),
             )
             .set_default("server_port", 8080)? // It should be empty for local development
@@ -34,8 +37,9 @@ impl Config {
             .set_default("wkc_metrics_bearer_token", "")?
             .set_default(
                 "database_url",
-                "postgres://postgres:postgres@localhost:3500/quests_db",
+                "postgres://postgres:postgres@localhost:5432/quests_db",
             )? // => Default for local development
+            .set_default("redis_url", "localhost:6379")?
             .build()?;
 
         config.try_deserialize()

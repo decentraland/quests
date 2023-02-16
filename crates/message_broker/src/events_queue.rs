@@ -9,7 +9,7 @@ use crate::redis::Redis;
 pub type EventsQueueResult<T> = Result<T, String>;
 
 #[async_trait]
-pub trait EventsQueue {
+pub trait EventsQueue: Send + Sync {
     async fn push(&self, event: &Event) -> EventsQueueResult<usize>;
     async fn pop(&self) -> EventsQueueResult<Event>;
 }

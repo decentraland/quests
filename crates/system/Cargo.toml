@@ -7,9 +7,14 @@ edition = "2021"
 quests_db = { path = "../db" }
 quests_message_broker = { path = "../message_broker" }
 quests_definitions = { path = "../definitions" }
+env_logger = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 config = { workspace = true }
 log = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 bincode = { workspace = true }
+
+[dev-dependencies]
+async-trait = "0.1.57"
+uuid = {version = "1.2.2", features = ["v4"]}

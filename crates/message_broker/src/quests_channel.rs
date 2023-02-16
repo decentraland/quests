@@ -6,7 +6,7 @@ use futures_util::StreamExt as _;
 use log::debug;
 use log::error;
 use log::info;
-use quests_definitions::quest_graph::QuestState;
+use quests_definitions::quest_state::QuestState;
 use serde::Deserialize;
 use serde::Serialize;
 use std::{collections::HashMap, sync::Arc};
@@ -21,7 +21,7 @@ pub struct QuestUpdate {
 pub type OnUpdate = Box<dyn Fn(QuestUpdate) + Send + Sync>;
 
 #[async_trait]
-pub trait QuestsChannel {
+pub trait QuestsChannel: Send + Sync {
     async fn subscribe(&mut self, quest_id: &str, on_update: OnUpdate);
     async fn unsubscribe(&mut self, quest_id: &str);
     async fn publish(&mut self, quest_id: &str, update: QuestUpdate);

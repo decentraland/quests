@@ -622,6 +622,7 @@ async fn get_quest_should_be_400() {
 
 #[actix_web::test]
 async fn get_quest_should_be_404() {
+    let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
     let id = uuid::Uuid::new_v4().to_string();
 

@@ -7,6 +7,11 @@ use crate::{
     quests::{Event, Quest, StepID, SubTask, Tasks, END_STEP_ID, START_STEP_ID},
 };
 
+#[derive(Serialize, Deserialize)]
+pub struct QuestUpdate {
+    pub state: QuestState,
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct QuestState {
     /// Next possible steps

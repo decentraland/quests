@@ -6,18 +6,12 @@ use futures_util::StreamExt as _;
 use log::debug;
 use log::error;
 use log::info;
-use quests_definitions::quest_state::QuestState;
-use serde::Deserialize;
-use serde::Serialize;
+use quests_definitions::quest_state::QuestUpdate;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::redis::Redis;
 
-#[derive(Serialize, Deserialize)]
-pub struct QuestUpdate {
-    pub state: QuestState,
-} // TODO: move to definitions
 pub type OnUpdate = Box<dyn Fn(QuestUpdate) + Send + Sync>;
 
 #[async_trait]

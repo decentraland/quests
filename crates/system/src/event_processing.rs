@@ -4,14 +4,11 @@ use log::info;
 use quests_db::core::definitions::{AddEvent, QuestInstance, QuestsDatabase};
 use quests_definitions::{
     quest_graph::QuestGraph,
-    quest_state::{get_state, QuestState},
+    quest_state::{get_state, QuestState, QuestUpdate},
     quests::{Event, Quest, QuestDefinition},
 };
 
-use quests_message_broker::{
-    events_queue::EventsQueue,
-    quests_channel::{QuestUpdate, QuestsChannel},
-};
+use quests_message_broker::{events_queue::EventsQueue, quests_channel::QuestsChannel};
 use tokio::sync::Mutex;
 
 pub enum ProcessEventResult {

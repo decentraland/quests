@@ -29,7 +29,7 @@ pub struct AddEvent<'a> {
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
 pub struct Event {
     pub id: String,
-    pub user_address: String, // TODO: do we need this field?
+    pub user_address: String,
     pub quest_instance_id: String,
     pub timestamp: i64,
     pub event: Vec<u8>,

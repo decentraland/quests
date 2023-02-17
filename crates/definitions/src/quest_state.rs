@@ -35,30 +35,6 @@ impl QuestState {
             .iter()
             .all(|step| self.steps_completed.contains(step))
     }
-    /// Returns the initial state of the Quest as it's not initialized
-    pub fn from_graph(quest_graph: &QuestGraph) -> Self {
-        let next_possible_steps = quest_graph
-            .next(START_STEP_ID)
-            .unwrap_or_default()
-            .iter()
-            .map(|step| {
-                (
-                    step.clone(),
-                    StepContent {
-                        todos: quest_graph.tasks_by_step.get(step).unwrap().clone(),
-                    },
-                )
-            })
-            .collect::<HashMap<String, StepContent>>();
-
-        Self {
-            next_possible_steps,
-            required_steps: quest_graph.required_for_end().unwrap_or_default(),
-            steps_left: quest_graph.total_steps() as u32,
-            steps_completed: HashSet::default(),
-            subtasks_completed: None,
-        }
-    }
 
     pub fn apply_event(&self, quest_graph: &QuestGraph, event: &Event) -> QuestState {
         let state = self.clone();
@@ -175,14 +151,41 @@ impl QuestState {
     }
 }
 
+impl From<&QuestGraph> for QuestState {
+    /// Returns the initial state of the Quest as it's not initialized
+    fn from(value: &QuestGraph) -> Self {
+        let next_possible_steps = value
+            .next(START_STEP_ID)
+            .unwrap_or_default()
+            .iter()
+            .map(|step| {
+                (
+                    step.clone(),
+                    StepContent {
+                        todos: value.tasks_by_step.get(step).unwrap().clone(),
+                    },
+                )
+            })
+            .collect::<HashMap<String, StepContent>>();
+
+        Self {
+            next_possible_steps,
+            required_steps: value.required_for_end().unwrap_or_default(),
+            steps_left: value.total_steps() as u32,
+            steps_completed: HashSet::default(),
+            subtasks_completed: None,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct StepContent {
     pub todos: Tasks,
 }
 
 pub fn get_state(quest: &Quest, events: Vec<Event>) -> QuestState {
-    let quest_graph = QuestGraph::from_quest(quest);
-    let initial_state = QuestState::from_graph(&quest_graph);
+    let quest_graph = QuestGraph::from(quest);
+    let initial_state = (&quest_graph).into();
     events.iter().fold(initial_state, |state, event| {
         state.apply_event(&quest_graph, event)
     })
@@ -264,7 +267,7 @@ mod tests {
                 ],
             },
         };
-        let quest_graph = QuestGraph::from_quest(&quest);
+        let quest_graph = QuestGraph::from(&quest);
         let mut events = vec![
             Event {
                 address: "0xA".to_string(),
@@ -309,7 +312,7 @@ mod tests {
                 },
             },
         ];
-        let mut state = QuestState::from_graph(&quest_graph);
+        let mut state = QuestState::from(&quest_graph);
         assert!(state.next_possible_steps.contains_key("A1")); // branch 1
         assert!(state.next_possible_steps.contains_key("A2")); // branch 2
         assert_eq!(state.next_possible_steps.len(), 2);
@@ -461,7 +464,7 @@ mod tests {
             },
         };
 
-        let quest_graph = QuestGraph::from_quest(&quest);
+        let quest_graph = QuestGraph::from(&quest);
         let mut events = vec![
             Event {
                 address: "0xA".to_string(),
@@ -527,7 +530,7 @@ mod tests {
                 },
             },
         ];
-        let mut state = QuestState::from_graph(&quest_graph);
+        let mut state = QuestState::from(&quest_graph);
 
         assert!(state.next_possible_steps.contains_key("A"));
         if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("A").unwrap().todos {

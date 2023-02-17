@@ -74,7 +74,7 @@ fn main() {
 
     print_quest(&branched_quest);
 
-    let quest_graph = QuestGraph::from_quest(&branched_quest);
+    let quest_graph = QuestGraph::from(&branched_quest);
     println!("{}", quest_graph.get_quest_draw());
 }
 

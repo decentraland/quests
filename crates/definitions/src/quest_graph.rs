@@ -16,13 +16,6 @@ pub struct QuestGraph {
 }
 
 impl QuestGraph {
-    pub fn from_quest(quest: &Quest) -> Self {
-        Self {
-            graph: build_graph_from_quest_definition(quest),
-            tasks_by_step: build_tasks_by_step_from_quest_definition(quest),
-        }
-    }
-
     /// Returns the step after `from`
     pub fn next(&self, from: &str) -> Option<Vec<String>> {
         let index = self.get_node_index_by_step_name(from);
@@ -80,6 +73,15 @@ impl QuestGraph {
 
     pub fn get_quest_draw(&self) -> Dot<&Dag<String, u32>> {
         Dot::with_config(&self.graph, &[Config::EdgeNoLabel])
+    }
+}
+
+impl From<&Quest> for QuestGraph {
+    fn from(value: &Quest) -> Self {
+        Self {
+            graph: build_graph_from_quest_definition(value),
+            tasks_by_step: build_tasks_by_step_from_quest_definition(value),
+        }
     }
 }
 
@@ -201,7 +203,7 @@ mod tests {
             },
         };
 
-        let graph = QuestGraph::from_quest(&quest);
+        let graph: QuestGraph = (&quest).into();
 
         let next = graph.next(START_STEP_ID).unwrap();
         assert_eq!(next.len(), 1);
@@ -273,7 +275,7 @@ mod tests {
             },
         };
 
-        let graph = QuestGraph::from_quest(&quest);
+        let graph = QuestGraph::from(&quest);
         let next = graph.next(START_STEP_ID).unwrap();
         assert_eq!(next.len(), 2);
         assert!(next.contains(&"A1".to_string()));
@@ -365,7 +367,7 @@ mod tests {
             },
         };
 
-        let graph = QuestGraph::from_quest(&quest);
+        let graph = QuestGraph::from(&quest);
         let next = graph.next(START_STEP_ID).unwrap();
         assert_eq!(next, vec!["A"]);
         let next = graph.next("A").unwrap();
@@ -445,7 +447,7 @@ mod tests {
             },
         };
 
-        let graph = QuestGraph::from_quest(&quest);
+        let graph = QuestGraph::from(&quest);
 
         let prev_step = graph.prev("A1").unwrap();
         assert_eq!(prev_step, vec![START_STEP_ID]);
@@ -512,7 +514,7 @@ mod tests {
         };
 
         assert!(quest.is_valid().is_ok());
-        let graph = QuestGraph::from_quest(&quest);
+        let graph = QuestGraph::from(&quest);
         let steps_required_for_end = graph.required_for_end().unwrap();
         assert!(steps_required_for_end.contains(&"D".to_string()));
         assert!(steps_required_for_end.contains(&"C".to_string()));

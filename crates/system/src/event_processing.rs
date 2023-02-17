@@ -90,7 +90,7 @@ async fn process_event_for_quest_instance(
         .map(|event| bincode::deserialize::<Event>(&event.event).unwrap())
         .collect();
 
-    let quest_graph = QuestGraph::from_quest(&quest);
+    let quest_graph = QuestGraph::from(&quest);
     let current_state = get_state(&quest, events);
     let new_state = current_state.apply_event(&quest_graph, event);
 

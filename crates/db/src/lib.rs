@@ -361,3 +361,14 @@ fn parse_str_to_uuid(id: &str) -> DBResult<sqlx::types::Uuid> {
 fn parse_uuid_to_str(uuid: sqlx::types::Uuid) -> String {
     uuid.to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::parse_str_to_uuid;
+
+    #[test]
+    fn parse_invalid_uuid_fails() {
+        let result = parse_str_to_uuid("not_uuid");
+        assert!(result.is_err())
+    }
+}

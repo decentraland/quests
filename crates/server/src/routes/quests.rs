@@ -5,6 +5,7 @@ use actix_web::{
     web::{self, ServiceConfig},
     HttpResponse,
 };
+use log::info;
 use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase, StoredQuest, UpdateQuest},
     core::errors::DBError,
@@ -165,17 +166,29 @@ async fn start_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     start_quest_request: StartQuest,
 ) -> Result<String, QuestError> {
+    let result = db.get_quest(&start_quest_request.quest_id).await;
+
+    match result {
+        Err(DBError::RowNotFound) => return Err(QuestError::CommonError(CommonError::NotFound)),
+        Err(_) => return Err(QuestError::CommonError(CommonError::Unknown)),
+        _ => info!("Quest found, can start it"),
+    }
+
     db.start_quest(
         &start_quest_request.quest_id,
         &start_quest_request.user_address,
     )
     .await
-    .map_err(|error| match error {
-        DBError::NotUUID => QuestError::CommonError(CommonError::BadRequest(
-            "the ID given is not a valid".to_string(),
-        )),
-        DBError::RowNotFound => QuestError::CommonError(CommonError::NotFound),
-        _ => QuestError::CommonError(CommonError::Unknown),
+    .map_err(|error| {
+        println!("Error while starting quest: {:?}", error);
+        match error {
+            DBError::NotUUID => QuestError::CommonError(CommonError::BadRequest(
+                "the ID given is not a valid".to_string(),
+            )),
+            DBError::RowNotFound => QuestError::CommonError(CommonError::NotFound),
+
+            _ => QuestError::CommonError(CommonError::Unknown),
+        }
     })
 }
 

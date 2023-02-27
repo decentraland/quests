@@ -12,14 +12,11 @@ use daggy::{
 
 pub struct QuestGraph {
     graph: Dag<String, u32>,
+    pub tasks_by_step: HashMap<StepID, Tasks>,
 }
 
 impl QuestGraph {
-    pub fn from_quest(quest: Quest) -> Self {
-        let graph = build_graph_from_quest_definition(&quest);
-        Self { graph }
-    }
-
+    /// Returns the step after `from`
     pub fn next(&self, from: &str) -> Option<Vec<String>> {
         let index = self.get_node_index_by_step_name(from);
         if let Some(index) = index {
@@ -36,6 +33,7 @@ impl QuestGraph {
         }
     }
 
+    /// Returns the step before `from`
     pub fn prev(&self, from: &str) -> Option<Vec<String>> {
         let index = self.get_node_index_by_step_name(from);
         if let Some(index) = index {
@@ -52,6 +50,16 @@ impl QuestGraph {
         }
     }
 
+    /// Returns steps required for the end of the quests. It returns the steps that directly point to the END, not all the path
+    pub fn required_for_end(&self) -> Option<Vec<StepID>> {
+        self.prev(END_STEP_ID)
+    }
+
+    pub fn total_steps(&self) -> usize {
+        // - 2 becsase START_STEP_ID and END_STEP_ID are also nodes
+        self.graph.node_count() - 2
+    }
+
     fn get_node_index_by_step_name(&self, step: &str) -> Option<NodeIndex> {
         self.graph.graph().node_indices().find(|idx| {
             let item = self.graph.node_weight(*idx);
@@ -65,6 +73,15 @@ impl QuestGraph {
 
     pub fn get_quest_draw(&self) -> Dot<&Dag<String, u32>> {
         Dot::with_config(&self.graph, &[Config::EdgeNoLabel])
+    }
+}
+
+impl From<&Quest> for QuestGraph {
+    fn from(value: &Quest) -> Self {
+        Self {
+            graph: build_graph_from_quest_definition(value),
+            tasks_by_step: build_tasks_by_step_from_quest_definition(value),
+        }
     }
 }
 
@@ -121,6 +138,19 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     dag
 }
 
+fn build_tasks_by_step_from_quest_definition(quest: &Quest) -> HashMap<StepID, Tasks> {
+    let mut content_map = HashMap::new();
+    for step in &quest.definition.steps {
+        let content = step.tasks.clone();
+        content_map.insert(step.id.clone(), content);
+    }
+    content_map
+}
+
+pub fn matches_action((action, event_action): (Action, Action)) -> bool {
+    action == event_action
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,7 +172,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -151,7 +180,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -160,7 +188,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -169,7 +196,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -177,7 +203,7 @@ mod tests {
             },
         };
 
-        let graph = QuestGraph::from_quest(quest);
+        let graph: QuestGraph = (&quest).into();
 
         let next = graph.next(START_STEP_ID).unwrap();
         assert_eq!(next.len(), 1);
@@ -210,7 +236,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -219,7 +244,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -228,7 +252,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -237,7 +260,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -246,7 +268,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -254,7 +275,7 @@ mod tests {
             },
         };
 
-        let graph = QuestGraph::from_quest(quest);
+        let graph = QuestGraph::from(&quest);
         let next = graph.next(START_STEP_ID).unwrap();
         assert_eq!(next.len(), 2);
         assert!(next.contains(&"A1".to_string()));
@@ -299,7 +320,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -308,7 +328,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -317,7 +336,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -326,7 +344,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -335,7 +352,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -344,7 +360,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -352,7 +367,7 @@ mod tests {
             },
         };
 
-        let graph = QuestGraph::from_quest(quest);
+        let graph = QuestGraph::from(&quest);
         let next = graph.next(START_STEP_ID).unwrap();
         assert_eq!(next, vec!["A"]);
         let next = graph.next("A").unwrap();
@@ -393,7 +408,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -402,7 +416,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -411,7 +424,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -420,7 +432,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -429,7 +440,6 @@ mod tests {
                         description: "".to_string(),
                         tasks: Tasks::Single {
                             action_items: vec![],
-                            repeat: None,
                         },
                         on_complete_hook: None,
                     },
@@ -437,7 +447,7 @@ mod tests {
             },
         };
 
-        let graph = QuestGraph::from_quest(quest);
+        let graph = QuestGraph::from(&quest);
 
         let prev_step = graph.prev("A1").unwrap();
         assert_eq!(prev_step, vec![START_STEP_ID]);
@@ -445,5 +455,101 @@ mod tests {
         assert_eq!(prev_step, vec!["A1"]);
         let prev_step = graph.prev("D").unwrap();
         assert_eq!(prev_step, vec!["A2"])
+    }
+
+    #[test]
+    fn quest_graph_steps_required_for_end() {
+        let quest = Quest {
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            definition: QuestDefinition {
+                connections: vec![
+                    ("A1".to_string(), "B".to_string()),
+                    ("B".to_string(), "C".to_string()),
+                    ("A2".to_string(), "D".to_string()),
+                ],
+                steps: vec![
+                    Step {
+                        id: "A1".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "A2".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                    Step {
+                        id: "D".to_string(),
+                        description: "".to_string(),
+                        tasks: Tasks::Single {
+                            action_items: vec![],
+                        },
+                        on_complete_hook: None,
+                    },
+                ],
+            },
+        };
+
+        assert!(quest.is_valid().is_ok());
+        let graph = QuestGraph::from(&quest);
+        let steps_required_for_end = graph.required_for_end().unwrap();
+        assert!(steps_required_for_end.contains(&"D".to_string()));
+        assert!(steps_required_for_end.contains(&"C".to_string()));
+    }
+
+    #[test]
+    fn matches_action_works() {
+        let result = matches_action((
+            Action::Location {
+                coordinates: Coordinates(10, 10),
+            },
+            Action::Location {
+                coordinates: Coordinates(10, 10),
+            },
+        ));
+        assert!(result);
+
+        let result = matches_action((
+            Action::Location {
+                coordinates: Coordinates(10, 10),
+            },
+            Action::Location {
+                coordinates: Coordinates(10, 20),
+            },
+        ));
+        assert!(!result);
+
+        let result = matches_action((
+            Action::Location {
+                coordinates: Coordinates(10, 10),
+            },
+            Action::Jump {
+                coordinates: Coordinates(10, 10),
+            },
+        ));
+        assert!(!result);
     }
 }

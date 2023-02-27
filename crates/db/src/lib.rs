@@ -212,7 +212,7 @@ impl QuestsDatabase for Database {
         // QuestInstance uses a number as the timestamp (unix time) but SQLX returns a specific type (chrono)
         let start_timestamp = date_time_to_unix(
             query_result
-                .try_get("started")
+                .try_get("start_timestamp")
                 .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
         );
 
@@ -246,9 +246,10 @@ impl QuestsDatabase for Database {
                     row.try_get("id")
                         .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
                 ),
-                quest_id: row
-                    .try_get("quest_id")
-                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                quest_id: parse_uuid_to_str(
+                    row.try_get("quest_id")
+                        .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                ),
                 user_address: row
                     .try_get("user_address")
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
@@ -359,4 +360,15 @@ fn parse_str_to_uuid(id: &str) -> DBResult<sqlx::types::Uuid> {
 
 fn parse_uuid_to_str(uuid: sqlx::types::Uuid) -> String {
     uuid.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parse_str_to_uuid;
+
+    #[test]
+    fn parse_invalid_uuid_fails() {
+        let result = parse_str_to_uuid("not_uuid");
+        assert!(result.is_err())
+    }
 }

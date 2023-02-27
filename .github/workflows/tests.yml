@@ -22,19 +22,23 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - uses: actions/checkout@v2
-      - uses: Swatinem/rust-cache@v1.3.0
-      - name: Build
-        run: cargo build --verbose
-      - name: Test quests_definitions
-        run: cargo test --package quests_definitions --verbose
-      - name: Test quests_server
-        run: cargo test --package quests_server --verbose
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+      - name: Run tests 
+        run: cargo test --verbose
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
-      - name: Test quests_db
-        run: cargo test --package quests_db --verbose
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
+          REDIS_URL: localhost:6379
+

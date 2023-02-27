@@ -1,6 +1,14 @@
+pub mod quest_samples;
+
+use actix_web::body::MessageBody;
+use actix_web::dev::ServiceFactory;
+use actix_web::web::Data;
+use actix_web::App;
 use quests_db::core::ops::{Connect, GetConnection, Migrate};
-use quests_db::{DatabaseOptions, Executor};
+use quests_db::{create_quests_db_component, DatabaseOptions, Executor};
+use quests_message_broker::create_events_queue;
 use quests_server::configuration::Config;
+use quests_server::get_app_router;
 
 pub async fn get_configuration() -> Config {
     let mut config = Config::new().expect("Couldn't read the configuration file");
@@ -8,6 +16,30 @@ pub async fn get_configuration() -> Config {
     config.database_url = new_url;
 
     config
+}
+
+pub async fn build_app(
+    config: &Config,
+) -> App<
+    impl ServiceFactory<
+        actix_web::dev::ServiceRequest,
+        Config = (),
+        Response = actix_web::dev::ServiceResponse<impl MessageBody>,
+        Error = actix_web::Error,
+        InitError = (),
+    >,
+> {
+    let db = create_quests_db_component(&config.database_url)
+        .await
+        .unwrap();
+
+    let redis = create_events_queue(&config.redis_url).await;
+
+    get_app_router(
+        &Data::new(config.clone()),
+        &Data::new(db),
+        &Data::new(redis),
+    )
 }
 
 pub async fn create_test_db(db_url: &str) -> String {

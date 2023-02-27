@@ -7,3 +7,4 @@ edition = "2021"
 serde = { version = "1.0.152", features = ["derive"] }
 daggy = "*"
 thiserror = "1.0.38"
+serde_json.workspace = true

@@ -3,7 +3,7 @@ use actix_web::web::ServiceConfig;
 mod errors;
 mod events;
 mod health;
-mod quests;
+pub mod quests;
 
 use errors::CommonError;
 pub use errors::{query_extractor_config, ErrorResponse};

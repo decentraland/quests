@@ -73,7 +73,19 @@ test-definitions:
 	-@cargo test --package quests_definitions
 
 # run tests locally
-tests: test-db test-server test-message-broker test-definitions # TODO: change to setup services only once for all packages and run cargo test for the whole project
+tests: 
+ifeq ($(LOCAL_DB), 1)
+	@make destroyservices
+	@make runservices 
+	-@cargo test 
+	@docker stop quests_db
+	@make destroyservices
+else
+	@make runservices
+	-@cargo test
+	@make destroyservices
+endif
+
 
 run-devserver:
 ifeq ($(WATCH_EXISTS), 1)

@@ -3,16 +3,16 @@ mod event_processing;
 
 use configuration::Config;
 use env_logger::init as initialize_logger;
-use event_processing::process_event;
+use event_processing::{process_event, ProcessEventResult};
 use log::{error, info};
 use quests_db::core::definitions::QuestsDatabase;
 use quests_db::create_quests_db_component;
 use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
 use quests_message_broker::quests_channel::{QuestsChannel, RedisQuestsChannel};
 use quests_message_broker::redis::Redis;
-use tokio::task::JoinHandle;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
 
 pub type Error = String;
 pub type EventProcessingResult<T> = Result<T, Error>;
@@ -70,12 +70,14 @@ pub async fn start_event_processing() -> EventProcessingResult<()> {
     }
 }
 
-pub async fn process(event_processor: &EventProcessor) -> Result<JoinHandle<()>, Error> {
+pub async fn process(
+    event_processor: &EventProcessor,
+) -> Result<JoinHandle<ProcessEventResult>, Error> {
     // Read items from events queue
     let event = event_processor.events_queue.pop().await;
     match event {
         Ok(event) => {
-            // - Spawn task to process the event
+            // Spawn task to process the event
             Ok(tokio::spawn(process_event(
                 event,
                 event_processor.quests_channel.clone(),

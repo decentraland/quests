@@ -5,8 +5,9 @@ use actix_web::{
     web::{self, ServiceConfig},
     HttpResponse,
 };
+use futures_util::{stream::FuturesUnordered, StreamExt};
 use quests_db::{
-    core::definitions::{CreateQuest, QuestsDatabase, StoredQuest, UpdateQuest},
+    core::definitions::{CreateQuest, QuestInstance, QuestsDatabase, StoredQuest, UpdateQuest},
     core::errors::DBError,
     Database,
 };
@@ -231,28 +232,7 @@ async fn get_quest_state_controller<DB: QuestsDatabase>(
     id: String,
 ) -> Result<QuestState, QuestError> {
     match db.get_quest_instance(&id).await {
-        Ok(quest_instance) => {
-            let quest = db.get_quest(&quest_instance.quest_id).await;
-            match quest {
-                Ok(quest) => {
-                    let quest = Quest {
-                        name: quest.name,
-                        description: quest.description,
-                        definition: bincode::deserialize(&quest.definition).unwrap(), // TODO: error handling
-                    };
-                    let events = db.get_events(&quest_instance.id).await.unwrap();
-                    let events = events
-                        .iter()
-                        .map(|event| bincode::deserialize(&event.event).unwrap()) // TODO: error handling
-                        .collect();
-
-                    Ok(get_state(&quest, events))
-                }
-                Err(_) => Err(QuestError::CommonError(CommonError::BadRequest(
-                    "the quest instance ID given doesn't correspond to a valid quest".to_string(),
-                ))),
-            }
-        }
+        Ok(quest_instance) => get_quest_instance_state(db, &quest_instance).await,
         Err(error) => match error {
             DBError::NotUUID => Err(QuestError::CommonError(CommonError::BadRequest(
                 "the ID given is not a valid".to_string(),
@@ -262,6 +242,86 @@ async fn get_quest_state_controller<DB: QuestsDatabase>(
         },
     }
 }
+
+#[derive(Deserialize)]
+struct QuestInstancesQuery {
+    user: String,
+}
+
+#[get("/quests/instances")]
+async fn get_quests_state_by_user_address(
+    data: web::Data<Database>,
+    query: web::Query<QuestInstancesQuery>,
+) -> HttpResponse {
+    let db = data.into_inner();
+    match get_quests_state_by_user_address_controller(db, &query.user).await {
+        Ok(quests_states) => HttpResponse::Ok().json(quests_states),
+        Err(err) => HttpResponse::from_error(err),
+    }
+}
+
+async fn get_quests_state_by_user_address_controller(
+    db: Arc<impl QuestsDatabase + 'static>,
+    user: &str,
+) -> Result<Vec<QuestState>, QuestError> {
+    match db.get_user_quest_instances(user).await {
+        Ok(result) => {
+            let mut join_handles = FuturesUnordered::new();
+            for instance in result {
+                // The spwawned task will run in the current thread because we are not using [tokio::main] that use tokio's work stealing feature
+                // TODO: should we replace [actix_web::main] for [tokio::main]?
+                let db_cloned = db.clone();
+                let join_handle = actix_web::rt::spawn(async move {
+                    get_quest_instance_state(db_cloned, &instance).await
+                });
+                join_handles.push(join_handle);
+            }
+
+            let mut states = vec![];
+            while let Some(join_handle_result) = join_handles.next().await {
+                match join_handle_result {
+                    Ok(task_result) => match task_result {
+                        Ok(state) => states.push(state),
+                        Err(err) => return Err(err),
+                    },
+                    Err(_) => return Err(QuestError::CommonError(CommonError::Unknown)),
+                }
+            }
+            Ok(states)
+        }
+        Err(error) => match error {
+            DBError::RowNotFound => Err(QuestError::CommonError(CommonError::NotFound)),
+            _ => Err(QuestError::CommonError(CommonError::Unknown)),
+        },
+    }
+}
+
+async fn get_quest_instance_state(
+    db: Arc<impl QuestsDatabase>,
+    quest_instance: &QuestInstance,
+) -> Result<QuestState, QuestError> {
+    let quest = db.get_quest(&quest_instance.quest_id).await;
+    match quest {
+        Ok(quest) => {
+            let quest = Quest {
+                name: quest.name,
+                description: quest.description,
+                definition: bincode::deserialize(&quest.definition).unwrap(), // TODO: error handling
+            };
+            let events = db.get_events(&quest_instance.id).await.unwrap();
+            let events = events
+                .iter()
+                .map(|event| bincode::deserialize(&event.event).unwrap()) // TODO: error handling
+                .collect();
+
+            Ok(get_state(&quest, events))
+        }
+        Err(_) => Err(QuestError::CommonError(CommonError::BadRequest(
+            "the quest instance ID given doesn't correspond to a valid quest".to_string(),
+        ))),
+    }
+}
+
 pub fn services(config: &mut ServiceConfig) {
     config
         .service(get_quests)

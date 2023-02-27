@@ -25,50 +25,16 @@ destroyservices:
 	-@docker rm quests_db
 	-@docker rm quests_redis 
 	-@docker volume rm quests_quests_db_volume
-# run tests locally
-test-db:
-ifeq ($(LOCAL_DB), 1)
-	@make destroyservices
-	@make runservices
-	-@cargo test --package quests_db
-	@docker stop quests_db
-	@make destroyservices
-else
-	@make runservices
-	-@cargo test --package quests_db
-	@make destroyservices
-endif
 
-# run tests locally
-test-message-broker:
-ifeq ($(LOCAL_DB), 1)
-	@make destroyservices
-	@make runservices
-	-@cargo test --package quests_message_broker
-	@docker stop quests_db
-	@make destroyservices
-else
-	@make runservices
-	-@cargo test --package quests_message_broker
-	@make destroyservices
-endif
+test-db: TEST_PROJECT=-p quests_db
+test-db: tests 
 
+test-message-broker: TEST_PROJECT=-p quests_message_broker
+test-message-broker: tests
 
-# run tests locally
-test-server:
-ifeq ($(LOCAL_DB), 1)
-	@make destroyservices
-	@make runservices 
-	-@cargo test --package quests_server
-	@docker stop quests_db
-	@make destroyservices
-else
-	@make runservices
-	-@cargo test --package quests_server
-	@make destroyservices
-endif
+test-server: TEST_PROJECT=-p quests_server
+test-server: tests
 
-# run tests locally
 test-definitions:
 	-@cargo test --package quests_definitions
 
@@ -77,12 +43,12 @@ tests:
 ifeq ($(LOCAL_DB), 1)
 	@make destroyservices
 	@make runservices 
-	-@cargo test 
+	-@cargo test $(TEST_PROJECT)
 	@docker stop quests_db
 	@make destroyservices
 else
 	@make runservices
-	-@cargo test
+	-@cargo test $(TEST_PROJECT)
 	@make destroyservices
 endif
 

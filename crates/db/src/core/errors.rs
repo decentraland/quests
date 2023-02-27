@@ -1,10 +1,11 @@
+use sqlx::Error;
 use std::error::Error as StdError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum DBError {
     #[error("Unable to connect to DB")]
-    UnableToConnect,
+    UnableToConnect(Error),
 
     #[error("Unable to migrate: {0}")]
     MigrationError(BoxDynError),

@@ -19,22 +19,23 @@ pub enum ApplyEventResult {
     Ignored,
 }
 
+#[derive(Debug)]
 pub enum ProcessEventError {
     Serialization,
     DatabaseAccess,
     Failed,
 }
 
-pub type ProcessEventResult = Result<(), ProcessEventError>;
+pub type ProcessEventResult = Result<usize, ProcessEventError>;
 
 impl From<bincode::Error> for ProcessEventError {
-    fn from(value: bincode::Error) -> Self {
+    fn from(_value: bincode::Error) -> Self {
         ProcessEventError::Serialization
     }
 }
 
 impl From<DBError> for ProcessEventError {
-    fn from(value: DBError) -> Self {
+    fn from(_value: DBError) -> Self {
         ProcessEventError::DatabaseAccess
     }
 }
@@ -50,6 +51,7 @@ pub async fn process_event(
 
     match quest_instances {
         Ok(quest_instances) => {
+            let mut event_applied_to_instances = 0;
             for quest_instance in quest_instances {
                 match process_event_for_quest_instance(&quest_instance, &event, database.clone())
                     .await
@@ -65,6 +67,7 @@ pub async fn process_event(
                             .await
                             .publish(&quest_instance.id, QuestUpdate { state: quest_state })
                             .await;
+                        event_applied_to_instances += 1;
                     }
                     Ok(ApplyEventResult::Ignored) => info!(
                         "Event for quest instance {} was ignored",
@@ -72,13 +75,13 @@ pub async fn process_event(
                     ),
                     Err(e) => {
                         info!(
-                            "Failed to process event for quest instance id: {}",
-                            quest_instance.id
+                            "Failed to process event for quest instance id: {} with err: {:?}",
+                            quest_instance.id, e
                         );
                     }
                 }
             }
-            Ok(())
+            Ok(event_applied_to_instances)
         }
         Err(_) => {
             info!(
@@ -110,12 +113,13 @@ async fn process_event_for_quest_instance(
 
     let last_events = database.get_events(&quest_instance.id).await?;
     let mut events = vec![];
-    for event in last_events {
-        events.push(bincode::deserialize::<Event>(&event.event)?);
+    for past_event in last_events {
+        events.push(bincode::deserialize::<Event>(&past_event.event)?);
     }
 
     let quest_graph = QuestGraph::from(&quest);
     let current_state = get_state(&quest, events);
+
     let new_state = current_state.apply_event(&quest_graph, event);
 
     Ok(if current_state == new_state {

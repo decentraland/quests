@@ -1,5 +1,5 @@
 use quests_db::{core::definitions::*, create_quests_db_component};
-use quests_definitions::quests::{*, Event};
+use quests_definitions::quests::{Event, *};
 use quests_system::{configuration::Config, EventProcessor};
 
 use crate::common::database::create_test_db;
@@ -107,7 +107,14 @@ async fn can_process_events() {
     let process_event = quests_system::process(&event_processor)
         .await
         .expect("can process event");
-    let _ = process_event.await;
+    let result = process_event.await;
+
+    match result {
+        Ok(Ok(result)) => {
+            assert_eq!(result, 1);
+        }
+        _ => panic!("Couldn't process event"),
+    }
 
     let events = db
         .get_events(&quest_instance_id)

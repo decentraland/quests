@@ -142,9 +142,9 @@ async fn delete_quest_controller<DB: QuestsDatabase>(
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct StartQuest {
-    user_address: String,
-    quest_id: String,
+pub struct StartQuest {
+    pub user_address: String,
+    pub quest_id: String,
 }
 
 #[post("/quests/instances")]
@@ -153,22 +153,30 @@ async fn start_quest(
     start_quest: web::Json<StartQuest>,
 ) -> HttpResponse {
     let db = data.into_inner();
+    let start_quest = start_quest.into_inner();
 
-    match db
-        .start_quest(&start_quest.quest_id, &start_quest.user_address)
-        .await
-    {
+    match start_quest_controller(db, start_quest).await {
         Ok(quest_instance_id) => HttpResponse::Ok().json(quest_instance_id),
-        Err(error) => match error {
-            DBError::NotUUID => HttpResponse::from_error(QuestError::CommonError(
-                CommonError::BadRequest("the ID given is not a valid".to_string()),
-            )),
-            DBError::RowNotFound => {
-                HttpResponse::from_error(QuestError::CommonError(CommonError::NotFound))
-            }
-            _ => HttpResponse::from_error(QuestError::CommonError(CommonError::Unknown)),
-        },
+        Err(err) => HttpResponse::from_error(err),
     }
+}
+
+async fn start_quest_controller<DB: QuestsDatabase>(
+    db: Arc<DB>,
+    start_quest_request: StartQuest,
+) -> Result<String, QuestError> {
+    db.start_quest(
+        &start_quest_request.quest_id,
+        &start_quest_request.user_address,
+    )
+    .await
+    .map_err(|error| match error {
+        DBError::NotUUID => QuestError::CommonError(CommonError::BadRequest(
+            "the ID given is not a valid".to_string(),
+        )),
+        DBError::RowNotFound => QuestError::CommonError(CommonError::NotFound),
+        _ => QuestError::CommonError(CommonError::Unknown),
+    })
 }
 
 #[get("/quests/{quest_id}")]

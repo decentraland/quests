@@ -1,3 +1,5 @@
+pub mod quest_samples;
+
 use actix_web::body::MessageBody;
 use actix_web::dev::ServiceFactory;
 use actix_web::web::Data;
@@ -33,7 +35,11 @@ pub async fn build_app(
 
     let redis = create_events_queue(&config.redis_url).await;
 
-    get_app_router(&Data::new(config.clone()), &Data::new(db), &Data::new(redis))
+    get_app_router(
+        &Data::new(config.clone()),
+        &Data::new(db),
+        &Data::new(redis),
+    )
 }
 
 pub async fn create_test_db(db_url: &str) -> String {

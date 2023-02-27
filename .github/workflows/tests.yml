@@ -35,18 +35,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: Swatinem/rust-cache@v1.3.0
-      - name: Build
-        run: cargo build --verbose
-      - name: Test quests_definitions
-        run: cargo test --package quests_definitions --verbose
-      - name: Test quests_server
-        run: cargo test --package quests_server --verbose
+      - name: Run tests 
+        run: cargo test --verbose
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
           REDIS_URL: localhost:6379
-      - name: Test quests_db
-        run: cargo test --package quests_db --verbose
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
-      - name: Test quests_message_broker
-        run: cargo test --package quests_message_broker --verbose
+

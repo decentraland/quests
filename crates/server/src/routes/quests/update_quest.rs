@@ -3,12 +3,11 @@ use std::sync::Arc;
 use actix_web::{put, web, HttpResponse};
 use quests_db::{
     core::definitions::{QuestsDatabase, UpdateQuest},
-    core::errors::DBError,
     Database,
 };
 use quests_definitions::quests::Quest;
 
-use crate::routes::errors::{CommonError, QuestError};
+use crate::routes::errors::QuestError;
 
 #[put("/quests/{quest_id}")]
 pub async fn update_quest(
@@ -30,23 +29,19 @@ async fn update_quest_controller<DB: QuestsDatabase>(
     quest: Quest,
 ) -> Result<Quest, QuestError> {
     match quest.is_valid() {
-        Ok(_) => {
-            let update = UpdateQuest {
-                name: &quest.name,
-                description: &quest.description,
-                definition: bincode::serialize(&quest.definition).unwrap(),
-            };
-            match db.update_quest(&id, &update).await {
-                Ok(_) => Ok(quest),
-                Err(error) => match error {
-                    DBError::NotUUID => Err(QuestError::CommonError(CommonError::BadRequest(
-                        "the ID given is not a valid".to_string(),
-                    ))),
-                    DBError::RowNotFound => Err(QuestError::CommonError(CommonError::NotFound)),
-                    _ => Err(QuestError::CommonError(CommonError::NotFound)),
-                },
-            }
-        }
+        Ok(_) => db
+            .update_quest(&id, &to_update_quest(&quest)?)
+            .await
+            .map(|_| quest)
+            .map_err(|error| error.into()),
         Err(error) => Err(QuestError::QuestValidation(error.to_string())),
     }
+}
+
+fn to_update_quest(quest: &Quest) -> Result<UpdateQuest, QuestError> {
+    Ok(UpdateQuest {
+        name: &quest.name,
+        description: &quest.description,
+        definition: bincode::serialize(&quest.definition)?,
+    })
 }

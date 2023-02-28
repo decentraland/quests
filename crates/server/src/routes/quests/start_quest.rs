@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use actix_web::{post, web, HttpResponse};
-use log::info;
-use quests_db::{core::definitions::QuestsDatabase, core::errors::DBError, Database};
+use quests_db::{core::definitions::QuestsDatabase, Database};
 use serde::{Deserialize, Serialize};
 
-use crate::routes::errors::{CommonError, QuestError};
+use crate::routes::errors::QuestError;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StartQuest {
@@ -31,28 +30,14 @@ async fn start_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     start_quest_request: StartQuest,
 ) -> Result<String, QuestError> {
-    let result = db.get_quest(&start_quest_request.quest_id).await;
-
-    match result {
-        Err(DBError::RowNotFound) => return Err(QuestError::CommonError(CommonError::NotFound)),
-        Err(_) => return Err(QuestError::CommonError(CommonError::Unknown)),
-        _ => info!("Quest found, can start it"),
-    }
+    db.get_quest(&start_quest_request.quest_id)
+        .await
+        .map_err(|err| -> QuestError { err.into() })?;
 
     db.start_quest(
         &start_quest_request.quest_id,
         &start_quest_request.user_address,
     )
     .await
-    .map_err(|error| {
-        println!("Error while starting quest: {:?}", error);
-        match error {
-            DBError::NotUUID => QuestError::CommonError(CommonError::BadRequest(
-                "the ID given is not a valid".to_string(),
-            )),
-            DBError::RowNotFound => QuestError::CommonError(CommonError::NotFound),
-
-            _ => QuestError::CommonError(CommonError::Unknown),
-        }
-    })
+    .map_err(|error| error.into())
 }

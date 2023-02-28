@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use actix_web::{delete, web, HttpResponse};
-use quests_db::{core::definitions::QuestsDatabase, core::errors::DBError, Database};
+use quests_db::{core::definitions::QuestsDatabase, Database};
 
 use crate::routes::errors::CommonError;
 
@@ -18,14 +18,8 @@ async fn delete_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     id: String,
 ) -> Result<(), CommonError> {
-    match db.delete_quest(&id).await {
-        Ok(_) => Ok(()),
-        Err(error) => match error {
-            DBError::NotUUID => Err(CommonError::BadRequest(
-                "the ID given is not a valid".to_string(),
-            )),
-            DBError::RowNotFound => Err(CommonError::NotFound),
-            _ => Err(CommonError::Unknown),
-        },
-    }
+    db.delete_quest(&id)
+        .await
+        .map(|_| ())
+        .map_err(|error| error.into())
 }

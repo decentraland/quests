@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
 use actix_web::{get, web, HttpResponse};
-use quests_db::{core::definitions::QuestsDatabase, core::errors::DBError, Database};
-use quests_definitions::quests::{Quest, QuestDefinition};
+use quests_db::{
+    core::definitions::{QuestsDatabase, StoredQuest},
+    Database,
+};
+use quests_definitions::quests::Quest;
 
-use crate::routes::errors::{CommonError, QuestError};
+use crate::routes::errors::QuestError;
 
 #[get("/quests/{quest_id}")]
 pub async fn get_quest(data: web::Data<Database>, quest_id: web::Path<String>) -> HttpResponse {
@@ -19,27 +22,16 @@ async fn get_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     id: String,
 ) -> Result<Quest, QuestError> {
-    match db.get_quest(&id).await {
-        Ok(stored_quest) => {
-            let definition: QuestDefinition =
-                if let Ok(definition) = bincode::deserialize(&stored_quest.definition) {
-                    definition
-                } else {
-                    return Err(QuestError::StepsDeserialization);
-                };
-            let quest = Quest {
-                name: stored_quest.name,
-                description: stored_quest.description,
-                definition,
-            };
-            Ok(quest)
-        }
-        Err(error) => match error {
-            DBError::NotUUID => Err(QuestError::CommonError(CommonError::BadRequest(
-                "the ID given is not a valid".to_string(),
-            ))),
-            DBError::RowNotFound => Err(QuestError::CommonError(CommonError::NotFound)),
-            _ => Err(QuestError::CommonError(CommonError::Unknown)),
-        },
-    }
+    db.get_quest(&id)
+        .await
+        .map(|stored_quest| to_quest(&stored_quest))?
+}
+
+pub fn to_quest(stored_quest: &StoredQuest) -> Result<Quest, QuestError> {
+    let definition = bincode::deserialize(&stored_quest.definition)?;
+    Ok(Quest {
+        name: stored_quest.name.to_string(),
+        description: stored_quest.description.to_string(),
+        definition,
+    })
 }

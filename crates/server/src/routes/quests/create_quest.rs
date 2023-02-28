@@ -14,8 +14,7 @@ pub async fn create_quest(data: web::Data<Database>, quest: web::Json<Quest>) ->
     let db = data.into_inner();
     match create_quest_controller(db, quest.0).await {
         Ok(quest_id) => {
-            let mut response_body = HashMap::new();
-            response_body.insert("id", quest_id);
+            let response_body = HashMap::from([("id", quest_id)]);
             HttpResponse::Created().json(response_body)
         }
         Err(error) => HttpResponse::from_error(error),
@@ -26,17 +25,20 @@ async fn create_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     quest: Quest,
 ) -> Result<String, QuestError> {
-    match quest.is_valid() {
-        Ok(_) => {
-            let quest_creation = CreateQuest {
-                name: &quest.name,
-                description: &quest.description,
-                definition: bincode::serialize(&quest.definition).unwrap(),
-            };
-            db.create_quest(&quest_creation)
-                .await
-                .map_err(|_| QuestError::CommonError(CommonError::Unknown))
-        }
-        Err(error) => Err(QuestError::QuestValidation(error.to_string())),
-    }
+    quest
+        .is_valid()
+        .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
+
+    let quest_creation = to_create_quest(&quest)?;
+    db.create_quest(&quest_creation)
+        .await
+        .map_err(|_| QuestError::CommonError(CommonError::Unknown))
+}
+
+fn to_create_quest(quest: &Quest) -> Result<CreateQuest, QuestError> {
+    Ok(CreateQuest {
+        name: &quest.name,
+        description: &quest.description,
+        definition: bincode::serialize(&quest.definition)?,
+    })
 }

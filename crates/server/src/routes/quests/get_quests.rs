@@ -15,7 +15,14 @@ pub struct GetQuestsQuery {
     limit: Option<i64>,
 }
 
-#[utoipa::path()]
+#[utoipa::path(
+    responses(
+        (status = 200, description = "Quest Definition"),
+        (status = 400, description = "Bad Request"),
+        (status = 404, description = "Quest not found"),
+        (status = 500, description = "Internal Server Error")
+    )
+)]
 #[get("/quests")]
 pub async fn get_quests(
     db: web::Data<Database>,

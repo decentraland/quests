@@ -9,7 +9,8 @@ use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
 
 #[utoipa::path(
     responses(
-        (status = 202, description = "Event accepted")
+        (status = 202, description = "Event accepted"),
+        (status = 400, description = "Bad Request")
     )
 )]
 #[put("/events")]

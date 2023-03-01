@@ -7,6 +7,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(OpenApi)]
 #[openapi(
+        info(title = "Quests API", description = "Quests API for content creators and progress tracking"),
         paths(
             health::live,
             quests::get_quest,
@@ -20,7 +21,7 @@ use utoipa_swagger_ui::SwaggerUi;
             events::add_event,
         ),
         components(
-            schemas()
+            schemas() // TODO: use schemas for better types
         ),
         tags(
             (name = "quests", description = "Quests endpoints."),

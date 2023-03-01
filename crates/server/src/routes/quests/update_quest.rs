@@ -9,7 +9,14 @@ use quests_definitions::quests::Quest;
 
 use crate::routes::errors::QuestError;
 
-#[utoipa::path()]
+#[utoipa::path(
+    responses(
+        (status = 200, description = "Quest updated"),
+        (status = 400, description = "Bad Request"),
+        (status = 404, description = "Quest not found"),
+        (status = 500, description = "Internal Server Error")
+    )
+)]
 #[put("/quests/{quest_id}")]
 pub async fn update_quest(
     data: web::Data<Database>,

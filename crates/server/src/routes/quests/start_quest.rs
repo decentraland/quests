@@ -12,7 +12,14 @@ pub struct StartQuest {
     pub quest_id: String,
 }
 
-#[utoipa::path()]
+#[utoipa::path(
+    responses(
+        (status = 200, description = "Quest started"),
+        (status = 400, description = "Bad Request"),
+        (status = 404, description = "Quest not found"),
+        (status = 500, description = "Internal Server Error")
+    )
+)]
 #[post("/quests/instances")]
 async fn start_quest(
     data: web::Data<Database>,

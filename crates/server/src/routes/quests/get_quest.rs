@@ -18,7 +18,9 @@ pub struct GetQuestResponse {
 
 #[utoipa::path(
     responses(
-        (status = 200, description = "Quest definition", body = [GetQuestResponse])
+        (status = 200, description = "Quest definition", body = [GetQuestResponse]),
+        (status = 404, description = "Quest not found", body = [GetQuestResponse]),
+        (status = 500, description = "Internal Server Error", body = [GetQuestResponse])
     )
 )]
 #[get("/quests/{quest_id}")]

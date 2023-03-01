@@ -9,14 +9,14 @@ mod get_quests;
 mod start_quest;
 mod update_quest;
 
-use create_quest::*;
-use delete_quest::*;
-use get_quest::*;
-use get_quest_state::*;
-use get_quest_stats::*;
-use get_quests::*;
+pub use create_quest::*;
+pub use delete_quest::*;
+pub use get_quest::*;
+pub use get_quest_state::*;
+pub use get_quest_stats::*;
+pub use get_quests::*;
 pub use start_quest::*;
-use update_quest::*;
+pub use update_quest::*;
 
 pub fn services(config: &mut ServiceConfig) {
     config

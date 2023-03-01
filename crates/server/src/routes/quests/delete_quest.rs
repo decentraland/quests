@@ -5,6 +5,7 @@ use quests_db::{core::definitions::QuestsDatabase, Database};
 
 use crate::routes::errors::CommonError;
 
+#[utoipa::path()]
 #[delete("/quests/{quest_id}")]
 pub async fn delete_quest(data: web::Data<Database>, quest_id: web::Path<String>) -> HttpResponse {
     let db = data.into_inner();

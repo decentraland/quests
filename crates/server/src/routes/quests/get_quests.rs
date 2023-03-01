@@ -15,6 +15,7 @@ pub struct GetQuestsQuery {
     limit: Option<i64>,
 }
 
+#[utoipa::path()]
 #[get("/quests")]
 pub async fn get_quests(
     db: web::Data<Database>,

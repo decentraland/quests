@@ -8,6 +8,7 @@ use crate::routes::errors::{CommonError, QuestError};
 
 use super::get_quest::to_quest;
 
+#[utoipa::path()]
 #[get("/quests/instances/{quest_instance_id}")]
 pub async fn get_quest_state(
     data: web::Data<Database>,

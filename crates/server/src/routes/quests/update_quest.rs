@@ -9,6 +9,7 @@ use quests_definitions::quests::Quest;
 
 use crate::routes::errors::QuestError;
 
+#[utoipa::path()]
 #[put("/quests/{quest_id}")]
 pub async fn update_quest(
     data: web::Data<Database>,

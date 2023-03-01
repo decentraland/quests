@@ -6,14 +6,26 @@ use quests_db::{
     Database,
 };
 use quests_definitions::quests::Quest;
+use serde::Serialize;
+use utoipa::ToSchema;
 
 use crate::routes::errors::QuestError;
 
+#[derive(Serialize, ToSchema)]
+pub struct GetQuestResponse {
+    pub quest: Quest,
+}
+
+#[utoipa::path(
+    responses(
+        (status = 200, description = "Quest definition", body = [GetQuestResponse])
+    )
+)]
 #[get("/quests/{quest_id}")]
 pub async fn get_quest(data: web::Data<Database>, quest_id: web::Path<String>) -> HttpResponse {
     let db = data.into_inner();
     match get_quest_controller(db, quest_id.into_inner()).await {
-        Ok(quest) => HttpResponse::Ok().json(quest),
+        Ok(quest) => HttpResponse::Ok().json(GetQuestResponse { quest }),
         Err(err) => HttpResponse::from_error(err),
     }
 }

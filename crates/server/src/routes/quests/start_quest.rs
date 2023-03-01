@@ -12,6 +12,7 @@ pub struct StartQuest {
     pub quest_id: String,
 }
 
+#[utoipa::path()]
 #[post("/quests/instances")]
 async fn start_quest(
     data: web::Data<Database>,

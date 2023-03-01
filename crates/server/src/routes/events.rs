@@ -7,6 +7,11 @@ use actix_web::{
 use quests_definitions::quests::Event;
 use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
 
+#[utoipa::path(
+    responses(
+        (status = 202, description = "Event accepted")
+    )
+)]
 #[put("/events")]
 async fn add_event(data: web::Data<RedisEventsQueue>, event: web::Json<Event>) -> HttpResponse {
     let events_queue = data.into_inner();

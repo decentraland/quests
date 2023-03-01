@@ -9,6 +9,7 @@ use quests_definitions::quests::Quest;
 
 use crate::routes::errors::{CommonError, QuestError};
 
+#[utoipa::path()]
 #[post("/quests")]
 pub async fn create_quest(data: web::Data<Database>, quest: web::Json<Quest>) -> HttpResponse {
     let db = data.into_inner();

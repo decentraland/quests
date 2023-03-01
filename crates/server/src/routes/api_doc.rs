@@ -31,6 +31,7 @@ use utoipa_swagger_ui::SwaggerUi;
                         quests::start_quest::StartQuestResponse,
                         quests::update_quest::UpdateQuestRequest,
                         quests::update_quest::UpdateQuestResponse,
+                        events::AddEventResponse,
                 )
         ),
         tags(

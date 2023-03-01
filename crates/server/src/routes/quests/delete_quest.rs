@@ -6,6 +6,9 @@ use quests_db::{core::definitions::QuestsDatabase, Database};
 use crate::routes::errors::CommonError;
 
 #[utoipa::path(
+    params(
+        ("quest_id" = String, description = "ID of the quest to delete")
+    ),
     responses(
         (status = 202, description = "Quest deactivated"),
         (status = 400, description = "Bad Request"),

@@ -9,19 +9,29 @@ use utoipa_swagger_ui::SwaggerUi;
 #[openapi(
         info(title = "Quests API", description = "Quests API for content creators and progress tracking"),
         paths(
-            health::live,
-            quests::get_quest,
-            quests::get_quests,
-            quests::get_quest_state,
-            quests::get_quest_stats,
-            quests::start_quest,
-            quests::update_quest,
-            quests::create_quest,
-            quests::delete_quest,
-            events::add_event,
+                health::live,
+                quests::get_quest,
+                quests::get_quests,
+                quests::get_quest_state,
+                quests::get_quest_stats,
+                quests::start_quest,
+                quests::update_quest,
+                quests::create_quest,
+                quests::delete_quest,
+                events::add_event,
         ),
         components(
-            schemas() // TODO: use schemas for better types
+                schemas(
+                        quests::create_quest::CreateQuestRequest,
+                        quests::create_quest::CreateQuestResponse,
+                        quests::get_quest::GetQuestResponse,
+                        quests::get_quest_state::GetQuestStateResponse,
+                        quests::get_quests::GetQuestsResponse,
+                        quests::start_quest::StartQuestRequest,
+                        quests::start_quest::StartQuestResponse,
+                        quests::update_quest::UpdateQuestRequest,
+                        quests::update_quest::UpdateQuestResponse,
+                )
         ),
         tags(
             (name = "quests", description = "Quests endpoints."),

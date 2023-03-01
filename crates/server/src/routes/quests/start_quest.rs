@@ -3,16 +3,23 @@ use std::sync::Arc;
 use actix_web::{post, web, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::routes::errors::QuestError;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct StartQuest {
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct StartQuestRequest {
     pub user_address: String,
     pub quest_id: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct StartQuestResponse {
+    pub quest_instance_id: String,
+}
+
 #[utoipa::path(
+    request_body = StartQuest,
     responses(
         (status = 200, description = "Quest started"),
         (status = 400, description = "Bad Request"),
@@ -23,20 +30,20 @@ pub struct StartQuest {
 #[post("/quests/instances")]
 async fn start_quest(
     data: web::Data<Database>,
-    start_quest: web::Json<StartQuest>,
+    start_quest: web::Json<StartQuestRequest>,
 ) -> HttpResponse {
     let db = data.into_inner();
     let start_quest = start_quest.into_inner();
 
     match start_quest_controller(db, start_quest).await {
-        Ok(quest_instance_id) => HttpResponse::Ok().json(quest_instance_id),
+        Ok(quest_instance_id) => HttpResponse::Ok().json(StartQuestResponse { quest_instance_id }),
         Err(err) => HttpResponse::from_error(err),
     }
 }
 
 async fn start_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
-    start_quest_request: StartQuest,
+    start_quest_request: StartQuestRequest,
 ) -> Result<String, QuestError> {
     db.get_quest(&start_quest_request.quest_id)
         .await

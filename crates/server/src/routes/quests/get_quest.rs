@@ -6,12 +6,20 @@ use quests_db::{
     Database,
 };
 use quests_definitions::quests::Quest;
+use serde::Serialize;
+use utoipa::ToSchema;
 
 use crate::routes::errors::QuestError;
 
+#[derive(Serialize, ToSchema)]
+pub struct GetQuestResponse(Quest);
+
 #[utoipa::path(
+    params(
+        ("quest_id" = String, description = "Quest ID")
+    ),
     responses(
-        (status = 200, description = "Quest definition"),
+        (status = 200, description = "Quest definition", body = [GetQuestResponse]),
         (status = 404, description = "Quest not found"),
         (status = 500, description = "Internal Server Error")
     )
@@ -20,7 +28,7 @@ use crate::routes::errors::QuestError;
 pub async fn get_quest(data: web::Data<Database>, quest_id: web::Path<String>) -> HttpResponse {
     let db = data.into_inner();
     match get_quest_controller(db, quest_id.into_inner()).await {
-        Ok(quest) => HttpResponse::Ok().json(quest),
+        Ok(quest) => HttpResponse::Ok().json(GetQuestResponse(quest)),
         Err(err) => HttpResponse::from_error(err),
     }
 }

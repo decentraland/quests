@@ -3,14 +3,22 @@ use std::sync::Arc;
 use actix_web::{get, web, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
 use quests_definitions::quest_state::{get_state, QuestState};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::routes::errors::{CommonError, QuestError};
 
 use super::get_quest::to_quest;
 
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct GetQuestStateResponse(QuestState);
+
 #[utoipa::path(
+    params(
+        ("quest_instance_id" = String, description = "Quest Instance ID")
+    ),
     responses(
-        (status = 200, description = "Quest State"),
+        (status = 200, description = "Quest State", body = [GetQuestStateResponse]),
         (status = 400, description = "Bad Request"),
         (status = 404, description = "Quest not found"),
         (status = 500, description = "Internal Server Error")
@@ -23,7 +31,7 @@ pub async fn get_quest_state(
 ) -> HttpResponse {
     let db = data.into_inner();
     match get_quest_state_controller(db, quest_instance_id.into_inner()).await {
-        Ok(quest_state) => HttpResponse::Ok().json(quest_state),
+        Ok(quest_state) => HttpResponse::Ok().json(GetQuestStateResponse(quest_state)),
         Err(err) => HttpResponse::from_error(err),
     }
 }

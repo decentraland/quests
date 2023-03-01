@@ -1839,6 +1839,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "config",
+ "derive_more",
  "env_logger",
  "futures-util",
  "log",

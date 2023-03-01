@@ -1,13 +1,13 @@
 use actix_web::web::ServiceConfig;
 
-mod create_quest;
-mod delete_quest;
-mod get_quest;
-mod get_quest_state;
-mod get_quest_stats;
-mod get_quests;
-mod start_quest;
-mod update_quest;
+pub mod create_quest;
+pub mod delete_quest;
+pub mod get_quest;
+pub mod get_quest_state;
+pub mod get_quest_stats;
+pub mod get_quests;
+pub mod start_quest;
+pub mod update_quest;
 
 pub use create_quest::*;
 pub use delete_quest::*;

@@ -1,15 +1,28 @@
 use std::sync::Arc;
 
 use actix_web::{put, web, HttpResponse};
+use derive_more::Deref;
 use quests_db::{
     core::definitions::{QuestsDatabase, UpdateQuest},
     Database,
 };
 use quests_definitions::quests::Quest;
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::routes::errors::QuestError;
 
+#[derive(Serialize, Deserialize, Debug, ToSchema, Deref)]
+pub struct UpdateQuestRequest(Quest);
+
+#[derive(Serialize, Deserialize, Debug, ToSchema, Deref)]
+pub struct UpdateQuestResponse(Quest);
+
 #[utoipa::path(
+    request_body = UpdateQuestRequest,
+    params(
+        ("quest_id" = String, Path, description = "Quest ID")    
+    ),
     responses(
         (status = 200, description = "Quest updated"),
         (status = 400, description = "Bad Request"),
@@ -21,12 +34,12 @@ use crate::routes::errors::QuestError;
 pub async fn update_quest(
     data: web::Data<Database>,
     quest_id: web::Path<String>,
-    quest_update: web::Json<Quest>,
+    quest_update: web::Json<UpdateQuestRequest>,
 ) -> HttpResponse {
     let db = data.into_inner();
     let quest_id = quest_id.into_inner();
-    match update_quest_controller(db, quest_id, quest_update.0).await {
-        Ok(quest) => HttpResponse::Ok().json(quest),
+    match update_quest_controller(db, quest_id, quest_update.0 .0).await {
+        Ok(quest) => HttpResponse::Ok().json(UpdateQuestResponse(quest)),
         Err(error) => HttpResponse::from_error(error),
     }
 }

@@ -5,19 +5,26 @@ use quests_db::{
     core::definitions::{QuestsDatabase, StoredQuest},
     Database,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
 use crate::routes::errors::CommonError;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct GetQuestsQuery {
     offset: Option<i64>,
     limit: Option<i64>,
 }
 
+#[derive(Serialize, ToSchema)]
+pub struct GetQuestsResponse(Vec<StoredQuest>);
+
 #[utoipa::path(
+    params(
+        ("query" = GetQuestsQuery, Query, description = "Offset and limit params")
+    ),
     responses(
-        (status = 200, description = "Quest Definition"),
+        (status = 200, description = "Quest Definition", body = [GetQuestsResponse]),
         (status = 400, description = "Bad Request"),
         (status = 404, description = "Quest not found"),
         (status = 500, description = "Internal Server Error")
@@ -30,7 +37,7 @@ pub async fn get_quests(
 ) -> HttpResponse {
     let db = db.into_inner();
     match get_quests_controller(db, query.offset.unwrap_or(0), query.limit.unwrap_or(50)).await {
-        Ok(quests) => HttpResponse::Ok().json(quests),
+        Ok(quests) => HttpResponse::Ok().json(GetQuestsResponse(quests)),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }

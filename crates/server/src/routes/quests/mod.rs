@@ -26,6 +26,6 @@ pub fn services(config: &mut ServiceConfig) {
         .service(delete_quest)
         .service(start_quest)
         .service(get_quest)
-        .service(get_quest_state)
+        .service(get_quest_instance_state)
         .service(get_quest_stats);
 }

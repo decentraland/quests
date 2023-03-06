@@ -1,3 +1,5 @@
+use crate::middlewares::initialize_telemetry;
+use crate::routes::query_extractor_config;
 use actix_web::{
     body::MessageBody,
     dev::{Server, ServiceFactory},
@@ -13,13 +15,9 @@ pub mod configuration;
 mod middlewares;
 pub mod routes;
 
-use crate::routes::query_extractor_config;
-
-use crate::middlewares::init_telemetry;
-
 pub async fn run_server() -> Result<Server, std::io::Error> {
     initialize_logger();
-    init_telemetry();
+    initialize_telemetry();
 
     let config = configuration::Config::new().expect("Unable to build up the config");
     let quests_database = create_quests_db_component(&config.database_url)

@@ -25,18 +25,18 @@ pub struct GetQuestStateResponse(QuestState);
     )
 )]
 #[get("/quests/instances/{quest_instance_id}")]
-pub async fn get_quest_state(
+pub async fn get_quest_instance_state(
     data: web::Data<Database>,
     quest_instance_id: web::Path<String>,
 ) -> HttpResponse {
     let db = data.into_inner();
-    match get_quest_state_controller(db, quest_instance_id.into_inner()).await {
+    match get_quest_instance_state_controller(db, quest_instance_id.into_inner()).await {
         Ok(quest_state) => HttpResponse::Ok().json(GetQuestStateResponse(quest_state)),
         Err(err) => HttpResponse::from_error(err),
     }
 }
 
-async fn get_quest_state_controller<DB: QuestsDatabase>(
+async fn get_quest_instance_state_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     id: String,
 ) -> Result<QuestState, QuestError> {

@@ -39,14 +39,20 @@ async fn get_quest_controller<DB: QuestsDatabase>(
 ) -> Result<Quest, QuestError> {
     db.get_quest(&id)
         .await
-        .map(|stored_quest| to_quest(&stored_quest))?
+        .map(|stored_quest| stored_quest.to_quest())?
 }
 
-pub fn to_quest(stored_quest: &StoredQuest) -> Result<Quest, QuestError> {
-    let definition = bincode::deserialize(&stored_quest.definition)?;
-    Ok(Quest {
-        name: stored_quest.name.to_string(),
-        description: stored_quest.description.to_string(),
-        definition,
-    })
+trait ToQuest {
+    fn to_quest(&self) -> Result<Quest, QuestError>;
+}
+
+impl ToQuest for StoredQuest {
+    fn to_quest(&self) -> Result<Quest, QuestError> {
+        let definition = bincode::deserialize(&self.definition)?;
+        Ok(Quest {
+            name: self.name.to_string(),
+            description: self.description.to_string(),
+            definition,
+        })
+    }
 }

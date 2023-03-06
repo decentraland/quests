@@ -12,7 +12,7 @@ use utoipa_swagger_ui::SwaggerUi;
                 health::live,
                 quests::get_quest,
                 quests::get_quests,
-                quests::get_quest_state,
+                quests::get_quest_instance_state,
                 quests::get_quest_stats,
                 quests::start_quest,
                 quests::update_quest,

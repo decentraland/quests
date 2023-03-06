@@ -6,9 +6,9 @@ use quests_definitions::quest_state::{get_state, QuestState};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::routes::errors::{CommonError, QuestError};
+use crate::api::routes::errors::{CommonError, QuestError};
 
-use super::get_quest::to_quest;
+use super::types::ToQuest;
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestStateResponse(QuestState);
@@ -45,7 +45,7 @@ async fn get_quest_instance_state_controller<DB: QuestsDatabase>(
             let quest = db.get_quest(&quest_instance.quest_id).await;
             match quest {
                 Ok(stored_quest) => {
-                    let quest = to_quest(&stored_quest)?;
+                    let quest = stored_quest.to_quest()?;
                     let stored_events = db.get_events(&quest_instance.id).await?;
 
                     let events = stored_events

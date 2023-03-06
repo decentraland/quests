@@ -5,7 +5,7 @@ use quests_db::{core::definitions::QuestsDatabase, Database};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::routes::errors::QuestError;
+use crate::api::routes::errors::QuestError;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct StartQuestRequest {

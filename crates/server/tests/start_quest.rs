@@ -4,7 +4,7 @@ use actix_web::test::*;
 use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_server::routes::quests::StartQuestRequest;
+use quests_server::api::routes::quests::StartQuestRequest;
 use uuid::Uuid;
 
 #[actix_web::test]

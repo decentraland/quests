@@ -1,7 +1,7 @@
 mod common;
 use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 pub use common::*;
-use quests_server::routes::ErrorResponse;
+use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
 async fn get_quests_should_be_200() {

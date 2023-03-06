@@ -3,7 +3,7 @@ use std::sync::Arc;
 use actix_web::{delete, web, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
 
-use crate::routes::errors::CommonError;
+use crate::api::routes::errors::CommonError;
 
 #[utoipa::path(
     params(

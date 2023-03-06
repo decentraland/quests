@@ -9,7 +9,7 @@ use quests_db::{
     create_quests_db_component,
 };
 use quests_definitions::{quest_graph::QuestGraph, quest_state::QuestState};
-use quests_server::routes::quests::{StartQuestRequest, StartQuestResponse};
+use quests_server::api::routes::quests::{StartQuestRequest, StartQuestResponse};
 use uuid::Uuid;
 
 #[actix_web::test]

@@ -7,6 +7,7 @@ pub mod get_quest_state;
 pub mod get_quest_stats;
 pub mod get_quests;
 pub mod start_quest;
+pub mod types;
 pub mod update_quest;
 
 pub use create_quest::*;

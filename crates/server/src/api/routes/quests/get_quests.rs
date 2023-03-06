@@ -8,7 +8,7 @@ use quests_db::{
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use crate::routes::errors::CommonError;
+use crate::api::routes::errors::CommonError;
 
 #[derive(Deserialize, IntoParams)]
 pub struct GetQuestsQuery {

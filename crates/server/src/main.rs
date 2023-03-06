@@ -1,4 +1,4 @@
-use quests_server::run_server;
+use quests_server::api::run_server;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

@@ -7,8 +7,8 @@ use actix_web::App;
 use quests_db::core::ops::{Connect, GetConnection, Migrate};
 use quests_db::{create_quests_db_component, DatabaseOptions, Executor};
 use quests_message_broker::create_events_queue;
+use quests_server::api::get_app_router;
 use quests_server::configuration::Config;
-use quests_server::get_app_router;
 
 pub async fn get_configuration() -> Config {
     let mut config = Config::new().expect("Couldn't read the configuration file");

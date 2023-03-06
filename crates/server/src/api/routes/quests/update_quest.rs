@@ -2,15 +2,14 @@ use std::sync::Arc;
 
 use actix_web::{put, web, HttpResponse};
 use derive_more::Deref;
-use quests_db::{
-    core::definitions::{QuestsDatabase, UpdateQuest},
-    Database,
-};
+use quests_db::{core::definitions::QuestsDatabase, Database};
 use quests_definitions::quests::Quest;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::routes::errors::QuestError;
+use crate::api::routes::errors::QuestError;
+
+use super::types::ToUpdateQuest;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Deref)]
 pub struct UpdateQuestRequest(Quest);
@@ -51,18 +50,10 @@ async fn update_quest_controller<DB: QuestsDatabase>(
 ) -> Result<Quest, QuestError> {
     match quest.is_valid() {
         Ok(_) => db
-            .update_quest(&id, &to_update_quest(&quest)?)
+            .update_quest(&id, &quest.to_update_quest()?)
             .await
             .map(|_| quest)
             .map_err(|error| error.into()),
         Err(error) => Err(QuestError::QuestValidation(error.to_string())),
     }
-}
-
-fn to_update_quest(quest: &Quest) -> Result<UpdateQuest, QuestError> {
-    Ok(UpdateQuest {
-        name: &quest.name,
-        description: &quest.description,
-        definition: bincode::serialize(&quest.definition)?,
-    })
 }

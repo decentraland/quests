@@ -9,7 +9,7 @@ use quests_db::{
     create_quests_db_component,
 };
 use quests_definitions::{quest_graph::QuestGraph, quest_state::QuestState};
-use quests_server::routes::quests::StartQuest;
+use quests_server::api::routes::quests::{StartQuestRequest, StartQuestResponse};
 use uuid::Uuid;
 
 #[actix_web::test]
@@ -31,7 +31,7 @@ async fn get_quest_state_should_be_200() {
 
     let id = db.create_quest(&create_quest).await.unwrap();
 
-    let start_quest = StartQuest {
+    let start_quest = StartQuestRequest {
         quest_id: id,
         user_address: "0xA".to_string(),
     };
@@ -44,7 +44,8 @@ async fn get_quest_state_should_be_200() {
     let response = call_service(&app, req).await;
     assert!(response.status().is_success());
 
-    let quest_instance_id: String = read_body_json(response).await;
+    let response: StartQuestResponse = read_body_json(response).await;
+    let quest_instance_id = response.quest_instance_id;
 
     let req = TestRequest::get()
         .uri(&format!("/quests/instances/{quest_instance_id}"))

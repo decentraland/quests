@@ -4,7 +4,7 @@ use actix_web::test::*;
 use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_server::routes::quests::StartQuest;
+use quests_server::api::routes::quests::StartQuestRequest;
 use uuid::Uuid;
 
 #[actix_web::test]
@@ -26,7 +26,7 @@ async fn start_quest_should_be_200() {
 
     let id = db.create_quest(&create_quest).await.unwrap();
 
-    let start_quest = StartQuest {
+    let start_quest = StartQuestRequest {
         quest_id: id,
         user_address: "0xA".to_string(),
     };
@@ -48,7 +48,7 @@ async fn start_quest_should_be_404() {
 
     let uuid = Uuid::new_v4().to_string();
 
-    let start_quest = StartQuest {
+    let start_quest = StartQuestRequest {
         quest_id: uuid,
         user_address: "0xA".to_string(),
     };

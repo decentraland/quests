@@ -1,7 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use thiserror::Error;
-
-use serde::{Deserialize, Serialize};
 
 pub const START_STEP_ID: &str = "_START_";
 pub const END_STEP_ID: &str = "_END_";

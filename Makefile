@@ -66,4 +66,4 @@ endif
 
 run-server:
 	@make runservices
-	@$(CARGO_RUN)
+	@$(CARGO_RUN_SERVER)

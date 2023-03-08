@@ -5,7 +5,7 @@ use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{EnvFilter, Registry};
 
-pub fn init_telemetry() {
+pub fn initialize_telemetry() {
     let app_name = "quests";
     // Start a new Jaeger trace pipeline.
     // Spans are exported in batch - recommended setup for a production application.

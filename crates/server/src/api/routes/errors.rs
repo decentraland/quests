@@ -1,4 +1,5 @@
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
+use quests_db::core::errors::DBError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -70,4 +71,32 @@ impl ResponseError for QuestError {
 pub fn query_extractor_config() -> web::QueryConfig {
     web::QueryConfig::default()
         .error_handler(|err, _| CommonError::BadRequest(err.to_string()).into())
+}
+
+impl From<bincode::Error> for QuestError {
+    fn from(_value: bincode::Error) -> Self {
+        QuestError::StepsDeserialization
+    }
+}
+
+impl From<DBError> for QuestError {
+    fn from(error: DBError) -> Self {
+        match error {
+            DBError::NotUUID => QuestError::CommonError(CommonError::BadRequest(
+                "the ID given is not a valid".to_string(),
+            )),
+            DBError::RowNotFound => QuestError::CommonError(CommonError::NotFound),
+            _ => QuestError::CommonError(CommonError::Unknown),
+        }
+    }
+}
+
+impl From<DBError> for CommonError {
+    fn from(error: DBError) -> Self {
+        match error {
+            DBError::NotUUID => CommonError::BadRequest("the ID given is not a valid".to_string()),
+            DBError::RowNotFound => CommonError::NotFound,
+            _ => CommonError::Unknown,
+        }
+    }
 }

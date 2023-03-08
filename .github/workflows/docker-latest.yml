@@ -1,0 +1,29 @@
+name: Publish Latest Docker image
+
+on:
+  release:
+    types: [published]
+  push:
+    branches: [main]
+
+jobs:
+  publish_server:
+    uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
+    with:
+      service-name: quests-server
+      deployment-environment: dev prd
+      build-args: PROJECT=quests_server
+      layers: true
+    secrets:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+  publish_system:
+    uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
+    with:
+      service-name: quests-system 
+      deployment-environment: dev prd
+      build-args: PROJECT=quests_system
+      layers: true
+    secrets:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}

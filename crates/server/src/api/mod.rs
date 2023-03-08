@@ -28,8 +28,6 @@ pub async fn run_server() -> Result<Server, std::io::Error> {
     // Create events queue
     let events_queue = create_events_queue(&config.redis_url).await;
 
-    log::info!("App Config:  {:?}", config);
-
     let server_address = format!("0.0.0.0:{}", config.server_port);
 
     let config_app_data = Data::new(config);

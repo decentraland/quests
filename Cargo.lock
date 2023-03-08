@@ -1818,14 +1818,11 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bincode",
- "config",
  "deadpool-redis",
  "futures-util",
  "log",
- "quests_db",
  "quests_definitions",
  "serde",
- "serde_json",
  "tokio",
 ]
 

@@ -9,9 +9,6 @@ async-trait = "0.1.57"
 deadpool-redis = "0.11.0"
 log = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
-config = { workspace = true }
 tokio = { version = "1", features = ["full"] }
-quests_db = { path = "../db" }
 futures-util = "0.3.26"
 bincode = { workspace = true }

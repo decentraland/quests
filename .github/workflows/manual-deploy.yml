@@ -25,7 +25,7 @@ jobs:
     environment: ${{ inputs.deployment-environment }}
     steps:
       - name: Trigger Quests Server deployment
-        id: deploy
+        id: deploy-server
         uses: decentraland/dcl-deploy-action@main
         with:
           dockerImage: "quay.io/decentraland/quests-server:${{ inputs.tag }}"
@@ -33,7 +33,7 @@ jobs:
           env: ${{ inputs.deployment-environment }}
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Trigger Quests System deployment
-        id: deploy
+        id: deploy-system
         uses: decentraland/dcl-deploy-action@main
         with:
           dockerImage: "quay.io/decentraland/quests-system:${{ inputs.tag }}"

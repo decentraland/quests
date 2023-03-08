@@ -11,7 +11,6 @@ jobs:
     uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
     with:
       service-name: quests-server
-      deployment-environment: dev prd
       build-args: PROJECT=quests_server
       layers: true
     secrets:
@@ -21,7 +20,6 @@ jobs:
     uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
     with:
       service-name: quests-system 
-      deployment-environment: dev prd
       build-args: PROJECT=quests_system
       layers: true
     secrets:

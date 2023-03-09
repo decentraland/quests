@@ -5,7 +5,7 @@ use actix_web::{get, web::ServiceConfig, HttpResponse};
         (status = 200, description = "Service is live")
     )
 )]
-#[get("/live")]
+#[get("/health/live")]
 async fn live() -> HttpResponse {
     HttpResponse::Ok().finish()
 }

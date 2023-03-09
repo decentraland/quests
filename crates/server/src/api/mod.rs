@@ -21,11 +21,14 @@ pub async fn run_server() -> Result<Server, std::io::Error> {
     initialize_telemetry();
 
     let config = configuration::Config::new().expect("Unable to build up the config");
+
+    println!("Database URL: {}", &config.database_url);
     let quests_database = create_quests_db_component(&config.database_url)
         .await
         .expect("unable to run the migrations"); // we know that the migrations failed because if connection fails, the app panics
 
     // Create events queue
+    println!("Redis URL: {}", &config.redis_url);
     let events_queue = create_events_queue(&config.redis_url).await;
 
     let server_address = format!("0.0.0.0:{}", config.server_port);

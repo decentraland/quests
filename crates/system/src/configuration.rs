@@ -7,7 +7,7 @@ pub struct Config {
     pub database_url: String,
 }
 
-const REDIS_HOST: &str = "REDIS_HOST";
+const REDIS_URL: &str = "REDIS_URL";
 const DATABASE_URL: &str = "DATABASE_URL";
 
 impl Config {
@@ -15,7 +15,7 @@ impl Config {
         let config = config::Config::builder()
             .add_source(
                 config::Environment::default()
-                    .with_list_parse_key(REDIS_HOST)
+                    .with_list_parse_key(REDIS_URL)
                     .with_list_parse_key(DATABASE_URL)
                     .try_parsing(true),
             )

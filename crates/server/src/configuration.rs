@@ -32,7 +32,7 @@ impl Config {
                     .with_list_parse_key(REDIS_URL)
                     .try_parsing(true),
             )
-            .set_default("server_port", 8080)? // It should be empty for local development
+            .set_default("server_port", 5000)? // It should be empty for local development
             .set_default("env", "dev")?
             .set_default("wkc_metrics_bearer_token", "")?
             .set_default(

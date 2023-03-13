@@ -32,7 +32,7 @@ async fn get_quest_state_should_be_200() {
     let id = db.create_quest(&create_quest).await.unwrap();
 
     let start_quest = StartQuestRequest {
-        quest_id: id,
+        quest_id: id.clone(),
         user_address: "0xA".to_string(),
     };
     // call start quest
@@ -48,7 +48,7 @@ async fn get_quest_state_should_be_200() {
     let quest_instance_id = response.quest_instance_id;
 
     let req = TestRequest::get()
-        .uri(&format!("/quests/instances/{quest_instance_id}"))
+        .uri(&format!("/quests/{id}/instances/{quest_instance_id}"))
         .to_request();
 
     let response = call_service(&app, req).await;
@@ -70,7 +70,9 @@ async fn get_quest_state_should_be_400() {
 
     let quest_instance_id = "some_unknown_id";
     let req = TestRequest::get()
-        .uri(&format!("/quests/instances/{quest_instance_id}"))
+        .uri(&format!(
+            "/quests/some_quest_id/instances/{quest_instance_id}"
+        ))
         .to_request();
 
     let response = call_service(&app, req).await;
@@ -84,7 +86,9 @@ async fn get_quest_state_should_be_404() {
 
     let quest_instance_id = Uuid::new_v4().to_string();
     let req = TestRequest::get()
-        .uri(&format!("/quests/instances/{quest_instance_id}"))
+        .uri(&format!(
+            "/quests/some_quest_id/instances/{quest_instance_id}"
+        ))
         .to_request();
 
     let response = call_service(&app, req).await;

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use log::info;
 use quests_db::core::{
     definitions::{AddEvent, QuestInstance, QuestsDatabase},
@@ -10,8 +8,8 @@ use quests_definitions::{
     quest_state::{get_state, QuestState, QuestUpdate},
     quests::{Event, Quest, QuestDefinition},
 };
-
 use quests_message_broker::{events_queue::EventsQueue, quests_channel::QuestsChannel};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub enum ApplyEventResult {

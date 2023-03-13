@@ -11,7 +11,6 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::redis::Redis;
-
 pub type OnUpdate = Box<dyn Fn(QuestUpdate) + Send + Sync>;
 
 #[async_trait]

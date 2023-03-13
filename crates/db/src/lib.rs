@@ -43,7 +43,7 @@ impl Connect for DatabaseOptions {
             .pool_options
             .connect_with(pg_options)
             .await
-            .map_err(|_| DBError::UnableToConnect)?;
+            .map_err(DBError::UnableToConnect)?;
 
         Ok(Database::new(pool))
     }
@@ -65,11 +65,7 @@ impl GetConnection for Database {
     type Conn = PoolConnection<Postgres>;
 
     async fn get_conn(&self) -> DBResult<Self::Conn> {
-        if let Ok(conn) = self.pool.acquire().await {
-            Ok(conn)
-        } else {
-            Err(DBError::UnableToConnect)
-        }
+        self.pool.acquire().await.map_err(DBError::UnableToConnect)
     }
 }
 

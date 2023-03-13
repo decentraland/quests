@@ -2,6 +2,7 @@ use actix_web::web::ServiceConfig;
 
 pub mod create_quest;
 pub mod delete_quest;
+pub mod get_all_states_by_address;
 pub mod get_quest;
 pub mod get_quest_state;
 pub mod get_quest_stats;
@@ -12,6 +13,7 @@ pub mod update_quest;
 
 pub use create_quest::*;
 pub use delete_quest::*;
+pub use get_all_states_by_address::*;
 pub use get_quest::*;
 pub use get_quest_state::*;
 pub use get_quest_stats::*;
@@ -28,5 +30,6 @@ pub fn services(config: &mut ServiceConfig) {
         .service(start_quest)
         .service(get_quest)
         .service(get_quest_instance_state)
+        .service(get_all_quest_states_by_user_address)
         .service(get_quest_stats);
 }

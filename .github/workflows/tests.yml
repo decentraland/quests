@@ -41,4 +41,3 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
           REDIS_URL: localhost:6379
-

@@ -5,12 +5,10 @@ mod common;
 use common::redis::build_redis;
 
 const ADDRESS: &str = "0xA";
-const TIMESTAMP_0: usize = 0;
 
 fn build_location_event(coordinates: Coordinates) -> Event {
     Event {
         address: ADDRESS.to_string(),
-        timestamp: TIMESTAMP_0,
         action: Action::Location { coordinates },
     }
 }

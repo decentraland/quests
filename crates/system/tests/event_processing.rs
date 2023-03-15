@@ -97,7 +97,6 @@ async fn can_process_events() {
 
     let event = Event {
         address: user_address.to_string(),
-        timestamp: 0,
         action,
     };
 

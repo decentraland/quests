@@ -271,42 +271,36 @@ mod tests {
         let mut events = vec![
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111111,
                 action: Action::Location {
                     coordinates: Coordinates(10, 10),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111115,
                 action: Action::Jump {
                     coordinates: Coordinates(10, 11),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::Jump {
                     coordinates: Coordinates(20, 10),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::Jump {
                     coordinates: Coordinates(20, 20),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::NPCInteraction {
                     npc_id: "NPC_IDEN".to_string(),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::NPCInteraction {
                     npc_id: "OTHER_NPC".to_string(),
                 },
@@ -468,63 +462,54 @@ mod tests {
         let mut events = vec![
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111111,
                 action: Action::Jump {
                     coordinates: Coordinates(10, 10),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111115,
                 action: Action::Location {
                     coordinates: Coordinates(15, 10),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::NPCInteraction {
                     npc_id: "NPC_ID".to_string(),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111115,
                 action: Action::Location {
                     coordinates: Coordinates(15, 14),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::Jump {
                     coordinates: Coordinates(10, 20),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::Location {
                     coordinates: Coordinates(23, 14),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::Custom {
                     id: "a".to_string(),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::Location {
                     coordinates: Coordinates(40, 10),
                 },
             },
             Event {
                 address: "0xA".to_string(),
-                timestamp: 111118,
                 action: Action::Jump {
                     coordinates: Coordinates(20, 20),
                 },

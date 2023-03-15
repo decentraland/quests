@@ -276,11 +276,12 @@ impl QuestsDatabase for Database {
     }
 
     async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>> {
-        let query_result = sqlx::query("SELECT * FROM events WHERE quest_instance_id = $1")
-            .bind(parse_str_to_uuid(quest_instance_id)?)
-            .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
-            .await
-            .map_err(|err| DBError::GetQuestInstanceFailed(Box::new(err)))?;
+        let query_result =
+            sqlx::query("SELECT * FROM events WHERE quest_instance_id = $1 ORDER BY timestamp ASC")
+                .bind(parse_str_to_uuid(quest_instance_id)?)
+                .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
+                .await
+                .map_err(|err| DBError::GetQuestInstanceFailed(Box::new(err)))?;
 
         let mut events = vec![];
 

@@ -1,10 +1,9 @@
 pub mod middlewares;
 pub mod routes;
 
-use crate::configuration;
-
 use self::middlewares::initialize_telemetry;
 use self::routes::query_extractor_config;
+use crate::{components::init_components, configuration::Config};
 use actix_web::{
     body::MessageBody,
     dev::{Server, ServiceFactory},
@@ -12,40 +11,36 @@ use actix_web::{
     App, HttpServer,
 };
 use env_logger::init as initialize_logger;
-use quests_db::{create_quests_db_component, Database};
-use quests_message_broker::{create_events_queue, events_queue::RedisEventsQueue};
+use quests_db::Database;
+use quests_message_broker::events_queue::RedisEventsQueue;
 use tracing_actix_web::TracingLogger;
 
 pub async fn run_server() -> Result<Server, std::io::Error> {
     initialize_logger();
     initialize_telemetry();
 
-    let config = configuration::Config::new().expect("Unable to build up the config");
+    let components = init_components().await;
 
-    println!("Database URL: {}", &config.database_url);
-    let quests_database = create_quests_db_component(&config.database_url)
-        .await
-        .expect("unable to run the migrations"); // we know that the migrations failed because if connection fails, the app panics
+    let server_address = format!("0.0.0.0:{}", components.0.server_port);
 
-    // Create events queue
-    println!("Redis URL: {}", &config.redis_url);
-    let events_queue = create_events_queue(&config.redis_url).await;
+    let config = Data::new(components.0);
+    let db = Data::new(components.1);
+    let redis_events_queue = Data::new(components.2);
 
-    let server_address = format!("0.0.0.0:{}", config.server_port);
-
-    let config_app_data = Data::new(config);
-    let quests_database_app_data = Data::new(quests_database);
-    let quests_events_queue_app_adata = Data::new(events_queue);
+    let config_moved = config.clone();
+    let db_moved = db.clone();
+    let redis_events_queue_moved = redis_events_queue.clone();
 
     let server = HttpServer::new(move || {
-        get_app_router(
-            &config_app_data,
-            &quests_database_app_data,
-            &quests_events_queue_app_adata,
-        )
+        get_app_router(&config_moved, &db_moved, &redis_events_queue_moved)
     })
     .bind(&server_address)?
     .run();
+
+    // Take Arc inside of the Data for the RPC Server
+    let config = config.into_inner();
+    let db = db.into_inner();
+    let redis_events_queue = redis_events_queue.into_inner();
 
     log::info!("Quests API running at http://{}", server_address);
 
@@ -53,7 +48,7 @@ pub async fn run_server() -> Result<Server, std::io::Error> {
 }
 
 pub fn get_app_router(
-    config: &Data<configuration::Config>,
+    config: &Data<Config>,
     db: &Data<Database>,
     redis: &Data<RedisEventsQueue>,
 ) -> App<

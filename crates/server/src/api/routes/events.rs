@@ -1,3 +1,4 @@
+use crate::logic::events::add_event_controller;
 use actix_web::{
     error::ErrorBadRequest,
     put,
@@ -5,7 +6,7 @@ use actix_web::{
     HttpResponse,
 };
 use quests_definitions::quests::Event;
-use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
+use quests_message_broker::events_queue::RedisEventsQueue;
 use serde::Serialize;
 use utoipa::ToSchema;
 
@@ -22,7 +23,7 @@ pub struct AddEventResponse(String);
 #[put("/events")]
 async fn add_event(data: web::Data<RedisEventsQueue>, event: web::Json<Event>) -> HttpResponse {
     let events_queue = data.into_inner();
-    match events_queue.push(&event.into_inner()).await {
+    match add_event_controller(events_queue, event.into_inner()).await {
         Ok(_) => HttpResponse::Accepted().json(AddEventResponse("Event Accepted".to_string())),
         Err(err) => HttpResponse::from_error(ErrorBadRequest(err)),
     }

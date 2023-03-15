@@ -1,17 +1,12 @@
 use std::sync::Arc;
 
 use actix_web::{get, web, HttpResponse};
-use quests_db::{
-    core::definitions::{QuestInstance, QuestsDatabase},
-    Database,
-};
-use quests_definitions::quest_state::{get_state, QuestState};
+use quests_db::{core::definitions::QuestsDatabase, Database};
+use quests_definitions::quest_state::QuestState;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::api::routes::errors::{CommonError, QuestError};
-
-use super::types::ToQuest;
+use crate::logic::quests::{get_instance_state, QuestError};
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestStateResponse(QuestState);
@@ -46,28 +41,5 @@ async fn get_quest_instance_state_controller<DB: QuestsDatabase>(
     match db.get_quest_instance(&id).await {
         Ok(quest_instance) => get_instance_state(db.clone(), quest_instance).await,
         Err(error) => Err(error.into()),
-    }
-}
-
-pub async fn get_instance_state(
-    db: Arc<impl QuestsDatabase>,
-    quest_instance: QuestInstance,
-) -> Result<QuestState, QuestError> {
-    let quest = db.get_quest(&quest_instance.quest_id).await;
-    match quest {
-        Ok(stored_quest) => {
-            let quest = stored_quest.to_quest()?;
-            let stored_events = db.get_events(&quest_instance.id).await?;
-
-            let events = stored_events
-                .iter()
-                .map(|event| bincode::deserialize(&event.event))
-                .collect::<Result<Vec<_>, _>>()?;
-
-            Ok(get_state(&quest, events))
-        }
-        Err(_) => Err(QuestError::CommonError(CommonError::BadRequest(
-            "the quest instance ID given doesn't correspond to a valid quest".to_string(),
-        ))),
     }
 }

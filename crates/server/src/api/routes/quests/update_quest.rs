@@ -7,7 +7,7 @@ use quests_definitions::quests::Quest;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::api::routes::errors::QuestError;
+use crate::logic::quests::QuestError;
 
 use super::types::ToUpdateQuest;
 

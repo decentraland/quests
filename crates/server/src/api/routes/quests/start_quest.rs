@@ -1,11 +1,8 @@
-use std::sync::Arc;
-
+use crate::logic::quests::start_quest_controller;
 use actix_web::{post, web, HttpResponse};
-use quests_db::{core::definitions::QuestsDatabase, Database};
+use quests_db::Database;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-
-use crate::api::routes::errors::QuestError;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct StartQuestRequest {
@@ -39,20 +36,4 @@ async fn start_quest(
         Ok(quest_instance_id) => HttpResponse::Ok().json(StartQuestResponse { quest_instance_id }),
         Err(err) => HttpResponse::from_error(err),
     }
-}
-
-async fn start_quest_controller<DB: QuestsDatabase>(
-    db: Arc<DB>,
-    start_quest_request: StartQuestRequest,
-) -> Result<String, QuestError> {
-    db.get_quest(&start_quest_request.quest_id)
-        .await
-        .map_err(|err| -> QuestError { err.into() })?;
-
-    db.start_quest(
-        &start_quest_request.quest_id,
-        &start_quest_request.user_address,
-    )
-    .await
-    .map_err(|error| error.into())
 }

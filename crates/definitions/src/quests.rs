@@ -203,7 +203,6 @@ pub struct SubTask {
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub address: String,
-    pub timestamp: usize,
     pub action: Action,
 }
 

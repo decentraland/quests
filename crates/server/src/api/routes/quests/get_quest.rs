@@ -6,7 +6,7 @@ use quests_definitions::quests::Quest;
 use serde::Serialize;
 use utoipa::ToSchema;
 
-use crate::api::routes::errors::QuestError;
+use crate::domain::quests::QuestError;
 
 use super::types::ToQuest;
 

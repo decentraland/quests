@@ -1,3 +1,4 @@
+use crate::domain::quests::QuestError;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use quests_db::core::errors::DBError;
 use serde::{Deserialize, Serialize};
@@ -37,16 +38,6 @@ impl ResponseError for CommonError {
         };
         HttpResponse::build(status_code).json(error_response)
     }
-}
-
-#[derive(Error, Debug)]
-pub enum QuestError {
-    #[error("{0}")]
-    CommonError(CommonError),
-    #[error("Quest Definition issue")]
-    StepsDeserialization,
-    #[error("Quest Validation Error: {0}")]
-    QuestValidation(String),
 }
 
 impl ResponseError for QuestError {

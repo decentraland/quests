@@ -3,7 +3,6 @@ use deadpool_redis::{
     Connection, CreatePoolError, Pool, Runtime,
 };
 
-#[derive(Clone)]
 pub struct Redis {
     pub pool: Pool,
 }

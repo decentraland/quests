@@ -1,4 +1,4 @@
-use crate::logic::quests::start_quest_controller;
+use crate::domain::quests::start_quest_controller;
 use actix_web::{post, web, HttpResponse};
 use quests_db::Database;
 use serde::{Deserialize, Serialize};

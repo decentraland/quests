@@ -1,7 +1,7 @@
 use quests_db::core::definitions::{StoredQuest, UpdateQuest};
 use quests_definitions::quests::Quest;
 
-use crate::logic::quests::QuestError;
+use crate::domain::quests::QuestError;
 
 pub trait ToQuest {
     fn to_quest(&self) -> Result<Quest, QuestError>;

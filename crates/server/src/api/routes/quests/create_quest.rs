@@ -10,7 +10,7 @@ use quests_definitions::quests::Quest;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{api::routes::errors::CommonError, logic::quests::QuestError};
+use crate::{api::routes::errors::CommonError, domain::quests::QuestError};
 
 #[derive(Serialize, ToSchema)]
 pub struct CreateQuestResponse {

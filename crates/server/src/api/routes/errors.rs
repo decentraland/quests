@@ -1,4 +1,4 @@
-use crate::logic::quests::QuestError;
+use crate::domain::quests::QuestError;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use quests_db::core::errors::DBError;
 use serde::{Deserialize, Serialize};

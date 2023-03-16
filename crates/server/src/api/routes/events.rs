@@ -1,4 +1,4 @@
-use crate::logic::events::add_event_controller;
+use crate::domain::events::add_event_controller;
 use actix_web::{
     error::ErrorBadRequest,
     put,

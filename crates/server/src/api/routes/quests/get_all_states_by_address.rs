@@ -4,7 +4,7 @@ use quests_definitions::quest_state::QuestState;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::logic::quests::get_all_quest_states_by_user_address_controller;
+use crate::domain::quests::get_all_quest_states_by_user_address_controller;
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestStateByUserAddressResponse {

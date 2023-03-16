@@ -6,7 +6,7 @@ use quests_definitions::quest_state::QuestState;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::logic::quests::{get_instance_state, QuestError};
+use crate::domain::quests::{get_instance_state, QuestError};
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestStateResponse(QuestState);

@@ -19,28 +19,19 @@ pub async fn run_server() -> Result<Server, std::io::Error> {
     initialize_logger();
     initialize_telemetry();
 
-    let components = init_components().await;
+    let (config, db, redis_events_queue) = init_components().await;
 
-    let server_address = format!("0.0.0.0:{}", components.0.server_port);
+    let server_address = format!("0.0.0.0:{}", config.server_port);
 
-    let config = Data::new(components.0);
-    let db = Data::new(components.1);
-    let redis_events_queue = Data::new(components.2);
+    let config = Data::new(config);
+    let db = Data::new(db);
+    let redis_events_queue = Data::new(redis_events_queue);
 
-    let config_moved = config.clone();
-    let db_moved = db.clone();
-    let redis_events_queue_moved = redis_events_queue.clone();
+    let server = HttpServer::new(move || get_app_router(&config, &db, &redis_events_queue))
+        .bind(&server_address)?
+        .run();
 
-    let server = HttpServer::new(move || {
-        get_app_router(&config_moved, &db_moved, &redis_events_queue_moved)
-    })
-    .bind(&server_address)?
-    .run();
-
-    // Take Arc inside of the Data for the RPC Server
-    let config = config.into_inner();
-    let db = db.into_inner();
-    let redis_events_queue = redis_events_queue.into_inner();
+    // TODO: Take Arc inside of the Data for the RPC Server
 
     log::info!("Quests API running at http://{}", server_address);
 

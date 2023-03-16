@@ -26,41 +26,49 @@ async fn can_process_events() {
             steps: vec![
                 Step {
                     id: "A".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "A_1".to_string(),
+                        description: None,
                         action_items: vec![Action::Location {
                             coordinates: Coordinates(10, 20),
                         }],
-                    },
+                    }],
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "B".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "B_1".to_string(),
+                        description: None,
                         action_items: vec![Action::Location {
                             coordinates: Coordinates(13, 20),
                         }],
-                    },
+                    }],
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "C".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "C_1".to_string(),
+                        description: None,
                         action_items: vec![Action::Location {
                             coordinates: Coordinates(10, 24),
                         }],
-                    },
+                    }],
                     on_complete_hook: None,
                     description: "".to_string(),
                 },
                 Step {
                     id: "D".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "D_1".to_string(),
+                        description: None,
                         action_items: vec![Action::Location {
                             coordinates: Coordinates(40, 20),
                         }],
-                    },
+                    }],
                     on_complete_hook: None,
                     description: "".to_string(),
                 },

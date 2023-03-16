@@ -33,76 +33,56 @@ impl QuestState {
 
     pub fn apply_event(&self, quest_graph: &QuestGraph, event: &Event) -> QuestState {
         // use this state to return
-        let state = self.clone();
+        let mut state = self.clone();
 
-        // We do many clones because we don't want to mutate the state given directly. And also, we don't want to keep a state in the QuestGraph
-        // We clone the next possible steps in order to mutate this instance for the new state
-        let mut current_steps_cloned = state.current_steps.clone();
-        // We clone the current completed steps in order to add the new ones for the event given
-        let mut steps_completed = state.steps_completed.clone();
-
-        for (step_id, step_content) in state.current_steps {
+        for (step_id, step_content) in &self.current_steps {
             if step_content.to_dos.is_empty() {
                 continue;
             }
-            let mut to_dos_cloned = step_content.to_dos.clone();
-            let mut tasks_completed_cloned = step_content.tasks_completed.clone();
             for (i, task) in step_content.to_dos.iter().enumerate() {
-                let mut actions_items_cloned = task.action_items.clone();
                 match task
                     .action_items
                     .iter()
                     .position(|action| matches_action((action.clone(), event.action.clone())))
                 {
                     Some(matched_action_index) => {
-                        actions_items_cloned.remove(matched_action_index);
+                        state.current_steps.entry(step_id.to_string()).and_modify(|step| {
+                            step.to_dos[i].action_items.remove(matched_action_index);
 
-                        if actions_items_cloned.is_empty() {
-                            tasks_completed_cloned.insert(task.id.clone());
-                            to_dos_cloned.remove(i);
-                        } else {
-                            to_dos_cloned[i] = Task {
-                                id: task.id.clone(),
-                                description: task.description.clone(),
-                                action_items: actions_items_cloned,
-                            };
-                        }
-                    }
+                            if step.to_dos[i].action_items.is_empty() {
+                                step.tasks_completed.insert(task.id.clone());
+                                step.to_dos.remove(i);
+                            }
+                        });
+                    },
                     None => continue,
                 }
             }
+            if let Some(step) = state.current_steps.get(step_id) {
+                if step.to_dos.is_empty() {
+                    // remove step because it was completed
+                    state.current_steps.remove(step_id);
+                    state.steps_left -= 1;
 
-            if to_dos_cloned.is_empty() {
-                // remove step because it was completed
-                current_steps_cloned.remove(&step_id);
+                    // add next steps
+                    let next_steps = quest_graph.next(step_id).unwrap_or_default();
+                    next_steps.iter().for_each(|step_id| {
+                        if step_id != END_STEP_ID {
+                            let step_content = StepContent {
+                                to_dos: quest_graph.tasks_by_step.get(step_id).unwrap().clone(),
+                                ..Default::default()
+                            };
+                            state.current_steps.insert(step_id.clone(), step_content);
+                        }
+                    });
 
-                // add next steps
-                let next_steps = quest_graph.next(&step_id).unwrap_or_default();
-                next_steps.iter().for_each(|step_id| {
-                    if step_id != END_STEP_ID {
-                        let step_content = StepContent {
-                            to_dos: quest_graph.tasks_by_step.get(step_id).unwrap().clone(),
-                            ..Default::default()
-                        };
-                        current_steps_cloned.insert(step_id.clone(), step_content);
-                    }
-                });
-
-                // mark just completed step as completed
-                steps_completed.insert(step_id.clone());
-            } else {
-                let step = current_steps_cloned.get_mut(&step_id).unwrap();
-                step.to_dos = to_dos_cloned;
-                step.tasks_completed = tasks_completed_cloned;
+                    // mark just completed step as completed
+                    state.steps_completed.insert(step_id.clone());
+                }
             }
         }
 
-        QuestState {
-            current_steps: current_steps_cloned,
-            steps_left: (quest_graph.total_steps() - steps_completed.len()) as u32,
-            required_steps: state.required_steps,
-            steps_completed,
-        }
+        state
     }
 }
 

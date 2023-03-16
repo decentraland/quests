@@ -10,7 +10,7 @@ jobs:
   publish_server:
     uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
     with:
-      service-name: quests-server
+      service-name: quests-poc-server
       deployment-environment: dev
       build-args: PROJECT=quests_server
       layers: true

@@ -1,7 +1,6 @@
-WORKDIR /app
-
 FROM rust as builder 
 ARG PROJECT
+WORKDIR /app
 COPY . .
 RUN cargo build --release -p $PROJECT 
 

@@ -4,24 +4,30 @@ on:
   release:
     types: [published]
   push:
-    branches: [main]
+    branches: [main, chore/ci-cache] # remove new branch before merge
 
 jobs:
   publish_server:
-    uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
+    uses: decentraland/actions/.github/workflows/build-quay-main.yml@chore/support-docker-caching # change to main branch before merge 
     with:
       service-name: quests-server
       build-args: PROJECT=quests_server
       layers: true
+      extra-args: |
+        --cache-from=quay.io/decentraland/quests-server
+        --cache-to=quay.io/decentraland/quests-server
     secrets:
       QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
       QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
   publish_system:
-    uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
+    uses: decentraland/actions/.github/workflows/build-quay-main.yml@chore/support-docker-caching # change to main branch before merge
     with:
       service-name: quests-system
       build-args: PROJECT=quests_system
       layers: true
+      extra-args: |
+        --cache-from=quay.io/decentraland/quests-system
+        --cache-to=quay.io/decentraland/quests-system
     secrets:
       QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
       QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}

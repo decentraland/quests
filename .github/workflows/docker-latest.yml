@@ -33,6 +33,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
+          push: true
           tags: quay.io/decentraland/quests-server:latest,quay.io/decentraland/quests-server:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -58,6 +59,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
+          push: true
           tags: quay.io/decentraland/quests-system:latest,quay.io/decentraland/quests-system:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

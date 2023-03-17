@@ -14,8 +14,8 @@ jobs:
       build-args: PROJECT=quests_server
       layers: true
       extra-args: |
-        --cache-from=quay.io/decentraland/quests-server
-        --cache-to=quay.io/decentraland/quests-server
+        --cache-from=quay.io/decentraland/cache
+        --cache-to=quay.io/decentraland/cache
     secrets:
       QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
       QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
@@ -26,8 +26,8 @@ jobs:
       build-args: PROJECT=quests_system
       layers: true
       extra-args: |
-        --cache-from=quay.io/decentraland/quests-system
-        --cache-to=quay.io/decentraland/quests-system
+        --cache-from=quay.io/decentraland/cache
+        --cache-to=quay.io/decentraland/cache
     secrets:
       QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
       QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}

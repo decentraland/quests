@@ -16,7 +16,9 @@ fn main() {
                 Step {
                     id: "A1".to_string(),
                     description: "".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "A1_1".to_string(),
+                        description: None,
                         action_items: vec![
                             Action::Location {
                                 coordinates: Coordinates(10, 10),
@@ -25,47 +27,55 @@ fn main() {
                                 coordinates: Coordinates(10, 11),
                             },
                         ],
-                    },
+                    }],
                     on_complete_hook: None,
                 },
                 Step {
                     id: "A2".to_string(),
                     description: "".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "A2_1".to_string(),
+                        description: None,
                         action_items: vec![Action::NPCInteraction {
                             npc_id: "NPC_IDEN".to_string(),
                         }],
-                    },
+                    }],
                     on_complete_hook: None,
                 },
                 Step {
                     id: "B".to_string(),
                     description: "".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "B_1".to_string(),
+                        description: None,
                         action_items: vec![Action::Jump {
                             coordinates: Coordinates(20, 10),
                         }],
-                    },
+                    }],
                     on_complete_hook: None,
                 },
                 Step {
                     id: "C".to_string(),
                     description: "".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "C_1".to_string(),
+                        description: None,
                         action_items: vec![Action::Jump {
                             coordinates: Coordinates(20, 20),
                         }],
-                    },
+                    }],
                     on_complete_hook: None,
                 },
                 Step {
                     id: "D".to_string(),
                     description: "".to_string(),
-                    tasks: Tasks::Single {
+                    tasks: vec![Task {
+                        id: "D_1".to_string(),
+                        description: None,
                         action_items: vec![Action::NPCInteraction {
                             npc_id: "OTHER_NPC".to_string(),
                         }],
-                    },
+                    }],
                     on_complete_hook: None,
                 },
             ],

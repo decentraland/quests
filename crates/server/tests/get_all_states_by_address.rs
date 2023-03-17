@@ -47,7 +47,7 @@ async fn get_all_states_by_user_address_should_be_200() {
     let response: GetQuestStateByUserAddressResponse = read_body_json(response).await;
     assert_eq!(response.states.len(), 1);
     assert!(response.states[0]
-        .next_possible_steps
+        .current_steps
         .get(&"A".to_string())
         .is_some());
     assert_eq!(response.states[0].steps_left, 4);

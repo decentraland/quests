@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     quest_graph::{matches_action, QuestGraph},
-    quests::{Event, Quest, StepID, SubTask, Tasks, END_STEP_ID, START_STEP_ID},
+    quests::{Event, Quest, StepID, Task, END_STEP_ID, START_STEP_ID},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -14,19 +14,14 @@ pub struct QuestUpdate {
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct QuestState {
-    /// Next possible steps
-    pub next_possible_steps: HashMap<StepID, StepContent>,
+    /// Current steps
+    pub current_steps: HashMap<StepID, StepContent>,
     /// Steps left to complete the Quest
     pub steps_left: u32,
     /// Required Steps for END
     pub required_steps: Vec<StepID>,
     /// Quest Steps Completed
     pub steps_completed: HashSet<StepID>,
-    /// Subtasks completed. Inner Step tasks
-    ///
-    /// String in key refers to SubTask ID
-    ///
-    pub subtasks_completed: Option<HashSet<String>>,
 }
 
 impl QuestState {
@@ -37,117 +32,57 @@ impl QuestState {
     }
 
     pub fn apply_event(&self, quest_graph: &QuestGraph, event: &Event) -> QuestState {
-        let state = self.clone();
-        // We do many clones because we don't want to mutate the state given directly. And also, we don't want to keep a state in the QuestGraph
-        // We clone the next possible steps in order to mutate this instance for the new state
-        let mut next_possible_steps_cloned = state.next_possible_steps.clone();
-        // We clone the current completed steps in order to add the new ones for the event given
-        let mut steps_completed = state.steps_completed.clone();
-        // We move the current completed subtasks in order to add new ones for the event given
-        let mut quest_subtasks_completed = state.subtasks_completed;
+        // use this state to return
+        let mut state = self.clone();
 
-        for (step_id, step_content) in state.next_possible_steps {
-            match &step_content.todos {
-                Tasks::Single { action_items } => {
-                    let mut action_items_cloned = action_items.clone();
-                    match action_items
-                        .iter()
-                        .position(|action| matches_action((action.clone(), event.action.clone())))
-                    {
-                        Some(matched_action_index) => {
-                            action_items_cloned.remove(matched_action_index);
-                            if action_items_cloned.is_empty() {
-                                next_possible_steps_cloned.remove(&step_id);
-                                let next_current_step_possible_steps =
-                                    quest_graph.next(&step_id).unwrap_or_default();
-                                next_current_step_possible_steps.iter().for_each(|step_id| {
-                                    if step_id != END_STEP_ID {
-                                        let step_content = StepContent {
-                                            todos: quest_graph
-                                                .tasks_by_step
-                                                .get(step_id)
-                                                .unwrap()
-                                                .clone(),
-                                        };
-                                        next_possible_steps_cloned
-                                            .insert(step_id.clone(), step_content);
-                                    }
-                                });
-                                steps_completed.insert(step_id.clone());
-                            } else {
-                                let step_content = next_possible_steps_cloned.entry(step_id);
-                                step_content.and_modify(|e| {
-                                    e.todos = Tasks::Single {
-                                        action_items: action_items_cloned,
-                                    }
-                                });
-                            }
-                        }
-                        None => continue,
-                    }
-                }
-                Tasks::Multiple(subtasks) => {
-                    let mut subtasks_cloned = subtasks.clone();
-                    for (i, subtask) in subtasks.iter().enumerate() {
-                        let mut actions_items_cloned = subtask.action_items.clone();
-                        match subtask.action_items.iter().position(|action| {
-                            matches_action((action.clone(), event.action.clone()))
-                        }) {
-                            Some(matched_action_index) => {
-                                actions_items_cloned.remove(matched_action_index);
+        for (step_id, step_content) in &self.current_steps {
+            if step_content.to_dos.is_empty() {
+                continue;
+            }
+            for (i, task) in step_content.to_dos.iter().enumerate() {
+                match task
+                    .action_items
+                    .iter()
+                    .position(|action| matches_action((action.clone(), event.action.clone())))
+                {
+                    Some(matched_action_index) => {
+                        state.current_steps.entry(step_id.to_string()).and_modify(|step| {
+                            step.to_dos[i].action_items.remove(matched_action_index);
 
-                                if actions_items_cloned.is_empty() {
-                                    if let Some(current_subtasks_completed) =
-                                        &mut quest_subtasks_completed
-                                    {
-                                        current_subtasks_completed.insert(subtask.id.clone());
-                                    } else {
-                                        let mut subtasks = HashSet::new();
-                                        subtasks.insert(subtask.id.clone());
-                                        quest_subtasks_completed = Some(subtasks)
-                                    }
-                                    subtasks_cloned.remove(i);
-                                } else {
-                                    subtasks_cloned[i] = SubTask {
-                                        id: subtask.id.clone(),
-                                        description: subtask.description.clone(),
-                                        action_items: actions_items_cloned,
-                                    };
-                                }
-                            }
-                            None => continue,
-                        }
-                    }
-                    if subtasks_cloned.is_empty() {
-                        next_possible_steps_cloned.remove(&step_id);
-                        let next_current_step_possible_steps =
-                            quest_graph.next(&step_id).unwrap_or_default();
-                        next_current_step_possible_steps.iter().for_each(|step_id| {
-                            if step_id != END_STEP_ID {
-                                let step_content = StepContent {
-                                    todos: quest_graph.tasks_by_step.get(step_id).unwrap().clone(),
-                                };
-                                next_possible_steps_cloned.insert(step_id.clone(), step_content);
+                            if step.to_dos[i].action_items.is_empty() {
+                                step.tasks_completed.insert(task.id.clone());
+                                step.to_dos.remove(i);
                             }
                         });
-                        steps_completed.insert(step_id.clone());
-                    } else {
-                        let step = next_possible_steps_cloned.get_mut(&step_id).unwrap();
-                        step.todos = Tasks::Multiple(subtasks_cloned)
-                    }
+                    },
+                    None => continue,
                 }
-                // We use this type for the START and END nodes because we consider them as "Step"
-                Tasks::None => {}
-            };
+            }
+            if let Some(step) = state.current_steps.get(step_id) {
+                if step.to_dos.is_empty() {
+                    // remove step because it was completed
+                    state.current_steps.remove(step_id);
+                    state.steps_left -= 1;
+
+                    // add next steps
+                    let next_steps = quest_graph.next(step_id).unwrap_or_default();
+                    next_steps.iter().for_each(|step_id| {
+                        if step_id != END_STEP_ID {
+                            let step_content = StepContent {
+                                to_dos: quest_graph.tasks_by_step.get(step_id).unwrap().clone(),
+                                ..Default::default()
+                            };
+                            state.current_steps.insert(step_id.clone(), step_content);
+                        }
+                    });
+
+                    // mark just completed step as completed
+                    state.steps_completed.insert(step_id.clone());
+                }
+            }
         }
 
-        QuestState {
-            next_possible_steps: next_possible_steps_cloned,
-            steps_left: (quest_graph.total_steps() - steps_completed.len()) as u32,
-            required_steps: state.required_steps,
-            steps_completed,
-            subtasks_completed: quest_subtasks_completed,
-        }
+        state
     }
 }
 
@@ -162,25 +97,30 @@ impl From<&QuestGraph> for QuestState {
                 (
                     step.clone(),
                     StepContent {
-                        todos: value.tasks_by_step.get(step).unwrap().clone(),
+                        to_dos: value.tasks_by_step.get(step).unwrap().clone(),
+                        ..Default::default()
                     },
                 )
             })
             .collect::<HashMap<String, StepContent>>();
 
         Self {
-            next_possible_steps,
+            current_steps: next_possible_steps,
             required_steps: value.required_for_end().unwrap_or_default(),
             steps_left: value.total_steps() as u32,
             steps_completed: HashSet::default(),
-            subtasks_completed: None,
         }
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Default, Deserialize, Serialize)]
 pub struct StepContent {
-    pub todos: Tasks,
+    pub to_dos: Vec<Task>,
+    /// Tasks completed. Inner Step tasks
+    ///
+    /// String in key refers to Task ID
+    ///
+    pub tasks_completed: HashSet<String>,
 }
 
 pub fn get_state(quest: &Quest, events: Vec<Event>) -> QuestState {
@@ -212,7 +152,9 @@ mod tests {
                     Step {
                         id: "A1".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A1_1".to_string(),
+                            description: None,
                             action_items: vec![
                                 Action::Location {
                                     coordinates: Coordinates(10, 10),
@@ -221,47 +163,55 @@ mod tests {
                                     coordinates: Coordinates(10, 11),
                                 },
                             ],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "A2".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A2_1".to_string(),
+                            description: None,
                             action_items: vec![Action::NPCInteraction {
                                 npc_id: "NPC_IDEN".to_string(),
                             }],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "B_1".to_string(),
+                            description: None,
                             action_items: vec![Action::Jump {
                                 coordinates: Coordinates(20, 10),
                             }],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "C_1".to_string(),
+                            description: None,
                             action_items: vec![Action::Jump {
                                 coordinates: Coordinates(20, 20),
                             }],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "D".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "D_1".to_string(),
+                            description: None,
                             action_items: vec![Action::NPCInteraction {
                                 npc_id: "OTHER_NPC".to_string(),
                             }],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                 ],
@@ -270,12 +220,14 @@ mod tests {
         let quest_graph = QuestGraph::from(&quest);
         let mut events = vec![
             Event {
+                // A1_1
                 address: "0xA".to_string(),
                 action: Action::Location {
                     coordinates: Coordinates(10, 10),
                 },
             },
             Event {
+                // A2_1
                 address: "0xA".to_string(),
                 action: Action::Jump {
                     coordinates: Coordinates(10, 11),
@@ -306,51 +258,65 @@ mod tests {
                 },
             },
         ];
+
         let mut state = QuestState::from(&quest_graph);
-        assert!(state.next_possible_steps.contains_key("A1")); // branch 1
-        assert!(state.next_possible_steps.contains_key("A2")); // branch 2
-        assert_eq!(state.next_possible_steps.len(), 2);
+        assert!(state.current_steps.contains_key("A1")); // branch 1
+        assert!(state.current_steps.contains_key("A2")); // branch 2
+        assert_eq!(state.current_steps.len(), 2);
         assert!(state.steps_completed.is_empty());
         assert_eq!(state.steps_left, 5);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert!(state.required_steps.contains(&"D".to_string()));
+
         state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("A1"));
-        assert!(state.next_possible_steps.contains_key("A2"));
-        assert_eq!(state.next_possible_steps.len(), 2);
+        assert!(state.current_steps.contains_key("A1"));
+        assert!(state.current_steps.contains_key("A2"));
+        assert_eq!(state.current_steps.len(), 2);
         assert!(state.steps_completed.is_empty());
         assert_eq!(state.steps_left, 5);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert!(state.required_steps.contains(&"D".to_string()));
+        assert!(state.current_steps.get("A1").is_some());
+        assert!(state
+            .current_steps
+            .get("A1")
+            .unwrap()
+            .tasks_completed
+            .is_empty());
+
         state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("B"));
-        assert!(state.next_possible_steps.contains_key("A2"));
-        assert_eq!(state.next_possible_steps.len(), 2);
+        assert!(state.current_steps.contains_key("B"));
+        assert!(state.current_steps.contains_key("A2"));
+        assert_eq!(state.current_steps.len(), 2);
         assert!(state.steps_completed.contains(&"A1".to_string()));
         assert_eq!(state.steps_left, 4);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert!(state.required_steps.contains(&"D".to_string()));
+        assert!(state.current_steps.get("A1").is_none());
+
         state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("C"));
-        assert!(state.next_possible_steps.contains_key("A2"));
-        assert_eq!(state.next_possible_steps.len(), 2);
+        assert!(state.current_steps.contains_key("C"));
+        assert!(state.current_steps.contains_key("A2"));
+        assert_eq!(state.current_steps.len(), 2);
         assert!(state.steps_completed.contains(&"A1".to_string()));
         assert!(state.steps_completed.contains(&"B".to_string()));
         assert_eq!(state.steps_left, 3);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert!(state.required_steps.contains(&"D".to_string()));
+
         state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("A2"));
-        assert_eq!(state.next_possible_steps.len(), 1);
+        assert!(state.current_steps.contains_key("A2"));
+        assert_eq!(state.current_steps.len(), 1);
         assert!(state.steps_completed.contains(&"A1".to_string()));
         assert!(state.steps_completed.contains(&"B".to_string()));
         assert!(state.steps_completed.contains(&"C".to_string()));
         assert_eq!(state.steps_left, 2);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert!(state.required_steps.contains(&"D".to_string()));
+
         state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("D"));
-        assert_eq!(state.next_possible_steps.len(), 1);
+        assert!(state.current_steps.contains_key("D"));
+        assert_eq!(state.current_steps.len(), 1);
         assert!(state.steps_completed.contains(&"A1".to_string()));
         assert!(state.steps_completed.contains(&"A2".to_string()));
         assert!(state.steps_completed.contains(&"B".to_string()));
@@ -358,8 +324,9 @@ mod tests {
         assert_eq!(state.steps_left, 1);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert!(state.required_steps.contains(&"D".to_string()));
+
         state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.is_empty());
+        assert!(state.current_steps.is_empty());
         assert!(state.steps_completed.contains(&"A1".to_string()));
         assert!(state.steps_completed.contains(&"A2".to_string()));
         assert!(state.steps_completed.contains(&"B".to_string()));
@@ -385,10 +352,10 @@ mod tests {
                     Step {
                         id: "A".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Multiple(vec![
-                            SubTask {
+                        tasks: vec![
+                            Task {
                                 id: "A_1".to_string(),
-                                description: "".to_string(),
+                                description: None,
                                 action_items: vec![
                                     Action::Jump {
                                         coordinates: Coordinates(10, 10),
@@ -398,9 +365,9 @@ mod tests {
                                     },
                                 ],
                             },
-                            SubTask {
+                            Task {
                                 id: "A_2".to_string(),
-                                description: "".to_string(),
+                                description: None,
                                 action_items: vec![
                                     Action::NPCInteraction {
                                         npc_id: "NPC_ID".to_string(),
@@ -410,16 +377,16 @@ mod tests {
                                     },
                                 ],
                             },
-                        ]),
+                        ],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Multiple(vec![
-                            SubTask {
+                        tasks: vec![
+                            Task {
                                 id: "B_1".to_string(),
-                                description: "".to_string(),
+                                description: None,
                                 action_items: vec![
                                     Action::Jump {
                                         coordinates: Coordinates(10, 20),
@@ -429,9 +396,9 @@ mod tests {
                                     },
                                 ],
                             },
-                            SubTask {
+                            Task {
                                 id: "B_2".to_string(),
-                                description: "".to_string(),
+                                description: None,
                                 action_items: vec![
                                     Action::Custom {
                                         id: "a".to_string(),
@@ -441,17 +408,19 @@ mod tests {
                                     },
                                 ],
                             },
-                        ]),
+                        ],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "C_1".to_string(),
+                            description: None,
                             action_items: vec![Action::Jump {
                                 coordinates: Coordinates(20, 20),
                             }],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                 ],
@@ -516,322 +485,326 @@ mod tests {
             },
         ];
         let mut state = QuestState::from(&quest_graph);
+        assert!(state.current_steps.contains_key("A"));
 
-        assert!(state.next_possible_steps.contains_key("A"));
-        if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("A").unwrap().todos {
-            assert_eq!(subtasks.len(), 2);
-            assert_eq!(
-                subtasks.get(0).unwrap(),
-                &SubTask {
-                    id: "A_1".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![
-                        Action::Jump {
-                            coordinates: Coordinates(10, 10),
-                        },
-                        Action::Location {
-                            coordinates: Coordinates(15, 10),
-                        },
-                    ]
-                }
-            );
-            assert_eq!(
-                subtasks.get(1).unwrap(),
-                &SubTask {
-                    id: "A_2".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![
-                        Action::NPCInteraction {
-                            npc_id: "NPC_ID".to_string(),
-                        },
-                        Action::Location {
-                            coordinates: Coordinates(15, 14),
-                        },
-                    ]
-                }
-            );
-        } else {
-            panic!()
-        }
-        assert_eq!(state.next_possible_steps.len(), 1);
-        assert!(state.steps_completed.is_empty());
-        assert_eq!(state.steps_left, 3);
-        assert!(state.required_steps.contains(&"C".to_string()));
-        assert_eq!(state.required_steps.len(), 1);
-        assert!(state.subtasks_completed.is_none());
-
-        state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("A"));
-        assert_eq!(state.next_possible_steps.len(), 1);
-        if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("A").unwrap().todos {
-            assert_eq!(subtasks.len(), 2);
-            assert_eq!(
-                subtasks.get(0).unwrap(),
-                &SubTask {
-                    id: "A_1".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![Action::Location {
+        let tasks = &state.current_steps.get("A").unwrap().to_dos;
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(
+            tasks.get(0).unwrap(),
+            &Task {
+                id: "A_1".to_string(),
+                description: None,
+                action_items: vec![
+                    Action::Jump {
+                        coordinates: Coordinates(10, 10),
+                    },
+                    Action::Location {
                         coordinates: Coordinates(15, 10),
-                    },]
-                }
-            );
-            assert_eq!(
-                subtasks.get(1).unwrap(),
-                &SubTask {
-                    id: "A_2".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![
-                        Action::NPCInteraction {
-                            npc_id: "NPC_ID".to_string(),
-                        },
-                        Action::Location {
-                            coordinates: Coordinates(15, 14),
-                        },
-                    ]
-                }
-            );
-        } else {
-            panic!()
-        }
-        assert!(state.steps_completed.is_empty());
-        assert_eq!(state.steps_left, 3);
-        assert!(state.required_steps.contains(&"C".to_string()));
-        assert_eq!(state.required_steps.len(), 1);
-        assert!(state.subtasks_completed.is_none());
-
-        state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("A"));
-        assert_eq!(state.next_possible_steps.len(), 1);
-        if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("A").unwrap().todos {
-            assert_eq!(subtasks.len(), 1);
-            assert_eq!(
-                subtasks.get(0).unwrap(),
-                &SubTask {
-                    id: "A_2".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![
-                        Action::NPCInteraction {
-                            npc_id: "NPC_ID".to_string(),
-                        },
-                        Action::Location {
-                            coordinates: Coordinates(15, 14),
-                        },
-                    ]
-                }
-            );
-        } else {
-            panic!()
-        }
-        assert!(state.steps_completed.is_empty());
-        assert_eq!(state.steps_left, 3);
-        assert!(state.required_steps.contains(&"C".to_string()));
-        assert_eq!(state.required_steps.len(), 1);
-        assert!(state.subtasks_completed.is_some());
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_1"));
-        assert_eq!(state.subtasks_completed.as_ref().unwrap().len(), 1);
-        state = state.apply_event(&quest_graph, &events.remove(0));
-
-        assert!(state.next_possible_steps.contains_key("A"));
-        assert_eq!(state.next_possible_steps.len(), 1);
-        if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("A").unwrap().todos {
-            assert_eq!(subtasks.len(), 1);
-            assert_eq!(
-                subtasks.get(0).unwrap(),
-                &SubTask {
-                    id: "A_2".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![Action::Location {
+                    },
+                ]
+            }
+        );
+        assert_eq!(
+            tasks.get(1).unwrap(),
+            &Task {
+                id: "A_2".to_string(),
+                description: None,
+                action_items: vec![
+                    Action::NPCInteraction {
+                        npc_id: "NPC_ID".to_string(),
+                    },
+                    Action::Location {
                         coordinates: Coordinates(15, 14),
-                    },]
-                }
-            );
-        } else {
-            panic!()
-        }
+                    },
+                ]
+            }
+        );
+
+        assert_eq!(state.current_steps.len(), 1);
+        assert!(state.steps_completed.is_empty());
+        assert_eq!(state.steps_left, 3);
+        assert!(state.required_steps.contains(&"C".to_string()));
+        assert_eq!(state.required_steps.len(), 1);
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert!(state.current_steps.contains_key("A"));
+        assert_eq!(state.current_steps.len(), 1);
+
+        let tasks = &state.current_steps.get("A").unwrap().to_dos;
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(
+            tasks.get(0).unwrap(),
+            &Task {
+                id: "A_1".to_string(),
+                description: None,
+                action_items: vec![Action::Location {
+                    coordinates: Coordinates(15, 10),
+                },]
+            }
+        );
+        assert_eq!(
+            tasks.get(1).unwrap(),
+            &Task {
+                id: "A_2".to_string(),
+                description: None,
+                action_items: vec![
+                    Action::NPCInteraction {
+                        npc_id: "NPC_ID".to_string(),
+                    },
+                    Action::Location {
+                        coordinates: Coordinates(15, 14),
+                    },
+                ]
+            }
+        );
+        assert!(state
+            .current_steps
+            .get("A")
+            .unwrap()
+            .tasks_completed
+            .is_empty());
+
+        assert_eq!(state.steps_left, 3);
+        assert!(state.required_steps.contains(&"C".to_string()));
+        assert_eq!(state.required_steps.len(), 1);
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert!(state.current_steps.contains_key("A"));
+        assert_eq!(state.current_steps.len(), 1);
+        let tasks = &state.current_steps.get("A").unwrap().to_dos;
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(
+            tasks.get(0).unwrap(),
+            &Task {
+                id: "A_2".to_string(),
+                description: None,
+                action_items: vec![
+                    Action::NPCInteraction {
+                        npc_id: "NPC_ID".to_string(),
+                    },
+                    Action::Location {
+                        coordinates: Coordinates(15, 14),
+                    },
+                ]
+            }
+        );
+        assert!(state.steps_completed.is_empty());
+        assert_eq!(state.steps_left, 3);
+        assert!(state.required_steps.contains(&"C".to_string()));
+        assert_eq!(state.required_steps.len(), 1);
+        assert_eq!(
+            state.current_steps.get("A").unwrap().tasks_completed.len(),
+            1
+        );
+        assert!(state
+            .current_steps
+            .get("A")
+            .unwrap()
+            .tasks_completed
+            .contains("A_1"));
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert!(state.current_steps.contains_key("A"));
+        assert_eq!(state.current_steps.len(), 1);
+
+        let subtasks = &state.current_steps.get("A").unwrap().to_dos;
+        assert_eq!(subtasks.len(), 1);
+        assert_eq!(
+            subtasks.get(0).unwrap(),
+            &Task {
+                id: "A_2".to_string(),
+                description: None,
+                action_items: vec![Action::Location {
+                    coordinates: Coordinates(15, 14),
+                },]
+            }
+        );
         assert!(state.steps_completed.is_empty());
         assert_eq!(state.steps_left, 3);
         assert_eq!(state.required_steps.len(), 1);
         assert!(state.required_steps.contains(&"C".to_string()));
-        assert!(state.subtasks_completed.is_some());
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_1"));
-        assert_eq!(state.subtasks_completed.as_ref().unwrap().len(), 1);
-        state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("B"));
-        assert_eq!(state.next_possible_steps.len(), 1);
-        if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("B").unwrap().todos {
-            assert_eq!(subtasks.len(), 2);
-            assert_eq!(
-                subtasks.get(0).unwrap(),
-                &SubTask {
-                    id: "B_1".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![
-                        Action::Jump {
-                            coordinates: Coordinates(10, 20),
-                        },
-                        Action::Location {
-                            coordinates: Coordinates(23, 14),
-                        },
-                    ],
-                },
-            );
-            assert_eq!(
-                subtasks.get(1).unwrap(),
-                &SubTask {
-                    id: "B_2".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![
-                        Action::Custom {
-                            id: "a".to_string(),
-                        },
-                        Action::Location {
-                            coordinates: Coordinates(40, 10),
-                        },
-                    ],
-                },
-            );
-        } else {
-            panic!()
-        }
-        assert!(state.steps_completed.contains(&"A".to_string()));
-        assert_eq!(state.steps_left, 2);
-        assert!(state.required_steps.contains(&"C".to_string()));
-        assert_eq!(state.required_steps.len(), 1);
-        assert!(state.subtasks_completed.is_some());
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_1"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_2"));
-        assert_eq!(state.subtasks_completed.as_ref().unwrap().len(), 2);
+        assert_eq!(
+            state.current_steps.get("A").unwrap().tasks_completed.len(),
+            1
+        );
+        assert!(state
+            .current_steps
+            .get("A")
+            .unwrap()
+            .tasks_completed
+            .contains("A_1"));
 
         state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("B"));
-        assert_eq!(state.next_possible_steps.len(), 1);
-        if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("B").unwrap().todos {
-            assert_eq!(subtasks.len(), 2);
-            assert_eq!(
-                subtasks.get(0).unwrap(),
-                &SubTask {
-                    id: "B_1".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![Action::Location {
+        assert!(state.current_steps.contains_key("B"));
+        assert_eq!(state.current_steps.len(), 1);
+        assert!(!state.current_steps.contains_key("A"));
+
+        let tasks = &state.current_steps.get("B").unwrap().to_dos;
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(
+            tasks.get(0).unwrap(),
+            &Task {
+                id: "B_1".to_string(),
+                description: None,
+                action_items: vec![
+                    Action::Jump {
+                        coordinates: Coordinates(10, 20),
+                    },
+                    Action::Location {
                         coordinates: Coordinates(23, 14),
-                    },],
-                },
-            );
-            assert_eq!(
-                subtasks.get(1).unwrap(),
-                &SubTask {
-                    id: "B_2".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![
-                        Action::Custom {
-                            id: "a".to_string(),
-                        },
-                        Action::Location {
-                            coordinates: Coordinates(40, 10),
-                        },
-                    ],
-                },
-            );
-        } else {
-            panic!()
-        }
-        assert!(state.steps_completed.contains(&"A".to_string()));
-        assert_eq!(state.steps_left, 2);
-        assert!(state.required_steps.contains(&"C".to_string()));
-        assert!(state.subtasks_completed.is_some());
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_1"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_2"));
-        assert_eq!(state.subtasks_completed.as_ref().unwrap().len(), 2);
-
-        state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("B"));
-        assert_eq!(state.next_possible_steps.len(), 1);
-        if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("B").unwrap().todos {
-            assert_eq!(subtasks.len(), 1);
-            assert_eq!(
-                subtasks.get(0).unwrap(),
-                &SubTask {
-                    id: "B_2".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![
-                        Action::Custom {
-                            id: "a".to_string(),
-                        },
-                        Action::Location {
-                            coordinates: Coordinates(40, 10),
-                        },
-                    ],
-                },
-            );
-        } else {
-            panic!()
-        }
-        assert!(state.steps_completed.contains(&"A".to_string()));
-        assert_eq!(state.steps_left, 2);
-        assert!(state.required_steps.contains(&"C".to_string()));
-        assert_eq!(state.required_steps.len(), 1);
-        assert!(state.subtasks_completed.is_some());
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_1"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_2"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("B_1"));
-        assert_eq!(state.subtasks_completed.as_ref().unwrap().len(), 3);
-        state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("B"));
-        assert_eq!(state.next_possible_steps.len(), 1);
-        if let Tasks::Multiple(subtasks) = &state.next_possible_steps.get("B").unwrap().todos {
-            assert_eq!(subtasks.len(), 1);
-            assert_eq!(
-                subtasks.get(0).unwrap(),
-                &SubTask {
-                    id: "B_2".to_string(),
-                    description: "".to_string(),
-                    action_items: vec![Action::Location {
+                    },
+                ],
+            },
+        );
+        assert_eq!(
+            tasks.get(1).unwrap(),
+            &Task {
+                id: "B_2".to_string(),
+                description: None,
+                action_items: vec![
+                    Action::Custom {
+                        id: "a".to_string(),
+                    },
+                    Action::Location {
                         coordinates: Coordinates(40, 10),
-                    },],
-                },
-            );
-        } else {
-            panic!()
-        }
+                    },
+                ],
+            },
+        );
+
         assert!(state.steps_completed.contains(&"A".to_string()));
         assert_eq!(state.steps_left, 2);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert_eq!(state.required_steps.len(), 1);
-        assert!(state.subtasks_completed.is_some());
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_1"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_2"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("B_1"));
-        assert_eq!(state.subtasks_completed.as_ref().unwrap().len(), 3);
 
         state = state.apply_event(&quest_graph, &events.remove(0));
-        assert!(state.next_possible_steps.contains_key("C"));
-        assert_eq!(state.next_possible_steps.len(), 1);
+        assert!(state.current_steps.contains_key("B"));
+        assert_eq!(state.current_steps.len(), 1);
+
+        let tasks = &state.current_steps.get("B").unwrap().to_dos;
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(
+            tasks.get(0).unwrap(),
+            &Task {
+                id: "B_1".to_string(),
+                description: None,
+                action_items: vec![Action::Location {
+                    coordinates: Coordinates(23, 14),
+                },],
+            },
+        );
+        assert_eq!(
+            tasks.get(1).unwrap(),
+            &Task {
+                id: "B_2".to_string(),
+                description: None,
+                action_items: vec![
+                    Action::Custom {
+                        id: "a".to_string(),
+                    },
+                    Action::Location {
+                        coordinates: Coordinates(40, 10),
+                    },
+                ],
+            },
+        );
+
+        assert!(state.steps_completed.contains(&"A".to_string()));
+        assert_eq!(state.steps_left, 2);
+        assert!(state.required_steps.contains(&"C".to_string()));
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert!(state.current_steps.contains_key("B"));
+        assert_eq!(state.current_steps.len(), 1);
+        let tasks = &state.current_steps.get("B").unwrap().to_dos;
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(
+            tasks.get(0).unwrap(),
+            &Task {
+                id: "B_2".to_string(),
+                description: None,
+                action_items: vec![
+                    Action::Custom {
+                        id: "a".to_string(),
+                    },
+                    Action::Location {
+                        coordinates: Coordinates(40, 10),
+                    },
+                ],
+            },
+        );
+
+        assert!(state.steps_completed.contains(&"A".to_string()));
+        assert_eq!(state.steps_left, 2);
+        assert!(state.required_steps.contains(&"C".to_string()));
+        assert_eq!(state.required_steps.len(), 1);
+        assert_eq!(
+            state.current_steps.get("B").unwrap().tasks_completed.len(),
+            1
+        );
+        assert!(state
+            .current_steps
+            .get("B")
+            .unwrap()
+            .tasks_completed
+            .contains("B_1"));
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert!(state.current_steps.contains_key("B"));
+        assert_eq!(state.current_steps.len(), 1);
+        let tasks = &state.current_steps.get("B").unwrap().to_dos;
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(
+            tasks.get(0).unwrap(),
+            &Task {
+                id: "B_2".to_string(),
+                description: None,
+                action_items: vec![Action::Location {
+                    coordinates: Coordinates(40, 10),
+                },],
+            },
+        );
+
+        assert!(state.steps_completed.contains(&"A".to_string()));
+        assert_eq!(state.steps_left, 2);
+        assert!(state.required_steps.contains(&"C".to_string()));
+        assert_eq!(state.required_steps.len(), 1);
+        assert_eq!(
+            state.current_steps.get("B").unwrap().tasks_completed.len(),
+            1
+        );
+        assert!(state
+            .current_steps
+            .get("B")
+            .unwrap()
+            .tasks_completed
+            .contains("B_1"));
+        assert!(!state
+            .current_steps
+            .get("B")
+            .unwrap()
+            .tasks_completed
+            .contains("B_2"));
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert!(state.current_steps.contains_key("C"));
+        assert_eq!(state.current_steps.len(), 1);
         assert!(state.steps_completed.contains(&"A".to_string()));
         assert!(state.steps_completed.contains(&"B".to_string()));
         assert_eq!(state.steps_left, 1);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert_eq!(state.required_steps.len(), 1);
-        assert!(state.subtasks_completed.is_some());
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_1"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_2"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("B_1"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("B_2"));
-        assert_eq!(state.subtasks_completed.as_ref().unwrap().len(), 4);
-        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert!(state.current_steps.get("B").is_none());
 
-        assert_eq!(state.next_possible_steps.len(), 0);
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert_eq!(state.current_steps.len(), 0);
         assert!(state.steps_completed.contains(&"A".to_string()));
         assert!(state.steps_completed.contains(&"B".to_string()));
         assert!(state.steps_completed.contains(&"C".to_string()));
         assert_eq!(state.steps_left, 0);
         assert!(state.required_steps.contains(&"C".to_string()));
         assert_eq!(state.required_steps.len(), 1);
-        assert!(state.subtasks_completed.is_some());
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_1"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("A_2"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("B_1"));
-        assert!(state.subtasks_completed.as_ref().unwrap().contains("B_2"));
-        assert_eq!(state.subtasks_completed.as_ref().unwrap().len(), 4);
+        assert_eq!(state.current_steps.len(), 0);
         assert!(state.is_completed())
     }
 }

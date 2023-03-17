@@ -12,7 +12,7 @@ use daggy::{
 
 pub struct QuestGraph {
     graph: Dag<String, u32>,
-    pub tasks_by_step: HashMap<StepID, Tasks>,
+    pub tasks_by_step: HashMap<StepID, Vec<Task>>,
 }
 
 impl QuestGraph {
@@ -90,13 +90,13 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     let starting_step = Step {
         id: START_STEP_ID.to_string(),
         description: "COMMON START NODE".to_string(),
-        tasks: Tasks::None,
+        tasks: vec![],
         on_complete_hook: None,
     };
     let ending_step = Step {
         id: END_STEP_ID.to_string(),
         description: "COMMON END NODE".to_string(),
-        tasks: Tasks::None,
+        tasks: vec![],
         on_complete_hook: None,
     };
 
@@ -138,7 +138,7 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     dag
 }
 
-fn build_tasks_by_step_from_quest_definition(quest: &Quest) -> HashMap<StepID, Tasks> {
+fn build_tasks_by_step_from_quest_definition(quest: &Quest) -> HashMap<StepID, Vec<Task>> {
     let mut content_map = HashMap::new();
     for step in &quest.definition.steps {
         let content = step.tasks.clone();
@@ -170,33 +170,41 @@ mod tests {
                     Step {
                         id: "A".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "B_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "C_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "D".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "D_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                 ],
@@ -234,41 +242,51 @@ mod tests {
                     Step {
                         id: "A1".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A1_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "A2".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A2_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "B_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "C_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "D".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "D_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                 ],
@@ -318,49 +336,61 @@ mod tests {
                     Step {
                         id: "A".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B1".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "B_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B2".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "B_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B3".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "B_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "C_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "D".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "D_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                 ],
@@ -406,41 +436,51 @@ mod tests {
                     Step {
                         id: "A1".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A1_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "A2".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A2_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "B_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "C_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "D".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "D_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                 ],
@@ -472,41 +512,51 @@ mod tests {
                     Step {
                         id: "A1".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A1_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "A2".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "A2_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "B_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "C_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                     Step {
                         id: "D".to_string(),
                         description: "".to_string(),
-                        tasks: Tasks::Single {
+                        tasks: vec![Task {
+                            id: "D_1".to_string(),
+                            description: None,
                             action_items: vec![],
-                        },
+                        }],
                         on_complete_hook: None,
                     },
                 ],

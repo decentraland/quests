@@ -7,6 +7,13 @@ on:
     branches: [main]
 
 jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fetch
   publish_server:
     uses: decentraland/actions/.github/workflows/build-quay-main.yml@main
     with:

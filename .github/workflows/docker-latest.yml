@@ -7,18 +7,11 @@ on:
     branches: [main, chore/pre-fetch] # remove new branch before merge
 
 jobs:
-  prepare:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: rustup toolchain install stable --profile minimal
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo build
-  publish_server:
-    runs-on: ubuntu-latest
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v2
       - uses: Swatinem/rust-cache@v2
       - run: cargo build
       - name: Set up QEMU
@@ -31,8 +24,7 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
-      - name: Build and push
-        id: docker_build
+      - name: Build and push (quests server)
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -42,26 +34,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             PROJECT=quests_server
-
-  publish_system:
-    runs-on: ubuntu-latest
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v2
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo build
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_TOKEN }}
-      - name: Build and push
-        id: docker_build
+      - name: Build and push (quests system)
         uses: docker/build-push-action@v3
         with:
           context: .

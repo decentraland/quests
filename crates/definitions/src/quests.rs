@@ -102,8 +102,8 @@ pub enum QuestValidationError {
     #[error("Step ID is not unique - Step ID: {0}")]
     NotUniqueIDForStep(StepID),
     /// Not unique ID for the Subtask
-    #[error("Step's Subtask ID is not unique - Step ID: {0}")]
-    NotUniqueIDForStepSubtask(StepID),
+    #[error("Step's Task ID is not unique - Step ID: {0}")]
+    NotUniqueIDForStepTask(StepID),
     /// Step should not has Tasks::None
     #[error("Step {0} doesn't have tasks defined")]
     MissingTasksForStep(StepID),
@@ -194,29 +194,26 @@ impl Quest {
             }
         }
 
+        // Used to check all steps/tasks have a unique ID
+        let mut unique_task_ids: HashSet<String> = HashSet::new();
+        let mut unique_step_ids: HashSet<String> = HashSet::new();
+
         for step in &self.definition.steps {
             // All steps should not contain Tasks::None used for START and END nodes
             if step.tasks.is_empty() {
                 return Err(QuestValidationError::MissingTasksForStep(step.id.clone()));
             }
 
-            // All steps has an unique ID
-            if self
-                .definition
-                .steps
-                .iter()
-                .filter(|other_step| step.id == other_step.id)
-                .count()
-                > 1
-            {
+            if !unique_step_ids.insert(step.id.to_string()) {
+                // Step with same id has been seen
                 return Err(QuestValidationError::NotUniqueIDForStep(step.id.clone()));
             }
 
             // All steps tasks (if there) have unique ID
-            // TODO: Find a way to check uniqueness between all steps' subtasks
             for task in &step.tasks {
-                if step.tasks.iter().filter(|s| s.id == task.id).count() > 1 {
-                    return Err(QuestValidationError::NotUniqueIDForStepSubtask(
+                if !unique_task_ids.insert(task.id.to_string()) {
+                    // Task with same id has been seen
+                    return Err(QuestValidationError::NotUniqueIDForStepTask(
                         step.id.clone(),
                     ));
                 }
@@ -632,7 +629,7 @@ mod tests {
                 ],
             },
         };
-        let err = QuestValidationError::NotUniqueIDForStepSubtask("A".to_string());
+        let err = QuestValidationError::NotUniqueIDForStepTask("A".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
 
         // Should not be valid because of tasks:None

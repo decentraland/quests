@@ -1,6 +1,5 @@
 .vscode
 .gitignore
-target
 *.dockerfile
 README.md
 .git

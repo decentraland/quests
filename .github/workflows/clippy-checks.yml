@@ -8,6 +8,8 @@ jobs:
   clippy_check:
     runs-on: ubuntu-latest
     steps:
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
       - uses: actions/checkout@v1
       - run: rustup component add clippy
       - uses: Swatinem/rust-cache@v2

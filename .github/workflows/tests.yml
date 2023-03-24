@@ -33,6 +33,8 @@ jobs:
           - 6379:6379
 
     steps:
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
       - uses: actions/checkout@v2
       - run: rustup toolchain install stable --profile minimal
       - uses: Swatinem/rust-cache@v2

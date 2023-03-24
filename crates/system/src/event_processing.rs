@@ -5,8 +5,11 @@ use quests_db::core::{
 };
 use quests_definitions::{
     quest_graph::QuestGraph,
-    quest_state::{get_state, QuestState, QuestUpdate},
-    quests::{Event, Quest, QuestDefinition},
+    quest_state::get_state,
+    quests::{
+        user_update, Event, Quest, QuestDefinition, QuestState, QuestStateUpdate, UserUpdate,
+    },
+    ProstDecodeError, ProstMessage,
 };
 use quests_message_broker::{events_queue::EventsQueue, quests_channel::QuestsChannel};
 use std::sync::Arc;
@@ -26,8 +29,8 @@ pub enum ProcessEventError {
 
 pub type ProcessEventResult = Result<usize, ProcessEventError>;
 
-impl From<bincode::Error> for ProcessEventError {
-    fn from(_value: bincode::Error) -> Self {
+impl From<ProstDecodeError> for ProcessEventError {
+    fn from(_value: ProstDecodeError) -> Self {
         ProcessEventError::Serialization
     }
 }
@@ -57,13 +60,23 @@ pub async fn process_event(
                     Ok(ApplyEventResult::NewState(quest_state)) => {
                         let add_event = AddEvent {
                             user_address: &event.address,
-                            event: bincode::serialize(&event)?,
+                            event: event.encode_to_vec(),
                         };
                         database.add_event(&add_event, &quest_instance.id).await?;
                         quests_channel
                             .lock()
                             .await
-                            .publish(&quest_instance.id, QuestUpdate { state: quest_state })
+                            .publish(
+                                &quest_instance.id,
+                                UserUpdate {
+                                    message: Some(user_update::Message::QuestState(
+                                        QuestStateUpdate {
+                                            quest_instance_id: quest_instance.id.clone(),
+                                            quest_state: Some(quest_state),
+                                        },
+                                    )),
+                                },
+                            )
                             .await;
                         event_applied_to_instances += 1;
                     }
@@ -102,7 +115,7 @@ async fn process_event_for_quest_instance(
 ) -> Result<ApplyEventResult, ProcessEventError> {
     // try to apply event to every instance
     let quest = database.get_quest(&quest_instance.quest_id).await?;
-    let quest_definition = bincode::deserialize::<QuestDefinition>(&quest.definition)?;
+    let quest_definition = QuestDefinition::decode(&*quest.definition)?;
     let quest = Quest {
         name: quest.name,
         description: quest.description,
@@ -112,7 +125,7 @@ async fn process_event_for_quest_instance(
     let last_events = database.get_events(&quest_instance.id).await?;
     let mut events = vec![];
     for past_event in last_events {
-        events.push(bincode::deserialize::<Event>(&past_event.event)?);
+        events.push(Event::decode(&*past_event.event)?);
     }
 
     let quest_graph = QuestGraph::from(&quest);

@@ -4,6 +4,7 @@ use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
 use quests_definitions::quests::Quest;
+use quests_definitions::ProstMessage;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
@@ -19,7 +20,7 @@ async fn get_quest_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: bincode::serialize(&quest_definition.definition).unwrap(),
+        definition: quest_definition.definition.encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();

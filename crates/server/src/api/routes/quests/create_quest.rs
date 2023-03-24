@@ -6,7 +6,7 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     Database,
 };
-use quests_definitions::quests::Quest;
+use quests_definitions::{quests::Quest, ProstMessage};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -58,6 +58,6 @@ fn to_create_quest(quest: &Quest) -> Result<CreateQuest, QuestError> {
     Ok(CreateQuest {
         name: &quest.name,
         description: &quest.description,
-        definition: bincode::serialize(&quest.definition)?,
+        definition: quest.definition.encode_to_vec()
     })
 }

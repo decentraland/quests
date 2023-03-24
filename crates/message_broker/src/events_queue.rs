@@ -1,10 +1,8 @@
-use std::sync::Arc;
-
+use crate::redis::Redis;
 use async_trait::async_trait;
 use deadpool_redis::redis::AsyncCommands;
-use quests_definitions::quests::*;
-
-use crate::redis::Redis;
+use quests_definitions::{quests::*, ProstMessage};
+use std::sync::Arc;
 
 pub type EventsQueueResult<T> = Result<T, String>;
 
@@ -34,7 +32,7 @@ impl EventsQueue for RedisEventsQueue {
             .get_async_connection()
             .await
             .ok_or("Failed to get a connection")?;
-        let event = bincode::serialize(event).map_err(|_| "Failed to serialize event")?;
+        let event = event.encode_to_vec();
         let queue_size: usize = connection
             .rpush(EVENTS_QUEUE, event)
             .await
@@ -56,8 +54,8 @@ impl EventsQueue for RedisEventsQueue {
             .await
             .map_err(|err| format!("Couldn't get an element from the events queue: {err}"))?;
 
-        let event = bincode::deserialize::<Event>(&result[1])
-            .map_err(|_| "Couldn't deserialize response as an Event")?;
+        let event =
+            Event::decode(&*result[1]).map_err(|_| "Couldn't deserialize response as an Event")?;
 
         Ok(event)
     }

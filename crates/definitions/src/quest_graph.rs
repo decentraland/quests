@@ -1,3 +1,4 @@
+use crate::quests::{Action, Connection, Step, Task};
 use std::collections::HashMap;
 
 use super::quests::*;
@@ -104,7 +105,11 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     let end_node = dag.add_node(ending_step.id);
     let mut nodes: HashMap<String, NodeIndex> = HashMap::new();
 
-    for (step_from, step_to) in &quest.definition.connections {
+    for &Connection {
+        ref step_from,
+        ref step_to,
+    } in &quest.definition.connections
+    {
         // Validate if steps are in defined in the quest
         if quest.contanins_step(step_from) && quest.contanins_step(step_to) {
             if let Some(node_from) = nodes.get(step_from) {
@@ -162,9 +167,9 @@ mod tests {
             description: "".to_string(),
             definition: QuestDefinition {
                 connections: vec![
-                    ("A".to_string(), "B".to_string()),
-                    ("B".to_string(), "C".to_string()),
-                    ("C".to_string(), "D".to_string()),
+                    Connection::new("A", "B"),
+                    Connection::new("B", "C"),
+                    Connection::new("C", "D"),
                 ],
                 steps: vec![
                     Step {
@@ -234,9 +239,9 @@ mod tests {
             description: "".to_string(),
             definition: QuestDefinition {
                 connections: vec![
-                    ("A1".to_string(), "B".to_string()),
-                    ("B".to_string(), "C".to_string()),
-                    ("A2".to_string(), "D".to_string()),
+                    Connection::new("A1", "B"),
+                    Connection::new("B", "C"),
+                    Connection::new("A2", "D"),
                 ],
                 steps: vec![
                     Step {
@@ -326,11 +331,11 @@ mod tests {
             description: "".to_string(),
             definition: QuestDefinition {
                 connections: vec![
-                    ("A".to_string(), "B1".to_string()),
-                    ("A".to_string(), "B2".to_string()),
-                    ("A".to_string(), "B3".to_string()),
-                    ("B1".to_string(), "C".to_string()),
-                    ("C".to_string(), "D".to_string()),
+                    Connection::new("A", "B1"),
+                    Connection::new("A", "B2"),
+                    Connection::new("A", "B3"),
+                    Connection::new("B1", "C"),
+                    Connection::new("C", "D"),
                 ],
                 steps: vec![
                     Step {
@@ -428,9 +433,9 @@ mod tests {
             description: "".to_string(),
             definition: QuestDefinition {
                 connections: vec![
-                    ("A1".to_string(), "B".to_string()),
-                    ("B".to_string(), "C".to_string()),
-                    ("A2".to_string(), "D".to_string()),
+                    Connection::new("A1", "B"),
+                    Connection::new("B", "C"),
+                    Connection::new("A2", "D"),
                 ],
                 steps: vec![
                     Step {
@@ -504,9 +509,9 @@ mod tests {
             description: "".to_string(),
             definition: QuestDefinition {
                 connections: vec![
-                    ("A1".to_string(), "B".to_string()),
-                    ("B".to_string(), "C".to_string()),
-                    ("A2".to_string(), "D".to_string()),
+                    Connection::new("A1", "B"),
+                    Connection::new("B", "C"),
+                    Connection::new("A2", "D"),
                 ],
                 steps: vec![
                     Step {
@@ -573,33 +578,39 @@ mod tests {
     #[test]
     fn matches_action_works() {
         let result = matches_action((
-            Action::Location {
-                coordinates: Coordinates(10, 10),
-            },
-            Action::Location {
-                coordinates: Coordinates(10, 10),
-            },
+            Action::location(Coordinates::new(10, 10)),
+            Action::location(Coordinates::new(10, 10)),
         ));
         assert!(result);
 
         let result = matches_action((
-            Action::Location {
-                coordinates: Coordinates(10, 10),
-            },
-            Action::Location {
-                coordinates: Coordinates(10, 20),
-            },
+            Action::location(Coordinates::new(10, 10)),
+            Action::location(Coordinates::new(10, 20)),
         ));
         assert!(!result);
 
         let result = matches_action((
-            Action::Location {
-                coordinates: Coordinates(10, 10),
-            },
-            Action::Jump {
-                coordinates: Coordinates(10, 10),
-            },
+            Action::location(Coordinates::new(10, 10)),
+            Action::jump(Coordinates::new(10, 10)),
         ));
         assert!(!result);
+
+        let result = matches_action((
+            Action::npc_interaction("NPC_ID"),
+            Action::npc_interaction("NPC_ID_2"),
+        ));
+        assert!(!result);
+
+        let result = matches_action((
+            Action::npc_interaction("NPC_ID"),
+            Action::npc_interaction("NPC_ID"),
+        ));
+        assert!(result);
+
+        let result = matches_action((
+            Action::emote(Coordinates::new(1, 2), "ID"),
+            Action::emote(Coordinates::new(1, 2), "ID"),
+        ));
+        assert!(result);
     }
 }

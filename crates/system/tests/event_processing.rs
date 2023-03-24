@@ -1,5 +1,8 @@
 use quests_db::{core::definitions::*, create_quests_db_component};
-use quests_definitions::quests::{Event, *};
+use quests_definitions::{
+    quests::{Event, *},
+    ProstMessage,
+};
 use quests_system::{configuration::Config, EventProcessor};
 
 use crate::common::database::create_test_db;
@@ -19,9 +22,9 @@ async fn can_process_events() {
         description: "Grab some apples".to_string(),
         definition: QuestDefinition {
             connections: vec![
-                ("A".to_string(), "B".to_string()),
-                ("B".to_string(), "C".to_string()),
-                ("C".to_string(), "D".to_string()),
+                Connection::new("A", "B"),
+                Connection::new("B", "C"),
+                Connection::new("C", "D"),
             ],
             steps: vec![
                 Step {
@@ -29,9 +32,7 @@ async fn can_process_events() {
                     tasks: vec![Task {
                         id: "A_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -41,9 +42,7 @@ async fn can_process_events() {
                     tasks: vec![Task {
                         id: "B_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(13, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(13, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -53,9 +52,7 @@ async fn can_process_events() {
                     tasks: vec![Task {
                         id: "C_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 24),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 24))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -65,9 +62,7 @@ async fn can_process_events() {
                     tasks: vec![Task {
                         id: "D_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(40, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(40, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -79,7 +74,7 @@ async fn can_process_events() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: bincode::serialize(&quest_definition.definition).unwrap(),
+        definition: quest_definition.definition.encode_to_vec(),
     };
 
     let result = db.create_quest(&create_quest).await;
@@ -99,13 +94,11 @@ async fn can_process_events() {
         .await
         .expect("can initialize event processor");
 
-    let action = Action::Location {
-        coordinates: Coordinates(10, 20),
-    };
+    let action = Action::location(Coordinates::new(10, 20));
 
     let event = Event {
         address: user_address.to_string(),
-        action,
+        action: Some(action),
     };
 
     println!("about to push event");

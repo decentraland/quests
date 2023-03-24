@@ -8,7 +8,7 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     create_quests_db_component,
 };
-use quests_definitions::{quest_graph::QuestGraph, quest_state::QuestState};
+use quests_definitions::{quest_graph::QuestGraph, quests::QuestState, ProstMessage};
 use quests_server::api::routes::quests::{StartQuestRequest, StartQuestResponse};
 use uuid::Uuid;
 
@@ -26,7 +26,7 @@ async fn get_quest_state_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: bincode::serialize(&quest_definition.definition).unwrap(),
+        definition: quest_definition.definition.encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();

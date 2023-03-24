@@ -9,7 +9,7 @@ const ADDRESS: &str = "0xA";
 fn build_location_event(coordinates: Coordinates) -> Event {
     Event {
         address: ADDRESS.to_string(),
-        action: Action::Location { coordinates },
+        action: Some(Action::location(coordinates)),
     }
 }
 #[tokio::test]
@@ -17,7 +17,7 @@ async fn can_send_event_to_the_queue() {
     let redis = build_redis(10).await;
     let events_queue = RedisEventsQueue::new(redis);
 
-    let event = build_location_event(Coordinates(0, 0));
+    let event = build_location_event(Coordinates::new(0, 0));
 
     let result = events_queue.push(&event).await;
     assert!(result.is_ok(), "should be able to send events");
@@ -31,11 +31,11 @@ async fn can_send_multiple_events_to_the_queue() {
     let redis = build_redis(11).await;
     let events_queue = RedisEventsQueue::new(redis);
 
-    let event = build_location_event(Coordinates(0, 0));
+    let event = build_location_event(Coordinates::new(0, 0));
     let result = events_queue.push(&event).await;
     assert!(result.is_ok(), "should be able to push events");
 
-    let event = build_location_event(Coordinates(0, 1));
+    let event = build_location_event(Coordinates::new(0, 1));
     let result = events_queue.push(&event).await;
     assert!(result.is_ok(), "should be able to push events");
 }
@@ -45,7 +45,7 @@ async fn can_receive_event_from_the_queue() {
     let redis = build_redis(12).await;
     let events_queue = RedisEventsQueue::new(redis);
 
-    let event = build_location_event(Coordinates(0, 0));
+    let event = build_location_event(Coordinates::new(0, 0));
     let result = events_queue.push(&event).await;
     assert!(result.is_ok(), "should be able to push events");
 
@@ -60,11 +60,11 @@ async fn can_receive_multiple_events_from_the_queue() {
     let redis = build_redis(13).await;
     let events_queue = RedisEventsQueue::new(redis);
 
-    let first_event = build_location_event(Coordinates(0, 0));
+    let first_event = build_location_event(Coordinates::new(0, 0));
     let result = events_queue.push(&first_event).await;
     assert!(result.is_ok(), "should be able to push events");
 
-    let second_event = build_location_event(Coordinates(0, 1));
+    let second_event = build_location_event(Coordinates::new(0, 1));
     let result = events_queue.push(&second_event).await;
     assert!(result.is_ok(), "should be able to push events");
 

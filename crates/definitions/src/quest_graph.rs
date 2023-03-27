@@ -105,7 +105,7 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     let end_node = dag.add_node(ending_step.id);
     let mut nodes: HashMap<String, NodeIndex> = HashMap::new();
 
-    for &Connection {
+    for Connection {
         ref step_from,
         ref step_to,
     } in &quest.definition.connections

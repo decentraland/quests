@@ -6,9 +6,9 @@ pub fn grab_some_apples() -> Quest {
         description: "Grab some apples".to_string(),
         definition: QuestDefinition {
             connections: vec![
-                ("A".to_string(), "B".to_string()),
-                ("B".to_string(), "C".to_string()),
-                ("C".to_string(), "D".to_string()),
+                Connection::new("A", "B"),
+                Connection::new("B", "C"),
+                Connection::new("C", "D"),
             ],
             steps: vec![
                 Step {
@@ -16,9 +16,7 @@ pub fn grab_some_apples() -> Quest {
                     tasks: vec![Task {
                         id: "A_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -28,9 +26,7 @@ pub fn grab_some_apples() -> Quest {
                     tasks: vec![Task {
                         id: "B_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(13, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(13, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -40,9 +36,7 @@ pub fn grab_some_apples() -> Quest {
                     tasks: vec![Task {
                         id: "C_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 24),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 24))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -52,9 +46,7 @@ pub fn grab_some_apples() -> Quest {
                     tasks: vec![Task {
                         id: "D_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(40, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(40, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -71,9 +63,9 @@ pub fn grab_some_pies() -> Quest {
         description: "Grab some pies".to_string(),
         definition: QuestDefinition {
             connections: vec![
-                ("A".to_string(), "B".to_string()),
-                ("B".to_string(), "C".to_string()),
-                ("C".to_string(), "D".to_string()),
+                Connection::new("A", "B"),
+                Connection::new("B", "C"),
+                Connection::new("C", "D"),
             ],
             steps: vec![
                 Step {
@@ -81,9 +73,7 @@ pub fn grab_some_pies() -> Quest {
                     tasks: vec![Task {
                         id: "A_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -93,9 +83,7 @@ pub fn grab_some_pies() -> Quest {
                     tasks: vec![Task {
                         id: "B_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(30, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(30, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -105,9 +93,7 @@ pub fn grab_some_pies() -> Quest {
                     tasks: vec![Task {
                         id: "C_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 23),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -117,9 +103,7 @@ pub fn grab_some_pies() -> Quest {
                     tasks: vec![Task {
                         id: "D_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(14, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(14, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),

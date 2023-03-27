@@ -8,3 +8,10 @@ serde = { version = "1.0.152", features = ["derive"] }
 daggy = "*"
 thiserror = "1.0.38"
 serde_json = { workspace = true }
+prost = "0.11.5"
+async-trait = "0.1.57"
+dcl-rpc = { workspace = true }
+
+[build-dependencies]
+dcl-rpc = { workspace = true }
+prost-build = "*"

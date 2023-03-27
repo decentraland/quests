@@ -1,6 +1,7 @@
 use crate::domain::quests::QuestError;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use quests_db::core::errors::DBError;
+use quests_definitions::ProstDecodeError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -43,7 +44,7 @@ impl ResponseError for CommonError {
 impl ResponseError for QuestError {
     fn status_code(&self) -> StatusCode {
         match self {
-            Self::StepsDeserialization => StatusCode::NOT_FOUND,
+            Self::DeserializationError => StatusCode::INTERNAL_SERVER_ERROR,
             Self::CommonError(base) => base.status_code(),
             Self::QuestValidation(_) => StatusCode::BAD_REQUEST,
         }
@@ -64,9 +65,9 @@ pub fn query_extractor_config() -> web::QueryConfig {
         .error_handler(|err, _| CommonError::BadRequest(err.to_string()).into())
 }
 
-impl From<bincode::Error> for QuestError {
-    fn from(_value: bincode::Error) -> Self {
-        QuestError::StepsDeserialization
+impl From<ProstDecodeError> for QuestError {
+    fn from(_value: ProstDecodeError) -> Self {
+        QuestError::DeserializationError
     }
 }
 

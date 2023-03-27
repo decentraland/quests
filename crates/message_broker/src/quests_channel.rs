@@ -6,18 +6,19 @@ use futures_util::StreamExt as _;
 use log::debug;
 use log::error;
 use log::info;
-use quests_definitions::quest_state::QuestUpdate;
+use quests_definitions::quests::UserUpdate;
+use quests_definitions::ProstMessage;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::redis::Redis;
-pub type OnUpdate = Box<dyn Fn(QuestUpdate) + Send + Sync>;
+pub type OnUpdate = Box<dyn Fn(UserUpdate) + Send + Sync>;
 
 #[async_trait]
 pub trait QuestsChannel: Send + Sync {
     async fn subscribe(&mut self, quest_id: &str, on_update: OnUpdate);
     async fn unsubscribe(&mut self, quest_id: &str);
-    async fn publish(&mut self, quest_id: &str, update: QuestUpdate);
+    async fn publish(&mut self, quest_id: &str, update: UserUpdate);
 }
 
 pub struct RedisQuestsChannel {
@@ -69,7 +70,7 @@ impl RedisQuestsChannel {
                         let payload = message.get_payload::<Vec<u8>>();
                         match payload {
                             Ok(payload) => {
-                                let update = bincode::deserialize::<QuestUpdate>(&payload);
+                                let update = UserUpdate::decode(&*payload);
                                 match update {
                                     Ok(_update) => {
                                         let _subscriptions = subscriptions.read().await;
@@ -112,8 +113,8 @@ impl QuestsChannel for RedisQuestsChannel {
         };
     }
 
-    async fn publish(&mut self, quest_id: &str, update: QuestUpdate) {
-        let update_bin = bincode::serialize(&update).expect("can serialize update"); // TODO: error handling
+    async fn publish(&mut self, quest_id: &str, update: UserUpdate) {
+        let update_bin = update.encode_to_vec();
         self.publish
             .publish::<&str, Vec<u8>, String>(quest_id, update_bin);
     }

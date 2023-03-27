@@ -8,9 +8,9 @@ fn main() {
         description: "".to_string(),
         definition: QuestDefinition {
             connections: vec![
-                ("A1".to_string(), "B".to_string()),
-                ("B".to_string(), "C".to_string()),
-                ("A2".to_string(), "D".to_string()),
+                Connection::new("A1", "B"),
+                Connection::new("B", "C"),
+                Connection::new("A2", "D"),
             ],
             steps: vec![
                 Step {
@@ -20,12 +20,8 @@ fn main() {
                         id: "A1_1".to_string(),
                         description: None,
                         action_items: vec![
-                            Action::Location {
-                                coordinates: Coordinates(10, 10),
-                            },
-                            Action::Jump {
-                                coordinates: Coordinates(10, 11),
-                            },
+                            Action::location(Coordinates::new(10, 10)),
+                            Action::jump(Coordinates::new(10, 11)),
                         ],
                     }],
                     on_complete_hook: None,
@@ -36,9 +32,7 @@ fn main() {
                     tasks: vec![Task {
                         id: "A2_1".to_string(),
                         description: None,
-                        action_items: vec![Action::NPCInteraction {
-                            npc_id: "NPC_IDEN".to_string(),
-                        }],
+                        action_items: vec![Action::npc_interaction("NPC_IDEN")],
                     }],
                     on_complete_hook: None,
                 },
@@ -48,9 +42,7 @@ fn main() {
                     tasks: vec![Task {
                         id: "B_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Jump {
-                            coordinates: Coordinates(20, 10),
-                        }],
+                        action_items: vec![Action::jump(Coordinates::new(20, 10))],
                     }],
                     on_complete_hook: None,
                 },
@@ -60,9 +52,7 @@ fn main() {
                     tasks: vec![Task {
                         id: "C_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Jump {
-                            coordinates: Coordinates(20, 20),
-                        }],
+                        action_items: vec![Action::jump(Coordinates::new(20, 20))],
                     }],
                     on_complete_hook: None,
                 },
@@ -72,9 +62,7 @@ fn main() {
                     tasks: vec![Task {
                         id: "D_1".to_string(),
                         description: None,
-                        action_items: vec![Action::NPCInteraction {
-                            npc_id: "OTHER_NPC".to_string(),
-                        }],
+                        action_items: vec![Action::npc_interaction("OTHER_NPC")],
                     }],
                     on_complete_hook: None,
                 },

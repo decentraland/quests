@@ -3,7 +3,10 @@ use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_definitions::quests::{Action, Coordinates, Quest, QuestDefinition, Step, Task};
+use quests_definitions::quests::{
+    Action, Connection, Coordinates, Quest, QuestDefinition, Step, Task,
+};
+use quests_definitions::ProstMessage;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
@@ -19,7 +22,7 @@ async fn update_quest_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest.name,
         description: &quest.description,
-        definition: bincode::serialize(&quest.definition).unwrap(),
+        definition: quest.definition.encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();
@@ -29,9 +32,9 @@ async fn update_quest_should_be_200() {
         description: "Grab some apples - Updated".to_string(),
         definition: QuestDefinition {
             connections: vec![
-                ("A-Updated".to_string(), "B".to_string()),
-                ("B".to_string(), "C".to_string()),
-                ("C".to_string(), "D".to_string()),
+                Connection::new("A-Updated", "B"),
+                Connection::new("B", "C"),
+                Connection::new("C", "D"),
             ],
             steps: vec![
                 Step {
@@ -39,9 +42,7 @@ async fn update_quest_should_be_200() {
                     tasks: vec![Task {
                         id: "A_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -51,9 +52,7 @@ async fn update_quest_should_be_200() {
                     tasks: vec![Task {
                         id: "B_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -63,9 +62,7 @@ async fn update_quest_should_be_200() {
                     tasks: vec![Task {
                         id: "C_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -75,9 +72,7 @@ async fn update_quest_should_be_200() {
                     tasks: vec![Task {
                         id: "D_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -99,7 +94,7 @@ async fn update_quest_should_be_200() {
 
     assert_eq!(quest_updated.name, "QUEST-1_UPDATE");
     assert_eq!(quest_updated.description, "Grab some apples - Updated");
-    let definition: QuestDefinition = bincode::deserialize(&quest_updated.definition).unwrap();
+    let definition = QuestDefinition::decode(quest_updated.definition.as_slice()).unwrap();
     assert_eq!(quest_update.definition.steps.len(), definition.steps.len());
     for step in &quest_update.definition.steps {
         assert!(definition.steps.iter().any(|s| s.id == step.id));
@@ -116,9 +111,9 @@ async fn update_quest_should_be_400_uuid_bad_format() {
         description: "Grab some apples".to_string(),
         definition: QuestDefinition {
             connections: vec![
-                ("A".to_string(), "B".to_string()),
-                ("B".to_string(), "C".to_string()),
-                ("C".to_string(), "D".to_string()),
+                Connection::new("A", "B"),
+                Connection::new("B", "C"),
+                Connection::new("C", "D"),
             ],
             steps: vec![
                 Step {
@@ -126,9 +121,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
                     tasks: vec![Task {
                         id: "A_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -138,9 +131,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
                     tasks: vec![Task {
                         id: "B_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -150,9 +141,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
                     tasks: vec![Task {
                         id: "C_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),
@@ -162,9 +151,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
                     tasks: vec![Task {
                         id: "D_1".to_string(),
                         description: None,
-                        action_items: vec![Action::Location {
-                            coordinates: Coordinates(10, 20),
-                        }],
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
                     }],
                     on_complete_hook: None,
                     description: "".to_string(),

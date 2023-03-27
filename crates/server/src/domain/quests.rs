@@ -4,7 +4,11 @@ use crate::api::routes::{
 };
 use futures_util::future::join_all;
 use quests_db::core::definitions::{QuestInstance, QuestsDatabase};
-use quests_definitions::quest_state::{get_state, QuestState};
+use quests_definitions::{
+    quest_state::get_state,
+    quests::{Event, QuestState},
+    ProstMessage,
+};
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -13,7 +17,7 @@ pub enum QuestError {
     #[error("{0}")]
     CommonError(CommonError),
     #[error("Quest Definition issue")]
-    StepsDeserialization,
+    DeserializationError,
     #[error("Quest Validation Error: {0}")]
     QuestValidation(String),
 }
@@ -74,7 +78,7 @@ pub async fn get_instance_state(
 
             let events = stored_events
                 .iter()
-                .map(|event| bincode::deserialize(&event.event))
+                .map(|event| Event::decode(event.event.as_slice()))
                 .collect::<Result<Vec<_>, _>>()?;
 
             Ok(get_state(&quest, events))

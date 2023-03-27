@@ -6,5 +6,9 @@ pub async fn add_event_controller(
     events_queue: Arc<impl EventsQueue>,
     event: Event,
 ) -> EventsQueueResult<usize> {
-    events_queue.push(&event).await
+    if event.action.is_some() {
+        events_queue.push(&event).await
+    } else {
+        Err("No Action".to_string())
+    }
 }

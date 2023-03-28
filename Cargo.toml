@@ -9,3 +9,8 @@ config = "0.13"
 serde = "1"
 serde_json = "1"
 dcl-rpc = "1.0.0"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1

@@ -9,6 +9,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef as builder 
 ARG PROJECT
+RUN apt update && apt-get install -y protobuf-compiler
 COPY --from=planner /app/recipe.json recipe.json
 
 # Build dependencies - this is the caching Docker layer!

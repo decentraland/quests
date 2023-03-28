@@ -1,6 +1,5 @@
-# Ignore everything
-*
-
-# But binary files
-!/target/release/quests_system
-!/target/release/quests_server
+.vscode
+.gitignore
+*.dockerfile
+README.md
+.git

@@ -29,6 +29,7 @@ utoipa = { version = "3.0.3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "3.0.2", features = ["actix-web"] }
 derive_more = "0.99.17"
 dcl-rpc = { workspace = true }
+openssl = { version = "0.10.45", features = ["vendored"] }
 
 [dev-dependencies]
 uuid = {version = "1.2.2", features = ["v4"]}

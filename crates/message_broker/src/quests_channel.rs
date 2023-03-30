@@ -45,7 +45,7 @@ impl RedisQuestsChannel {
     }
 
     /// Listen to new messages
-    pub async fn listen(&self, redis: Arc<Redis>) {
+    pub fn listen(&self, redis: Arc<Redis>) {
         let subscriptions = self.subscriptions.clone();
         tokio::spawn(async move {
             let connection = redis

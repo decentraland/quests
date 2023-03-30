@@ -15,7 +15,9 @@ pub async fn init_message_broker_components(
     let redis = Arc::new(redis);
 
     let redis_events_queue = RedisEventsQueue::new(redis.clone());
-    let quests_channel = RedisQuestsChannel::new(redis).await;
+    let quests_channel = RedisQuestsChannel::new(redis.clone()).await;
+
+    quests_channel.listen(redis);
 
     (redis_events_queue, quests_channel)
 }

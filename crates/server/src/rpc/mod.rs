@@ -8,7 +8,11 @@ use quests_definitions::quests::QuestsServiceRegistration;
 use quests_message_broker::{events_queue::RedisEventsQueue, quests_channel::RedisQuestsChannel};
 use std::sync::Arc;
 use tokio::task::JoinHandle;
-use warp::{self, reject, reply, Filter, Rejection, Reply};
+use warp::{
+    self,
+    reject::{self, MissingHeader},
+    reply, Filter, Rejection, Reply,
+};
 use warp_ws_transport::WarpWebSocketTransport;
 
 use crate::configuration::Config;
@@ -87,6 +91,8 @@ impl reject::Reject for Unauthorized {}
 async fn handle_rejection(err: Rejection) -> Result<impl Reply, std::convert::Infallible> {
     if err.find::<Unauthorized>().is_some() {
         Ok(reply::with_status("UNAUTHORIZED", StatusCode::UNAUTHORIZED))
+    } else if err.find::<MissingHeader>().is_some() {
+        Ok(reply::with_status("BAD_REQUEST", StatusCode::BAD_REQUEST))
     } else {
         eprintln!("unhandled rejection: {:?}", err);
         Ok(reply::with_status(

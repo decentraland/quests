@@ -1,42 +1,36 @@
 use async_trait::async_trait;
-use deadpool_redis::redis::aio::PubSub;
 use deadpool_redis::redis::AsyncCommands;
 use deadpool_redis::Connection;
 use futures_util::StreamExt as _;
 use log::debug;
 use log::error;
-use log::info;
-use quests_definitions::quests::UserUpdate;
+use quests_definitions::quests::{user_update, UserUpdate};
 use quests_definitions::ProstMessage;
+use std::future::Future;
+use std::pin::Pin;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::redis::Redis;
-pub type OnUpdate = Box<dyn Fn(UserUpdate) + Send + Sync>;
+type Response = Pin<Box<dyn Future<Output = ()> + Send + Sync>>;
+pub type OnUpdate = Box<dyn Fn(UserUpdate) -> Response + Send + Sync>;
+
+const QUESTS_CHANNEL_NAME: &str = "QUEST_UPDATES_CHANNEL";
 
 #[async_trait]
 pub trait QuestsChannel: Send + Sync {
-    async fn subscribe(&mut self, quest_id: &str, on_update: OnUpdate);
-    async fn unsubscribe(&mut self, quest_id: &str);
-    async fn publish(&mut self, quest_id: &str, update: UserUpdate);
+    async fn subscribe(&self, quest_instance_id: &str, on_update: OnUpdate);
+    async fn unsubscribe(&self, quest_instance_id: &str);
+    async fn publish(&mut self, update: UserUpdate);
 }
 
 pub struct RedisQuestsChannel {
-    pubsub: PubSub,
     publish: Connection,
     subscriptions: Arc<RwLock<HashMap<String, OnUpdate>>>,
 }
 
 impl RedisQuestsChannel {
     pub async fn new(redis: Arc<Redis>) -> Self {
-        let connection = redis
-            .get_async_connection()
-            .await
-            .expect("to get a connection"); // TODO: Error handling
-
-        let connection = deadpool_redis::Connection::take(connection);
-        let pubsub = connection.into_pubsub();
-
         let publish = redis
             .get_async_connection()
             .await
@@ -46,7 +40,6 @@ impl RedisQuestsChannel {
 
         Self {
             publish,
-            pubsub,
             subscriptions,
         }
     }
@@ -72,9 +65,18 @@ impl RedisQuestsChannel {
                             Ok(payload) => {
                                 let update = UserUpdate::decode(&*payload);
                                 match update {
-                                    Ok(_update) => {
-                                        let _subscriptions = subscriptions.read().await;
-                                        todo!()
+                                    Ok(update) => {
+                                        if let Some(user_update::Message::QuestState(
+                                            quest_state_update,
+                                        )) = &update.message
+                                        {
+                                            let subscriptions = subscriptions.read().await;
+                                            let on_update_fn = subscriptions
+                                                .get(&quest_state_update.quest_instance_id);
+                                            if let Some(on_update) = on_update_fn {
+                                                on_update(update).await;
+                                            }
+                                        }
                                     }
                                     Err(_) => error!("Couldn't deserialize quest update"),
                                 }
@@ -91,31 +93,20 @@ impl RedisQuestsChannel {
 
 #[async_trait]
 impl QuestsChannel for RedisQuestsChannel {
-    async fn subscribe(&mut self, quest_id: &str, on_update: OnUpdate) {
-        let subscription = self.pubsub.subscribe(quest_id).await;
-        match subscription {
-            Ok(_) => {
-                self.subscriptions
-                    .write()
-                    .await
-                    .insert(quest_id.to_string(), on_update);
-            }
-            Err(_) => error!("Couldn't subscribe to channel {}", quest_id),
-        }
+    async fn subscribe(&self, quest_instance_id: &str, on_update: OnUpdate) {
+        self.subscriptions
+            .write()
+            .await
+            .insert(quest_instance_id.to_string(), on_update);
     }
 
-    async fn unsubscribe(&mut self, quest_id: &str) {
-        match self.pubsub.unsubscribe(quest_id).await {
-            Ok(_) => {
-                self.subscriptions.write().await.remove(quest_id);
-            }
-            Err(_) => info!("Couldn't unsubscribe to {}", quest_id),
-        };
+    async fn unsubscribe(&self, quest_instance_id: &str) {
+        self.subscriptions.write().await.remove(quest_instance_id);
     }
 
-    async fn publish(&mut self, quest_id: &str, update: UserUpdate) {
+    async fn publish(&mut self, update: UserUpdate) {
         let update_bin = update.encode_to_vec();
         self.publish
-            .publish::<&str, Vec<u8>, String>(quest_id, update_bin);
+            .publish::<&str, Vec<u8>, String>(QUESTS_CHANNEL_NAME, update_bin);
     }
 }

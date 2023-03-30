@@ -1,41 +1,31 @@
 pub mod middlewares;
 pub mod routes;
 
-use self::middlewares::initialize_telemetry;
 use self::routes::query_extractor_config;
-use crate::{components::init_components, configuration::Config};
+use crate::configuration::Config;
 use actix_web::{
     body::MessageBody,
     dev::{Server, ServiceFactory},
     web::Data,
     App, HttpServer,
 };
-use env_logger::init as initialize_logger;
 use quests_db::Database;
 use quests_message_broker::events_queue::RedisEventsQueue;
 use tracing_actix_web::TracingLogger;
 
-pub async fn run_server() -> Result<Server, std::io::Error> {
-    initialize_logger();
-    initialize_telemetry();
-
-    let (config, db, redis_events_queue) = init_components().await;
-
+pub async fn run_server(
+    (config, db, redis_events_queue): (Data<Config>, Data<Database>, Data<RedisEventsQueue>),
+) -> Server {
     let server_address = format!("0.0.0.0:{}", config.server_port);
 
-    let config = Data::new(config);
-    let db = Data::new(db);
-    let redis_events_queue = Data::new(redis_events_queue);
-
     let server = HttpServer::new(move || get_app_router(&config, &db, &redis_events_queue))
-        .bind(&server_address)?
+        .bind(&server_address)
+        .unwrap() // Unwrap because if it's not able to bind, it doens't matter the panic
         .run();
 
-    // TODO: Take Arc inside of the Data for the RPC Server
+    log::info!("Quests REST API running at http://{}", server_address);
 
-    log::info!("Quests API running at http://{}", server_address);
-
-    Ok(server)
+    server
 }
 
 pub fn get_app_router(

@@ -66,17 +66,12 @@ pub async fn process_event(
                         quests_channel
                             .lock()
                             .await
-                            .publish(
-                                &quest_instance.id,
-                                UserUpdate {
-                                    message: Some(user_update::Message::QuestState(
-                                        QuestStateUpdate {
-                                            quest_instance_id: quest_instance.id.clone(),
-                                            quest_state: Some(quest_state),
-                                        },
-                                    )),
-                                },
-                            )
+                            .publish(UserUpdate {
+                                message: Some(user_update::Message::QuestState(QuestStateUpdate {
+                                    quest_instance_id: quest_instance.id.clone(),
+                                    quest_state: Some(quest_state),
+                                })),
+                            })
                             .await;
                         event_applied_to_instances += 1;
                     }

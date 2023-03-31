@@ -41,23 +41,25 @@ pub async fn start_quest_controller(
 pub async fn get_all_quest_states_by_user_address_controller(
     db: Arc<impl QuestsDatabase + 'static>,
     user_address: String,
-) -> Result<Vec<QuestState>, QuestError> {
+) -> Result<Vec<(String, QuestState)>, QuestError> {
     let quest_instances = db.get_user_quest_instances(&user_address).await?;
     let mut join_handles = vec![];
     for quest_instance in quest_instances {
         let db_cloned = db.clone();
-        let handle =
-            actix_web::rt::spawn(
-                async move { get_instance_state(db_cloned, quest_instance).await },
-            );
+        let handle = tokio::spawn(async move {
+            (
+                quest_instance.id.clone(),
+                get_instance_state(db_cloned, quest_instance).await,
+            )
+        });
         join_handles.push(handle);
     }
     let join_results = join_all(join_handles).await;
     let mut states = vec![];
     for join_result in join_results {
         match join_result {
-            Ok(state_result) => match state_result {
-                Ok(state) => states.push(state),
+            Ok((id, state_result)) => match state_result {
+                Ok(state) => states.push((id, state)),
                 Err(quest_error) => return Err(quest_error),
             },
             Err(_) => return Err(QuestError::CommonError(CommonError::Unknown)),

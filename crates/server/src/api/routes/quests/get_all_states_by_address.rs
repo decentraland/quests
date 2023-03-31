@@ -2,13 +2,12 @@ use actix_web::{get, web, HttpResponse};
 use quests_db::Database;
 use quests_definitions::quests::QuestState;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 use crate::domain::quests::get_all_quest_states_by_user_address_controller;
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize)]
 pub struct GetQuestStateByUserAddressResponse {
-    pub states: Vec<QuestState>,
+    pub states: Vec<(String, QuestState)>,
 }
 
 #[utoipa::path(
@@ -16,7 +15,7 @@ pub struct GetQuestStateByUserAddressResponse {
         ("user_address" = String, description = "User's ethereum address")
     ),
     responses(
-        (status = 200, description = "Quest States", body = [GetQuestStateByUserAddressResponse]),
+        (status = 200, description = "Quest States"),
         (status = 400, description = "Bad Request"),
         (status = 404, description = "Quest not found"),
         (status = 500, description = "Internal Server Error")

@@ -47,17 +47,18 @@ pub async fn run_rpc_server(
     let rpc_server_events_sender = rpc_server.get_server_events_sender();
 
     let routes = warp::path::end()
-        .and(
-            warp::header::<String>("authorization").and_then(|auth| async move {
-                if auth == "123" {
-                    Ok(auth)
-                } else {
-                    Err(reject::custom(Unauthorized {})) // this reject is a 404
-                }
-            }),
-        )
+        // .and(
+        //     warp::header::<String>("authorization").and_then(|auth| async move {
+        //         if auth == "123" {
+        //             Ok(auth)
+        //         } else {
+        //             Err(reject::custom(Unauthorized {})) // this reject is a 404
+        //         }
+        //     }),
+        // )
         .and(warp::ws())
-        .map(move |_auth: String, ws: warp::ws::Ws| {
+        // .map(move |_auth: String, ws: warp::ws::Ws| {
+        .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
             ws.on_upgrade(|websocket| async move {
                 server_events_sender

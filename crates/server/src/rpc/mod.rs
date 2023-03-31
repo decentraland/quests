@@ -1,23 +1,20 @@
 mod service;
 mod warp_ws_transport;
 
-use actix_web::http::StatusCode;
+use crate::configuration::Config;
 use dcl_rpc::server::RpcServer;
 use quests_db::Database;
 use quests_definitions::quests::QuestsServiceRegistration;
 use quests_message_broker::{events_queue::RedisEventsQueue, quests_channel::RedisQuestsChannel};
+use service::QuestsServiceImplementation;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 use warp::{
-    self,
-    reject::{self, MissingHeader},
+    http::StatusCode,
+    reject::{MissingHeader, Reject},
     reply, Filter, Rejection, Reply,
 };
 use warp_ws_transport::WarpWebSocketTransport;
-
-use crate::configuration::Config;
-
-use self::service::QuestsServiceImplementation;
 
 pub struct QuestsRpcServerContext {
     pub config: Arc<Config>,
@@ -47,17 +44,7 @@ pub async fn run_rpc_server(
     let rpc_server_events_sender = rpc_server.get_server_events_sender();
 
     let routes = warp::path::end()
-        // .and(
-        //     warp::header::<String>("authorization").and_then(|auth| async move {
-        //         if auth == "123" {
-        //             Ok(auth)
-        //         } else {
-        //             Err(reject::custom(Unauthorized {})) // this reject is a 404
-        //         }
-        //     }),
-        // )
         .and(warp::ws())
-        // .map(move |_auth: String, ws: warp::ws::Ws| {
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
             ws.on_upgrade(|websocket| async move {
@@ -87,7 +74,7 @@ pub async fn run_rpc_server(
 #[derive(Debug)]
 struct Unauthorized {}
 
-impl reject::Reject for Unauthorized {}
+impl Reject for Unauthorized {}
 
 async fn handle_rejection(err: Rejection) -> Result<impl Reply, std::convert::Infallible> {
     if err.find::<Unauthorized>().is_some() {

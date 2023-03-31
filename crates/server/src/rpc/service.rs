@@ -91,14 +91,15 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
 
         if let Ok(states) = states {
             for (id, state) in states {
-                if let Err(_) = generator_yielder
+                if (generator_yielder
                     .r#yield(UserUpdate {
                         message: Some(Message::QuestState(QuestStateUpdate {
                             quest_instance_id: id,
                             quest_state: Some(state),
                         })),
                     })
-                    .await
+                    .await)
+                    .is_err()
                 {
                     log::error!("Failed to push state to response stream")
                 }

@@ -15,7 +15,7 @@ fn build_location_event(coordinates: Coordinates) -> Event {
 #[tokio::test]
 async fn can_send_event_to_the_queue() {
     let redis = build_redis(10).await;
-    let events_queue = RedisMessagesQueue::new(redis);
+    let events_queue = RedisMessagesQueue::new(redis, "events:queue");
 
     let event = build_location_event(Coordinates::new(0, 0));
 
@@ -29,7 +29,7 @@ async fn can_send_event_to_the_queue() {
 #[tokio::test]
 async fn can_send_multiple_events_to_the_queue() {
     let redis = build_redis(11).await;
-    let events_queue = RedisMessagesQueue::new(redis);
+    let events_queue = RedisMessagesQueue::new(redis, "events:queue");
 
     let event = build_location_event(Coordinates::new(0, 0));
     let result = events_queue.push(&event).await;
@@ -43,7 +43,7 @@ async fn can_send_multiple_events_to_the_queue() {
 #[tokio::test]
 async fn can_receive_event_from_the_queue() {
     let redis = build_redis(12).await;
-    let events_queue = RedisMessagesQueue::new(redis);
+    let events_queue = RedisMessagesQueue::new(redis, "events:queue");
 
     let event = build_location_event(Coordinates::new(0, 0));
     let result = events_queue.push(&event).await;
@@ -58,7 +58,7 @@ async fn can_receive_event_from_the_queue() {
 #[tokio::test]
 async fn can_receive_multiple_events_from_the_queue() {
     let redis = build_redis(13).await;
-    let events_queue = RedisMessagesQueue::new(redis);
+    let events_queue = RedisMessagesQueue::new(redis, "events:queue");
 
     let first_event = build_location_event(Coordinates::new(0, 0));
     let result = events_queue.push(&first_event).await;

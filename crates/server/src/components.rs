@@ -3,14 +3,14 @@ use dcl_rpc::stream_protocol::GeneratorYielder;
 use quests_db::{create_quests_db_component, Database};
 use quests_definitions::quests::UserUpdate;
 use quests_message_broker::{
-    events_queue::RedisEventsQueue, init_message_broker_components_with_subscriber,
+    events_queue::RedisMessagesQueue, init_message_broker_components_with_subscriber,
     quests_channel::RedisQuestsChannelSubscriber,
 };
 
 pub async fn init_components() -> (
     Config,
     Database,
-    RedisEventsQueue,
+    RedisMessagesQueue,
     RedisQuestsChannelSubscriber<GeneratorYielder<UserUpdate>>,
 ) {
     let config = Config::new().expect("Unable to build up the config");
@@ -26,9 +26,10 @@ pub async fn init_components() -> (
     >(&config.redis_url)
     .await;
 
-    quests_channel.listen(|notifier, users_update| {
-        let yielder = notifier.clone();
-        async move { yielder.r#yield(users_update).await.unwrap() }
+    quests_channel.listen(|users_update| {
+        // // id => vec generators
+        // let yielder = notifier.clone();
+        // async move { yielder.r#yield(users_update).await.unwrap() }
     });
 
     (config, quests_database, events_queue, quests_channel)

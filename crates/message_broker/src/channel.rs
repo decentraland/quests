@@ -3,17 +3,15 @@ use async_trait::async_trait;
 use deadpool_redis::{redis::AsyncCommands, Connection};
 use futures_util::{Future, StreamExt as _};
 use log::{debug, error};
-use quests_definitions::{
+use quests_protocol::{
     quests::{user_update, UserUpdate},
-    ProstMessage,
+    ProtocolMessage,
 };
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
-const QUESTS_CHANNEL_NAME: &str = "QUEST_UPDATES_CHANNEL";
-
 #[async_trait]
-pub trait QuestsChannelSubscriber: Send + Sync {
+pub trait ChannelSubscriber: Send + Sync {
     type SubscriptionNotifier;
     async fn subscribe(
         &self,
@@ -24,31 +22,32 @@ pub trait QuestsChannelSubscriber: Send + Sync {
 }
 
 #[async_trait]
-pub trait QuestsChannelPublisher<Publishment>: Send + Sync {
+pub trait ChannelPublisher<Publishment>: Send + Sync {
     async fn publish(&mut self, update: Publishment);
 }
 
-pub struct RedisQuestsChannelSubscriber<SubscriptionNotifier> {
+pub struct RedisChannelSubscriber<SubscriptionNotifier> {
     subscriptions: Arc<RwLock<HashMap<String, SubscriptionNotifier>>>,
     redis: Arc<Redis>,
+    channel_name: String,
 }
 
-pub struct RedisQuestsChannelPublisher {
+pub struct RedisChannelPublisher {
     publish: Connection,
+    channel_name: String,
 }
 
-impl<SubscriptionNotifier> RedisQuestsChannelSubscriber<SubscriptionNotifier> {
-    pub(crate) fn new(redis: Arc<Redis>) -> Self {
+impl<SubscriptionNotifier> RedisChannelSubscriber<SubscriptionNotifier> {
+    pub(crate) fn new(redis: Arc<Redis>, channel_name: &str) -> Self {
         Self {
             subscriptions: Arc::new(RwLock::new(HashMap::new())),
             redis,
+            channel_name: channel_name.to_string(),
         }
     }
 }
 
-impl<SubscriptionNotifier: Send + Sync + 'static>
-    RedisQuestsChannelSubscriber<SubscriptionNotifier>
-{
+impl<SubscriptionNotifier: Send + Sync + 'static> RedisChannelSubscriber<SubscriptionNotifier> {
     /// Listen to new messages
     pub fn listen<U: Future<Output = ()> + Send + Sync>(
         &self,
@@ -64,6 +63,7 @@ impl<SubscriptionNotifier: Send + Sync + 'static>
 
             let connection = deadpool_redis::Connection::take(connection);
             let mut pubsub = connection.into_pubsub();
+            // TODO: channel_name
             let mut on_message_stream = pubsub.on_message();
 
             loop {
@@ -100,19 +100,22 @@ impl<SubscriptionNotifier: Send + Sync + 'static>
     }
 }
 
-impl RedisQuestsChannelPublisher {
-    pub async fn new(redis: Arc<Redis>) -> Self {
+impl RedisChannelPublisher {
+    pub async fn new(redis: Arc<Redis>, channel_name: &str) -> Self {
         let publish = redis
             .get_async_connection()
             .await
             .expect("to get a connection");
 
-        Self { publish }
+        Self {
+            publish,
+            channel_name: channel_name.to_string(),
+        }
     }
 }
 
 #[async_trait]
-impl<Notifier: Send + Sync> QuestsChannelSubscriber for RedisQuestsChannelSubscriber<Notifier> {
+impl<Notifier: Send + Sync> ChannelSubscriber for RedisChannelSubscriber<Notifier> {
     type SubscriptionNotifier = Notifier;
     async fn subscribe(
         &self,
@@ -131,12 +134,12 @@ impl<Notifier: Send + Sync> QuestsChannelSubscriber for RedisQuestsChannelSubscr
 }
 
 #[async_trait]
-impl<Publishment: ProstMessage + 'static> QuestsChannelPublisher<Publishment>
-    for RedisQuestsChannelPublisher
+impl<Publishment: ProtocolMessage + 'static> ChannelPublisher<Publishment>
+    for RedisChannelPublisher
 {
     async fn publish(&mut self, publishment: Publishment) {
         let publishment_bin = publishment.encode_to_vec();
         self.publish
-            .publish::<&str, Vec<u8>, String>(QUESTS_CHANNEL_NAME, publishment_bin);
+            .publish::<&str, Vec<u8>, String>(&self.channel_name, publishment_bin);
     }
 }

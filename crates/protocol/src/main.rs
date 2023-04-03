@@ -1,4 +1,4 @@
-use quests_definitions::{quest_graph::QuestGraph, quests::*};
+use quests_protocol::{quest_graph::QuestGraph, quests::*};
 
 fn main() {
     println!("Quests definitions:");

@@ -1,18 +1,18 @@
-pub mod events_queue;
-pub mod quests_channel;
+pub mod channel;
+pub mod messages_queue;
 pub mod redis;
 
-use events_queue::RedisEventsQueue;
-use quests_channel::{RedisQuestsChannelPublisher, RedisQuestsChannelSubscriber};
+use channel::{RedisChannelPublisher, RedisChannelSubscriber};
+use messages_queue::RedisMessagesQueue;
 use redis::Redis;
 use std::sync::Arc;
 
 pub async fn init_message_broker_components_with_subscriber<F>(
     redis_url: &str,
-) -> (RedisEventsQueue, RedisQuestsChannelSubscriber<F>) {
+) -> (RedisMessagesQueue, RedisChannelSubscriber<F>) {
     let redis = init_redis(redis_url).await;
 
-    let redis_events_queue = RedisEventsQueue::new(redis.clone());
+    let redis_events_queue = init_events_queue(redis.clone());
     let quests_channel = init_quests_channel_subscriber(redis);
 
     (redis_events_queue, quests_channel)
@@ -20,7 +20,7 @@ pub async fn init_message_broker_components_with_subscriber<F>(
 
 pub async fn init_message_broker_components_with_publisher(
     redis_url: &str,
-) -> (RedisEventsQueue, RedisQuestsChannelPublisher) {
+) -> (RedisMessagesQueue, RedisChannelPublisher) {
     let redis = init_redis(redis_url).await;
 
     let redis_events_queue = init_events_queue(redis.clone());
@@ -35,16 +35,16 @@ async fn init_redis(redis_url: &str) -> Arc<Redis> {
     Arc::new(redis)
 }
 
-fn init_events_queue(redis: Arc<Redis>) -> RedisEventsQueue {
-    RedisEventsQueue::new(redis)
+fn init_events_queue(redis: Arc<Redis>) -> RedisMessagesQueue {
+    RedisMessagesQueue::new(redis, "events:queue")
 }
 
 fn init_quests_channel_subscriber<SubscriptionNotifier>(
     redis: Arc<Redis>,
-) -> RedisQuestsChannelSubscriber<SubscriptionNotifier> {
-    RedisQuestsChannelSubscriber::new(redis)
+) -> RedisChannelSubscriber<SubscriptionNotifier> {
+    RedisChannelSubscriber::new(redis, "")
 }
 
-async fn init_quests_channel_publisher(redis: Arc<Redis>) -> RedisQuestsChannelPublisher {
-    RedisQuestsChannelPublisher::new(redis).await
+async fn init_quests_channel_publisher(redis: Arc<Redis>) -> RedisChannelPublisher {
+    RedisChannelPublisher::new(redis, "").await
 }

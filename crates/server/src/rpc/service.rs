@@ -8,12 +8,11 @@ use crate::{
 };
 use dcl_rpc::stream_protocol::Generator;
 use quests_db::core::definitions::QuestsDatabase;
-use quests_definitions::quests::{
+use quests_protocol::quests::{
     user_update::Message, AbortQuestRequest, AbortQuestResponse, Event, EventResponse,
     QuestStateUpdate, QuestsServiceServer, ServerStreamResponse, StartQuestRequest,
     StartQuestResponse, UserAddress, UserUpdate,
 };
-use quests_message_broker::quests_channel::QuestsChannelSubscriber;
 use std::sync::Arc;
 
 pub struct QuestsServiceImplementation {}
@@ -115,9 +114,10 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
                 for instance in instances {
                     let yielder = generator_yielder.clone();
 
-                    ctx.redis_quests_channel_subscriber
-                        .subscribe(&instance.id, yielder)
-                        .await;
+                    ctx.quest_subscriptions
+                        .write()
+                        .await
+                        .insert(instance.id, yielder);
                 }
 
                 generator

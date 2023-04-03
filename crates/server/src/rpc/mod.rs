@@ -4,13 +4,15 @@ mod warp_ws_transport;
 use crate::configuration::Config;
 use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
 use quests_db::Database;
-use quests_definitions::quests::{QuestsServiceRegistration, UserUpdate};
 use quests_message_broker::{
-    events_queue::RedisEventsQueue, quests_channel::RedisQuestsChannelSubscriber,
+    channel::{ChannelSubscriber, RedisChannelSubscriber},
+    messages_queue::RedisMessagesQueue,
+    QUEST_UPDATES_CHANNEL_NAME,
 };
+use quests_protocol::quests::{user_update::Message, QuestsServiceRegistration, UserUpdate};
 use service::QuestsServiceImplementation;
-use std::sync::Arc;
-use tokio::task::JoinHandle;
+use std::{collections::HashMap, sync::Arc};
+use tokio::{sync::RwLock, task::JoinHandle};
 use warp::{
     http::StatusCode,
     reject::{MissingHeader, Reject},
@@ -21,16 +23,16 @@ use warp_ws_transport::WarpWebSocketTransport;
 pub struct QuestsRpcServerContext {
     pub config: Arc<Config>,
     pub db: Arc<Database>,
-    pub redis_events_queue: Arc<RedisEventsQueue>,
-    pub redis_quests_channel_subscriber: RedisQuestsChannelSubscriber<GeneratorYielder<UserUpdate>>,
+    pub redis_events_queue: Arc<RedisMessagesQueue>,
+    pub quest_subscriptions: Arc<RwLock<HashMap<String, GeneratorYielder<UserUpdate>>>>,
 }
 
 pub async fn run_rpc_server(
     (config, db, redis_events_queue, redis_quests_channel_subscriber): (
         Arc<Config>,
         Arc<Database>,
-        Arc<RedisEventsQueue>,
-        RedisQuestsChannelSubscriber<GeneratorYielder<UserUpdate>>,
+        Arc<RedisMessagesQueue>,
+        RedisChannelSubscriber,
     ),
 ) -> (JoinHandle<()>, JoinHandle<()>) {
     let ws_server_address = ([0, 0, 0, 0], config.ws_server_port.parse::<u16>().unwrap());
@@ -38,8 +40,28 @@ pub async fn run_rpc_server(
         config,
         db,
         redis_events_queue,
-        redis_quests_channel_subscriber,
+        quest_subscriptions: Arc::new(RwLock::new(HashMap::new())),
     };
+
+    let subscriptions = ctx.quest_subscriptions.clone();
+
+    redis_quests_channel_subscriber.subscribe(
+        QUEST_UPDATES_CHANNEL_NAME,
+        move |user_update: UserUpdate| {
+            let subscriptions = subscriptions.clone();
+            async move {
+                if let Some(Message::QuestState(state)) = &user_update.message {
+                    let subs = subscriptions.read().await;
+                    if let Some(generator) = subs.get(&state.quest_instance_id) {
+                        generator
+                            .r#yield(user_update)
+                            .await
+                            .expect("to be able to send the update"); // todo: handle error
+                    }
+                }
+            }
+        },
+    );
 
     let mut rpc_server = RpcServer::create(ctx);
 

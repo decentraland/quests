@@ -7,9 +7,9 @@ use messages_queue::RedisMessagesQueue;
 use redis::Redis;
 use std::sync::Arc;
 
-pub async fn init_message_broker_components_with_subscriber<F>(
+pub async fn init_message_broker_components_with_subscriber(
     redis_url: &str,
-) -> (RedisMessagesQueue, RedisChannelSubscriber<F>) {
+) -> (RedisMessagesQueue, RedisChannelSubscriber) {
     let redis = init_redis(redis_url).await;
 
     let redis_events_queue = init_events_queue(redis.clone());
@@ -39,12 +39,12 @@ fn init_events_queue(redis: Arc<Redis>) -> RedisMessagesQueue {
     RedisMessagesQueue::new(redis, "events:queue")
 }
 
-fn init_quests_channel_subscriber<SubscriptionNotifier>(
-    redis: Arc<Redis>,
-) -> RedisChannelSubscriber<SubscriptionNotifier> {
-    RedisChannelSubscriber::new(redis, "")
+pub const QUEST_UPDATES_CHANNEL_NAME: &str = "QUEST_UPDATES";
+
+fn init_quests_channel_subscriber(redis: Arc<Redis>) -> RedisChannelSubscriber {
+    RedisChannelSubscriber::new(redis)
 }
 
 async fn init_quests_channel_publisher(redis: Arc<Redis>) -> RedisChannelPublisher {
-    RedisChannelPublisher::new(redis, "").await
+    RedisChannelPublisher::new(redis, QUEST_UPDATES_CHANNEL_NAME).await
 }

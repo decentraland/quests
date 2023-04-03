@@ -1,3 +1,4 @@
+use super::QuestsRpcServerContext;
 use crate::{
     api::routes::quests::StartQuestRequest as StartQuestRequestAPI,
     domain::{
@@ -15,7 +16,6 @@ use quests_definitions::quests::{
 use quests_message_broker::quests_channel::QuestsChannelSubscriber;
 use std::sync::Arc;
 
-use super::QuestsRpcServerContext;
 pub struct QuestsServiceImplementation {}
 
 #[async_trait::async_trait]

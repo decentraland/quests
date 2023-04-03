@@ -1,7 +1,7 @@
 use quests_db::{core::definitions::*, create_quests_db_component};
-use quests_definitions::{
+use quests_protocol::{
     quests::{Event, *},
-    ProstMessage,
+    ProtocolMessage,
 };
 use quests_system::{configuration::Config, EventProcessor};
 

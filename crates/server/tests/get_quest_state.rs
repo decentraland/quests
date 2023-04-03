@@ -8,7 +8,7 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     create_quests_db_component,
 };
-use quests_definitions::{quest_graph::QuestGraph, quests::QuestState, ProstMessage};
+use quests_protocol::{quest_graph::QuestGraph, quests::QuestState, ProtocolMessage};
 use quests_server::api::routes::quests::{StartQuestRequest, StartQuestResponse};
 use uuid::Uuid;
 

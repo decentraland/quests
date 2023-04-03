@@ -3,7 +3,7 @@ use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_definitions::quests::{Quest, QuestDefinition};
+use quests_protocol::quests::{Quest, QuestDefinition};
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]

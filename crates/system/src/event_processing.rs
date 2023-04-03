@@ -3,15 +3,15 @@ use quests_db::core::{
     definitions::{AddEvent, QuestInstance, QuestsDatabase},
     errors::DBError,
 };
-use quests_definitions::{
+use quests_message_broker::{channel::ChannelPublisher, messages_queue::MessagesQueue};
+use quests_protocol::{
     quest_graph::QuestGraph,
     quest_state::get_state,
     quests::{
         user_update, Event, Quest, QuestDefinition, QuestState, QuestStateUpdate, UserUpdate,
     },
-    ProstDecodeError, ProstMessage,
+    ProtocolDecodeError, ProtocolMessage,
 };
-use quests_message_broker::{events_queue::EventsQueue, quests_channel::QuestsChannelPublisher};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -29,8 +29,8 @@ pub enum ProcessEventError {
 
 pub type ProcessEventResult = Result<usize, ProcessEventError>;
 
-impl From<ProstDecodeError> for ProcessEventError {
-    fn from(_value: ProstDecodeError) -> Self {
+impl From<ProtocolDecodeError> for ProcessEventError {
+    fn from(_value: ProtocolDecodeError) -> Self {
         ProcessEventError::Serialization
     }
 }
@@ -43,9 +43,9 @@ impl From<DBError> for ProcessEventError {
 
 pub async fn process_event(
     event: Event,
-    quests_channel: Arc<Mutex<impl QuestsChannelPublisher<UserUpdate> + ?Sized>>,
+    quests_channel: Arc<Mutex<impl ChannelPublisher<UserUpdate> + ?Sized>>,
     database: Arc<impl QuestsDatabase + ?Sized>,
-    events_queue: Arc<impl EventsQueue<Event> + ?Sized>,
+    events_queue: Arc<impl MessagesQueue<Event> + ?Sized>,
 ) -> ProcessEventResult {
     // get user quest instances
     let quest_instances = database.get_user_quest_instances(&event.address).await;

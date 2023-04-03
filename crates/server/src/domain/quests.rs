@@ -4,10 +4,10 @@ use crate::api::routes::{
 };
 use futures_util::future::join_all;
 use quests_db::core::definitions::{QuestInstance, QuestsDatabase};
-use quests_definitions::{
+use quests_protocol::{
     quest_state::get_state,
     quests::{Event, QuestState},
-    ProstMessage,
+    ProtocolMessage,
 };
 use std::sync::Arc;
 use thiserror::Error;

@@ -7,10 +7,10 @@ use event_processing::{process_event, ProcessEventResult};
 use log::{error, info};
 use quests_db::core::definitions::QuestsDatabase;
 use quests_db::create_quests_db_component;
-use quests_definitions::quests::{Event, UserUpdate};
-use quests_message_broker::events_queue::EventsQueue;
+use quests_message_broker::channel::ChannelPublisher;
 use quests_message_broker::init_message_broker_components_with_publisher;
-use quests_message_broker::quests_channel::QuestsChannelPublisher;
+use quests_message_broker::messages_queue::MessagesQueue;
+use quests_protocol::quests::{Event, UserUpdate};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
@@ -19,8 +19,8 @@ pub type Error = String;
 pub type EventProcessingResult<T> = Result<T, Error>;
 
 pub struct EventProcessor {
-    pub events_queue: Arc<dyn EventsQueue<Event>>,
-    quests_channel: Arc<Mutex<dyn QuestsChannelPublisher<UserUpdate>>>,
+    pub events_queue: Arc<dyn MessagesQueue<Event>>,
+    quests_channel: Arc<Mutex<dyn ChannelPublisher<UserUpdate>>>,
     database: Arc<dyn QuestsDatabase>,
 }
 

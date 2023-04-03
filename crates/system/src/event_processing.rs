@@ -11,7 +11,7 @@ use quests_definitions::{
     },
     ProstDecodeError, ProstMessage,
 };
-use quests_message_broker::{events_queue::EventsQueue, quests_channel::QuestsChannel};
+use quests_message_broker::{events_queue::EventsQueue, quests_channel::QuestsChannelPublisher};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -43,9 +43,9 @@ impl From<DBError> for ProcessEventError {
 
 pub async fn process_event(
     event: Event,
-    quests_channel: Arc<Mutex<impl QuestsChannel + ?Sized>>,
+    quests_channel: Arc<Mutex<impl QuestsChannelPublisher<UserUpdate> + ?Sized>>,
     database: Arc<impl QuestsDatabase + ?Sized>,
-    events_queue: Arc<impl EventsQueue + ?Sized>,
+    events_queue: Arc<impl EventsQueue<Event> + ?Sized>,
 ) -> ProcessEventResult {
     // get user quest instances
     let quest_instances = database.get_user_quest_instances(&event.address).await;

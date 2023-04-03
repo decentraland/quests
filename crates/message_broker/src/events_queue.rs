@@ -1,15 +1,15 @@
 use crate::redis::Redis;
 use async_trait::async_trait;
 use deadpool_redis::redis::AsyncCommands;
-use quests_definitions::{quests::*, ProstMessage};
+use quests_definitions::ProstMessage;
 use std::sync::Arc;
 
 pub type EventsQueueResult<T> = Result<T, String>;
 
 #[async_trait]
-pub trait EventsQueue: Send + Sync {
-    async fn push(&self, event: &Event) -> EventsQueueResult<usize>;
-    async fn pop(&self) -> EventsQueueResult<Event>;
+pub trait EventsQueue<T>: Send + Sync {
+    async fn push(&self, item: &T) -> EventsQueueResult<usize>;
+    async fn pop(&self) -> EventsQueueResult<T>;
 }
 
 pub struct RedisEventsQueue {
@@ -25,8 +25,8 @@ impl RedisEventsQueue {
 const EVENTS_QUEUE: &str = "events:queue";
 
 #[async_trait]
-impl EventsQueue for RedisEventsQueue {
-    async fn push(&self, event: &Event) -> EventsQueueResult<usize> {
+impl<T: ProstMessage + Default> EventsQueue<T> for RedisEventsQueue {
+    async fn push(&self, event: &T) -> EventsQueueResult<usize> {
         let mut connection = self
             .redis
             .get_async_connection()
@@ -41,7 +41,7 @@ impl EventsQueue for RedisEventsQueue {
         Ok(queue_size)
     }
 
-    async fn pop(&self) -> EventsQueueResult<Event> {
+    async fn pop(&self) -> EventsQueueResult<T> {
         let mut connection = self
             .redis
             .get_async_connection()
@@ -54,9 +54,9 @@ impl EventsQueue for RedisEventsQueue {
             .await
             .map_err(|err| format!("Couldn't get an element from the events queue: {err}"))?;
 
-        let event =
-            Event::decode(&*result[1]).map_err(|_| "Couldn't deserialize response as an Event")?;
+        let item =
+            T::decode(&*result[1]).map_err(|_| "Couldn't deserialize response as an Event")?;
 
-        Ok(event)
+        Ok(item)
     }
 }

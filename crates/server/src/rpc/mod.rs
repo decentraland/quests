@@ -2,10 +2,12 @@ mod service;
 mod warp_ws_transport;
 
 use crate::configuration::Config;
-use dcl_rpc::server::RpcServer;
+use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
 use quests_db::Database;
-use quests_definitions::quests::QuestsServiceRegistration;
-use quests_message_broker::{events_queue::RedisEventsQueue, quests_channel::RedisQuestsChannel};
+use quests_definitions::quests::{QuestsServiceRegistration, UserUpdate};
+use quests_message_broker::{
+    events_queue::RedisEventsQueue, quests_channel::RedisQuestsChannelSubscriber,
+};
 use service::QuestsServiceImplementation;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
@@ -20,15 +22,15 @@ pub struct QuestsRpcServerContext {
     pub config: Arc<Config>,
     pub db: Arc<Database>,
     pub redis_events_queue: Arc<RedisEventsQueue>,
-    pub redis_quests_channel: RedisQuestsChannel,
+    pub redis_quests_channel_subscriber: RedisQuestsChannelSubscriber<GeneratorYielder<UserUpdate>>,
 }
 
 pub async fn run_rpc_server(
-    (config, db, redis_events_queue, redis_quests_channel): (
+    (config, db, redis_events_queue, redis_quests_channel_subscriber): (
         Arc<Config>,
         Arc<Database>,
         Arc<RedisEventsQueue>,
-        RedisQuestsChannel,
+        RedisQuestsChannelSubscriber<GeneratorYielder<UserUpdate>>,
     ),
 ) -> (JoinHandle<()>, JoinHandle<()>) {
     let ws_server_address = ([0, 0, 0, 0], config.ws_server_port.parse::<u16>().unwrap());
@@ -36,7 +38,7 @@ pub async fn run_rpc_server(
         config,
         db,
         redis_events_queue,
-        redis_quests_channel,
+        redis_quests_channel_subscriber,
     };
 
     let mut rpc_server = RpcServer::create(ctx);

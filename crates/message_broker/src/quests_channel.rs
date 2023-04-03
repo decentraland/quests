@@ -1,52 +1,61 @@
+use crate::redis::Redis;
 use async_trait::async_trait;
-use deadpool_redis::redis::AsyncCommands;
-use deadpool_redis::Connection;
-use futures_util::StreamExt as _;
-use log::debug;
-use log::error;
-use quests_definitions::quests::{user_update, UserUpdate};
-use quests_definitions::ProstMessage;
-use std::future::Future;
-use std::pin::Pin;
+use deadpool_redis::{redis::AsyncCommands, Connection};
+use futures_util::{Future, StreamExt as _};
+use log::{debug, error};
+use quests_definitions::{
+    quests::{user_update, UserUpdate},
+    ProstMessage,
+};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
-
-use crate::redis::Redis;
-type Response = Pin<Box<dyn Future<Output = ()> + Send + Sync>>;
-pub type OnUpdate = Box<dyn Fn(UserUpdate) -> Response + Send + Sync>;
 
 const QUESTS_CHANNEL_NAME: &str = "QUEST_UPDATES_CHANNEL";
 
 #[async_trait]
-pub trait QuestsChannel: Send + Sync {
-    async fn subscribe(&self, quest_instance_id: &str, on_update: OnUpdate);
+pub trait QuestsChannelSubscriber: Send + Sync {
+    type SubscriptionNotifier;
+    async fn subscribe(
+        &self,
+        quest_instance_id: &str,
+        subscription_notifier: Self::SubscriptionNotifier,
+    );
     async fn unsubscribe(&self, quest_instance_id: &str);
-    async fn publish(&mut self, update: UserUpdate);
 }
 
-pub struct RedisQuestsChannel {
+#[async_trait]
+pub trait QuestsChannelPublisher<Publishment>: Send + Sync {
+    async fn publish(&mut self, update: Publishment);
+}
+
+pub struct RedisQuestsChannelSubscriber<SubscriptionNotifier> {
+    subscriptions: Arc<RwLock<HashMap<String, SubscriptionNotifier>>>,
+    redis: Arc<Redis>,
+}
+
+pub struct RedisQuestsChannelPublisher {
     publish: Connection,
-    subscriptions: Arc<RwLock<HashMap<String, OnUpdate>>>,
 }
 
-impl RedisQuestsChannel {
-    pub async fn new(redis: Arc<Redis>) -> Self {
-        let publish = redis
-            .get_async_connection()
-            .await
-            .expect("to get a connection");
-
-        let subscriptions = Arc::new(RwLock::new(HashMap::default()));
-
+impl<SubscriptionNotifier> RedisQuestsChannelSubscriber<SubscriptionNotifier> {
+    pub(crate) fn new(redis: Arc<Redis>) -> Self {
         Self {
-            publish,
-            subscriptions,
+            subscriptions: Arc::new(RwLock::new(HashMap::new())),
+            redis,
         }
     }
+}
 
+impl<SubscriptionNotifier: Send + Sync + 'static>
+    RedisQuestsChannelSubscriber<SubscriptionNotifier>
+{
     /// Listen to new messages
-    pub fn listen(&self, redis: Arc<Redis>) {
+    pub fn listen<U: Future<Output = ()> + Send + Sync>(
+        &self,
+        on_update_fn: impl Fn(&SubscriptionNotifier, UserUpdate) -> U + Send + Sync + 'static,
+    ) {
         let subscriptions = self.subscriptions.clone();
+        let redis = self.redis.clone(); // Should we have an Option to do an Option::take instead of clonning and leaving a useless and unused Arc instance?
         tokio::spawn(async move {
             let connection = redis
                 .get_async_connection()
@@ -71,10 +80,10 @@ impl RedisQuestsChannel {
                                         )) = &update.message
                                         {
                                             let subscriptions = subscriptions.read().await;
-                                            let on_update_fn = subscriptions
+                                            let subscription_notifier = subscriptions
                                                 .get(&quest_state_update.quest_instance_id);
-                                            if let Some(on_update) = on_update_fn {
-                                                on_update(update).await;
+                                            if let Some(notifier) = subscription_notifier {
+                                                on_update_fn(notifier, update).await;
                                             }
                                         }
                                     }
@@ -91,22 +100,43 @@ impl RedisQuestsChannel {
     }
 }
 
+impl RedisQuestsChannelPublisher {
+    pub async fn new(redis: Arc<Redis>) -> Self {
+        let publish = redis
+            .get_async_connection()
+            .await
+            .expect("to get a connection");
+
+        Self { publish }
+    }
+}
+
 #[async_trait]
-impl QuestsChannel for RedisQuestsChannel {
-    async fn subscribe(&self, quest_instance_id: &str, on_update: OnUpdate) {
+impl<Notifier: Send + Sync> QuestsChannelSubscriber for RedisQuestsChannelSubscriber<Notifier> {
+    type SubscriptionNotifier = Notifier;
+    async fn subscribe(
+        &self,
+        quest_instance_id: &str,
+        subscription_notifier: Self::SubscriptionNotifier,
+    ) {
         self.subscriptions
             .write()
             .await
-            .insert(quest_instance_id.to_string(), on_update);
+            .insert(quest_instance_id.to_string(), subscription_notifier);
     }
 
     async fn unsubscribe(&self, quest_instance_id: &str) {
         self.subscriptions.write().await.remove(quest_instance_id);
     }
+}
 
-    async fn publish(&mut self, update: UserUpdate) {
-        let update_bin = update.encode_to_vec();
+#[async_trait]
+impl<Publishment: ProstMessage + 'static> QuestsChannelPublisher<Publishment>
+    for RedisQuestsChannelPublisher
+{
+    async fn publish(&mut self, publishment: Publishment) {
+        let publishment_bin = publishment.encode_to_vec();
         self.publish
-            .publish::<&str, Vec<u8>, String>(QUESTS_CHANNEL_NAME, update_bin);
+            .publish::<&str, Vec<u8>, String>(QUESTS_CHANNEL_NAME, publishment_bin);
     }
 }

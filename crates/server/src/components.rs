@@ -1,11 +1,18 @@
 use crate::configuration::Config;
+use dcl_rpc::stream_protocol::GeneratorYielder;
 use quests_db::{create_quests_db_component, Database};
+use quests_definitions::quests::UserUpdate;
 use quests_message_broker::{
-    events_queue::RedisEventsQueue, init_message_broker_components,
-    quests_channel::RedisQuestsChannel,
+    events_queue::RedisEventsQueue, init_message_broker_components_with_subscriber,
+    quests_channel::RedisQuestsChannelSubscriber,
 };
 
-pub async fn init_components() -> (Config, Database, RedisEventsQueue, RedisQuestsChannel) {
+pub async fn init_components() -> (
+    Config,
+    Database,
+    RedisEventsQueue,
+    RedisQuestsChannelSubscriber<GeneratorYielder<UserUpdate>>,
+) {
     let config = Config::new().expect("Unable to build up the config");
 
     log::debug!("Configuration: {config:?}");
@@ -14,7 +21,15 @@ pub async fn init_components() -> (Config, Database, RedisEventsQueue, RedisQues
         .await
         .expect("unable to run the migrations"); // we know that the migrations failed because if connection fails, the app panics
 
-    let (events_queue, quests_channel) = init_message_broker_components(&config.redis_url).await;
+    let (events_queue, quests_channel) = init_message_broker_components_with_subscriber::<
+        GeneratorYielder<UserUpdate>,
+    >(&config.redis_url)
+    .await;
+
+    quests_channel.listen(|notifier, users_update| {
+        let yielder = notifier.clone();
+        async move { yielder.r#yield(users_update).await.unwrap() }
+    });
 
     (config, quests_database, events_queue, quests_channel)
 }

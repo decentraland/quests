@@ -12,7 +12,7 @@ use quests_definitions::quests::{
     QuestStateUpdate, QuestsServiceServer, ServerStreamResponse, StartQuestRequest,
     StartQuestResponse, UserAddress, UserUpdate,
 };
-use quests_message_broker::quests_channel::QuestsChannel;
+use quests_message_broker::quests_channel::QuestsChannelSubscriber;
 use std::sync::Arc;
 
 use super::QuestsRpcServerContext;
@@ -115,19 +115,8 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
                 for instance in instances {
                     let yielder = generator_yielder.clone();
 
-                    ctx.redis_quests_channel
-                        .subscribe(
-                            &instance.id,
-                            // TODO: change this. remove the box
-                            Box::new(move |user_update| {
-                                // TODO: fix this
-                                let yielder = yielder.clone();
-                                Box::pin(async move {
-                                    yielder.r#yield(user_update).await.unwrap();
-                                    // TODO: handle error
-                                })
-                            }),
-                        )
+                    ctx.redis_quests_channel_subscriber
+                        .subscribe(&instance.id, yielder)
                         .await;
                 }
 

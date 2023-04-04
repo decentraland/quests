@@ -2,14 +2,17 @@ use std::sync::Arc;
 
 use actix_web::{get, web, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
-use quests_protocol::quests::QuestState;
+use quests_protocol::quests::{Quest, QuestState};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::domain::quests::{get_instance_state, QuestError};
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct GetQuestStateResponse(QuestState);
+pub struct GetQuestStateResponse {
+    quest: Quest,
+    state: QuestState,
+}
 
 #[utoipa::path(
     params(
@@ -29,7 +32,7 @@ pub async fn get_quest_instance_state(
 ) -> HttpResponse {
     let db = data.into_inner();
     match get_quest_instance_state_controller(db, quest_instance_id.into_inner().1).await {
-        Ok(quest_state) => HttpResponse::Ok().json(GetQuestStateResponse(quest_state)),
+        Ok((quest, state)) => HttpResponse::Ok().json(GetQuestStateResponse { quest, state }),
         Err(err) => HttpResponse::from_error(err),
     }
 }
@@ -37,7 +40,7 @@ pub async fn get_quest_instance_state(
 async fn get_quest_instance_state_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     id: String,
-) -> Result<QuestState, QuestError> {
+) -> Result<(Quest, QuestState), QuestError> {
     match db.get_quest_instance(&id).await {
         Ok(quest_instance) => get_instance_state(db.clone(), quest_instance).await,
         Err(error) => Err(error.into()),

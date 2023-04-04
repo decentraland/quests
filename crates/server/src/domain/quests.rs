@@ -6,7 +6,7 @@ use futures_util::future::join_all;
 use quests_db::core::definitions::{QuestInstance, QuestsDatabase};
 use quests_protocol::{
     quest_state::get_state,
-    quests::{Event, QuestState},
+    quests::{Event, Quest, QuestState},
     ProtocolMessage,
 };
 use std::sync::Arc;
@@ -41,7 +41,7 @@ pub async fn start_quest_controller(
 pub async fn get_all_quest_states_by_user_address_controller(
     db: Arc<impl QuestsDatabase + 'static>,
     user_address: String,
-) -> Result<Vec<(String, QuestState)>, QuestError> {
+) -> Result<Vec<(String, (Quest, QuestState))>, QuestError> {
     let quest_instances = db.get_user_quest_instances(&user_address).await?;
     let mut join_handles = vec![];
     for quest_instance in quest_instances {
@@ -71,7 +71,7 @@ pub async fn get_all_quest_states_by_user_address_controller(
 pub async fn get_instance_state(
     db: Arc<impl QuestsDatabase>,
     quest_instance: QuestInstance,
-) -> Result<QuestState, QuestError> {
+) -> Result<(Quest, QuestState), QuestError> {
     let quest = db.get_quest(&quest_instance.quest_id).await;
     match quest {
         Ok(stored_quest) => {
@@ -83,7 +83,9 @@ pub async fn get_instance_state(
                 .map(|event| Event::decode(event.event.as_slice()))
                 .collect::<Result<Vec<_>, _>>()?;
 
-            Ok(get_state(&quest, events))
+            let state = get_state(&quest, events);
+
+            Ok((quest, state))
         }
         Err(_) => Err(QuestError::CommonError(CommonError::BadRequest(
             "the quest instance ID given doesn't correspond to a valid quest".to_string(),

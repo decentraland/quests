@@ -89,10 +89,12 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
         .await;
 
         if let Ok(states) = states {
-            for (id, state) in states {
+            for (id, (quest, state)) in states {
                 if (generator_yielder
                     .r#yield(UserUpdate {
                         message: Some(Message::QuestState(QuestStateUpdate {
+                            name: quest.name,
+                            description: quest.description,
                             quest_instance_id: id,
                             quest_state: Some(state),
                         })),

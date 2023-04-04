@@ -75,8 +75,9 @@ pub async fn run_rpc_server(
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
             ws.on_upgrade(|websocket| async move {
-                if let Err(_) = server_events_sender
+                if server_events_sender
                     .send_attach_transport(Arc::new(WarpWebSocketTransport::new(websocket)))
+                    .is_err()
                 {
                     log::error!("Couldn't attach web socket transport");
                 }

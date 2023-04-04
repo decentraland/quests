@@ -5,7 +5,7 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     create_quests_db_component,
 };
-use quests_definitions::ProstMessage;
+use quests_protocol::ProtocolMessage;
 use quests_server::api::routes::quests::{GetQuestStateByUserAddressResponse, StartQuestRequest};
 
 #[actix_web::test]

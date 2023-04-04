@@ -6,7 +6,7 @@ use actix_web::web::Data;
 use actix_web::App;
 use quests_db::core::ops::{Connect, GetConnection, Migrate};
 use quests_db::{create_quests_db_component, DatabaseOptions, Executor};
-use quests_message_broker::init_message_broker_components;
+use quests_message_broker::init_message_broker_components_with_subscriber;
 use quests_server::api::get_app_router;
 use quests_server::configuration::Config;
 
@@ -33,7 +33,7 @@ pub async fn build_app(
         .await
         .unwrap();
 
-    let (redis, _) = init_message_broker_components(&config.redis_url).await;
+    let (redis, _) = init_message_broker_components_with_subscriber(&config.redis_url).await;
 
     get_app_router(
         &Data::new(config.clone()),

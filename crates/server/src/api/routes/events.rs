@@ -5,8 +5,8 @@ use actix_web::{
     web::{self, ServiceConfig},
     HttpResponse,
 };
-use quests_definitions::quests::Event;
-use quests_message_broker::events_queue::RedisEventsQueue;
+use quests_message_broker::messages_queue::RedisMessagesQueue;
+use quests_protocol::quests::Event;
 use serde::Serialize;
 use utoipa::ToSchema;
 
@@ -21,7 +21,7 @@ pub struct AddEventResponse(String);
     )
 )]
 #[put("/events")]
-async fn add_event(data: web::Data<RedisEventsQueue>, event: web::Json<Event>) -> HttpResponse {
+async fn add_event(data: web::Data<RedisMessagesQueue>, event: web::Json<Event>) -> HttpResponse {
     let events_queue = data.into_inner();
     match add_event_controller(events_queue, event.into_inner()).await {
         Ok(_) => HttpResponse::Accepted().json(AddEventResponse("Event Accepted".to_string())),

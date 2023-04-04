@@ -1,4 +1,4 @@
-use quests_definitions::quests::*;
+use quests_protocol::quests::*;
 
 pub fn grab_some_apples() -> Quest {
     Quest {

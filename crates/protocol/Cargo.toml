@@ -1,5 +1,5 @@
 [package]
-name = "quests_definitions"
+name = "quests_protocol"
 version = "0.1.0"
 edition = "2021"
 

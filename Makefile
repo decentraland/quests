@@ -36,7 +36,7 @@ test-server: TEST_PROJECT=-p quests_server
 test-server: tests
 
 test-definitions:
-	-@cargo test --package quests_definitions
+	-@cargo test --package quests_protocol
 
 # run tests locally
 tests: 

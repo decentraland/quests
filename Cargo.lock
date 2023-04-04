@@ -2019,7 +2019,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "quests_definitions"
+name = "quests_message_broker"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "deadpool-redis",
+ "futures-util",
+ "log",
+ "quests_protocol",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "quests_protocol"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -2030,19 +2043,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
-]
-
-[[package]]
-name = "quests_message_broker"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "deadpool-redis",
- "futures-util",
- "log",
- "quests_definitions",
- "serde",
- "tokio",
 ]
 
 [[package]]
@@ -2063,8 +2063,8 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-jaeger",
  "quests_db",
- "quests_definitions",
  "quests_message_broker",
+ "quests_protocol",
  "serde",
  "thiserror",
  "tokio",
@@ -2089,8 +2089,8 @@ dependencies = [
  "env_logger",
  "log",
  "quests_db",
- "quests_definitions",
  "quests_message_broker",
+ "quests_protocol",
  "serde",
  "serde_json",
  "tokio",

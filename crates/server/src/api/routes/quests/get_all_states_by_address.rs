@@ -1,6 +1,6 @@
 use actix_web::{get, web, HttpResponse};
 use quests_db::Database;
-use quests_definitions::quests::QuestState;
+use quests_protocol::quests::QuestState;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::quests::get_all_quest_states_by_user_address_controller;

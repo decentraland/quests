@@ -10,11 +10,11 @@ use actix_web::{
     App, HttpServer,
 };
 use quests_db::Database;
-use quests_message_broker::events_queue::RedisEventsQueue;
+use quests_message_broker::messages_queue::RedisMessagesQueue;
 use tracing_actix_web::TracingLogger;
 
 pub async fn run_server(
-    (config, db, redis_events_queue): (Data<Config>, Data<Database>, Data<RedisEventsQueue>),
+    (config, db, redis_events_queue): (Data<Config>, Data<Database>, Data<RedisMessagesQueue>),
 ) -> Server {
     let server_address = format!("0.0.0.0:{}", config.server_port);
 
@@ -31,7 +31,7 @@ pub async fn run_server(
 pub fn get_app_router(
     config: &Data<Config>,
     db: &Data<Database>,
-    redis: &Data<RedisEventsQueue>,
+    redis: &Data<RedisMessagesQueue>,
 ) -> App<
     impl ServiceFactory<
         actix_web::dev::ServiceRequest,

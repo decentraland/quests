@@ -5,47 +5,38 @@ use configuration::Config;
 use env_logger::init as initialize_logger;
 use event_processing::{process_event, ProcessEventResult};
 use log::{error, info};
-use quests_db::core::definitions::QuestsDatabase;
-use quests_db::create_quests_db_component;
-use quests_message_broker::events_queue::{EventsQueue, RedisEventsQueue};
-use quests_message_broker::quests_channel::{QuestsChannel, RedisQuestsChannel};
-use quests_message_broker::redis::Redis;
+use quests_db::{create_quests_db_component, Database};
+use quests_message_broker::{
+    channel::RedisChannelPublisher,
+    init_message_broker_components_with_publisher,
+    messages_queue::{MessagesQueue, RedisMessagesQueue},
+};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 pub type Error = String;
 pub type EventProcessingResult<T> = Result<T, Error>;
 
 pub struct EventProcessor {
-    pub events_queue: Arc<dyn EventsQueue>,
-    quests_channel: Arc<Mutex<dyn QuestsChannel>>,
-    database: Arc<dyn QuestsDatabase>,
+    pub events_queue: Arc<RedisMessagesQueue>,
+    quests_channel: Arc<RedisChannelPublisher>,
+    database: Arc<Database>,
 }
 
 impl EventProcessor {
-    pub async fn from_config(config: &Config) -> EventProcessingResult<EventProcessor> {
-        // Create Redis pool
-        let redis = Redis::new(&config.redis_url)
-            .await
-            .expect("Can connect to Redis");
-        let redis = Arc::new(redis);
+    pub async fn from_config(config: &Config) -> EventProcessingResult<Self> {
+        let (events_queue, quests_channel) =
+            init_message_broker_components_with_publisher(&config.redis_url).await;
 
-        // Create events queue
-        let events_queue = RedisEventsQueue::new(redis.clone());
         let events_queue = Arc::new(events_queue);
+        let quests_channel = Arc::new(quests_channel);
 
-        // Create quests channel
-        let quests_channel = RedisQuestsChannel::new(redis.clone()).await;
-        let quests_channel = Arc::new(Mutex::new(quests_channel));
-
-        // Create DB
         let database = create_quests_db_component(&config.database_url)
             .await
             .map_err(|_| "Couldn't connect to the database".to_string())?;
         let database = Arc::new(database);
 
-        Ok(EventProcessor {
+        Ok(Self {
             events_queue,
             quests_channel,
             database,

@@ -1,3 +1,4 @@
+use super::QuestsRpcServerContext;
 use crate::{
     api::routes::quests::StartQuestRequest as StartQuestRequestAPI,
     domain::{
@@ -7,15 +8,13 @@ use crate::{
 };
 use dcl_rpc::stream_protocol::Generator;
 use quests_db::core::definitions::QuestsDatabase;
-use quests_definitions::quests::{
+use quests_protocol::quests::{
     user_update::Message, AbortQuestRequest, AbortQuestResponse, Event, EventResponse,
     QuestStateUpdate, QuestsServiceServer, ServerStreamResponse, StartQuestRequest,
     StartQuestResponse, UserAddress, UserUpdate,
 };
-use quests_message_broker::quests_channel::QuestsChannel;
 use std::sync::Arc;
 
-use super::QuestsRpcServerContext;
 pub struct QuestsServiceImplementation {}
 
 #[async_trait::async_trait]
@@ -115,20 +114,10 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
                 for instance in instances {
                     let yielder = generator_yielder.clone();
 
-                    ctx.redis_quests_channel
-                        .subscribe(
-                            &instance.id,
-                            // TODO: change this. remove the box
-                            Box::new(move |user_update| {
-                                // TODO: fix this
-                                let yielder = yielder.clone();
-                                Box::pin(async move {
-                                    yielder.r#yield(user_update).await.unwrap();
-                                    // TODO: handle error
-                                })
-                            }),
-                        )
-                        .await;
+                    ctx.quest_subscriptions
+                        .write()
+                        .await
+                        .insert(instance.id, yielder);
                 }
 
                 generator

@@ -1,6 +1,6 @@
 use crate::redis::Redis;
 use async_trait::async_trait;
-use deadpool_redis::{redis::AsyncCommands, Connection};
+use deadpool_redis::redis::AsyncCommands;
 use futures_util::{Future, StreamExt as _};
 use log::{debug, error};
 use quests_protocol::ProtocolMessage;
@@ -80,19 +80,14 @@ impl ChannelSubscriber for RedisChannelSubscriber {
 }
 
 pub struct RedisChannelPublisher {
-    publish: Connection,
+    redis: Arc<Redis>,
     channel_name: String,
 }
 
 impl RedisChannelPublisher {
-    pub async fn new(redis: Arc<Redis>, channel_name: &str) -> Self {
-        let publish = redis
-            .get_async_connection()
-            .await
-            .expect("to get a connection");
-
+    pub fn new(redis: Arc<Redis>, channel_name: &str) -> Self {
         Self {
-            publish,
+            redis,
             channel_name: channel_name.to_string(),
         }
     }
@@ -103,8 +98,14 @@ impl<Publishment: ProtocolMessage + 'static> ChannelPublisher<Publishment>
     for RedisChannelPublisher
 {
     async fn publish(&mut self, publishment: Publishment) {
+        let mut publish = self
+            .redis
+            .get_async_connection()
+            .await
+            .expect("to get a connection"); // TODO: Handle error
+
         let publishment_bin = publishment.encode_to_vec();
-        self.publish
-            .publish::<&str, Vec<u8>, String>(&self.channel_name, publishment_bin);
+
+        publish.publish::<&str, Vec<u8>, String>(&self.channel_name, publishment_bin);
     }
 }

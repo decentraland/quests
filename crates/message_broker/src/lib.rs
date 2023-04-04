@@ -46,5 +46,5 @@ fn init_quests_channel_subscriber(redis: Arc<Redis>) -> RedisChannelSubscriber {
 }
 
 async fn init_quests_channel_publisher(redis: Arc<Redis>) -> RedisChannelPublisher {
-    RedisChannelPublisher::new(redis, QUEST_UPDATES_CHANNEL_NAME).await
+    RedisChannelPublisher::new(redis, QUEST_UPDATES_CHANNEL_NAME)
 }

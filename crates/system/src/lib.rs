@@ -5,23 +5,22 @@ use configuration::Config;
 use env_logger::init as initialize_logger;
 use event_processing::{process_event, ProcessEventResult};
 use log::{error, info};
-use quests_db::core::definitions::QuestsDatabase;
-use quests_db::create_quests_db_component;
-use quests_message_broker::channel::ChannelPublisher;
-use quests_message_broker::init_message_broker_components_with_publisher;
-use quests_message_broker::messages_queue::MessagesQueue;
-use quests_protocol::quests::{Event, UserUpdate};
+use quests_db::{create_quests_db_component, Database};
+use quests_message_broker::{
+    channel::RedisChannelPublisher,
+    init_message_broker_components_with_publisher,
+    messages_queue::{MessagesQueue, RedisMessagesQueue},
+};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 pub type Error = String;
 pub type EventProcessingResult<T> = Result<T, Error>;
 
 pub struct EventProcessor {
-    pub events_queue: Arc<dyn MessagesQueue<Event>>,
-    quests_channel: Arc<Mutex<dyn ChannelPublisher<UserUpdate>>>,
-    database: Arc<dyn QuestsDatabase>,
+    pub events_queue: Arc<RedisMessagesQueue>,
+    quests_channel: Arc<RedisChannelPublisher>,
+    database: Arc<Database>,
 }
 
 impl EventProcessor {
@@ -30,7 +29,7 @@ impl EventProcessor {
             init_message_broker_components_with_publisher(&config.redis_url).await;
 
         let events_queue = Arc::new(events_queue);
-        let quests_channel = Arc::new(Mutex::new(quests_channel));
+        let quests_channel = Arc::new(quests_channel);
 
         let database = create_quests_db_component(&config.database_url)
             .await

@@ -16,7 +16,7 @@ pub trait ChannelSubscriber: Send + Sync {
 
 #[async_trait]
 pub trait ChannelPublisher<Publishment>: Send + Sync {
-    async fn publish(&mut self, update: Publishment);
+    async fn publish(&self, update: Publishment);
 }
 
 pub struct RedisChannelSubscriber {
@@ -97,7 +97,7 @@ impl RedisChannelPublisher {
 impl<Publishment: ProtocolMessage + 'static> ChannelPublisher<Publishment>
     for RedisChannelPublisher
 {
-    async fn publish(&mut self, publishment: Publishment) {
+    async fn publish(&self, publishment: Publishment) {
         let mut publish = self
             .redis
             .get_async_connection()

@@ -13,7 +13,6 @@ use quests_protocol::{
     ProtocolDecodeError, ProtocolMessage,
 };
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub enum ApplyEventResult {
     NewState(QuestState),
@@ -43,7 +42,7 @@ impl From<DBError> for ProcessEventError {
 
 pub async fn process_event(
     event: Event,
-    quests_channel: Arc<Mutex<impl ChannelPublisher<UserUpdate> + ?Sized>>,
+    quests_channel: Arc<impl ChannelPublisher<UserUpdate> + ?Sized>,
     database: Arc<impl QuestsDatabase + ?Sized>,
     events_queue: Arc<impl MessagesQueue<Event> + ?Sized>,
 ) -> ProcessEventResult {
@@ -64,8 +63,6 @@ pub async fn process_event(
                         };
                         database.add_event(&add_event, &quest_instance.id).await?;
                         quests_channel
-                            .lock()
-                            .await
                             .publish(UserUpdate {
                                 message: Some(user_update::Message::QuestState(QuestStateUpdate {
                                     quest_instance_id: quest_instance.id.clone(),

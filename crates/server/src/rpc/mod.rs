@@ -56,9 +56,10 @@ pub async fn run_rpc_server(
                 if let Some(Message::QuestState(state)) = &user_update.message {
                     let subs = subscriptions.read().await;
                     if let Some(generator) = subs.get(&state.quest_instance_id) {
-                        if let Err(_) = generator.r#yield(user_update).await {
-                            log::error!("Couldn't send user update through generator")
-                        }
+                        generator
+                            .r#yield(user_update)
+                            .await
+                            .expect("to be able to send the update"); // todo: handle error
                     }
                 }
             }

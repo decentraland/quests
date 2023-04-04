@@ -501,7 +501,7 @@ mod tests {
             .iter()
             .find(|task| task.id == "A_1".to_string())
             .is_some());
-
+            
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("A"));
         assert_eq!(state.current_steps.len(), 1);
@@ -662,7 +662,7 @@ mod tests {
             .iter()
             .find(|task| task.id == "B_1".to_string())
             .is_some());
-
+            
         assert!(!state
             .current_steps
             .get("B")

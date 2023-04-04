@@ -66,7 +66,7 @@ impl ChannelSubscriber for RedisChannelSubscriber {
                                     Ok(update) => {
                                         on_update_fn(update).await;
                                     }
-                                    Err(_) => error!("Couldn't deserialize quest update"),
+                                    Err(_) => error!("Couldn't deserialize update"),
                                 }
                             }
                             Err(_) => error!("Couldn't retrieve payload"),

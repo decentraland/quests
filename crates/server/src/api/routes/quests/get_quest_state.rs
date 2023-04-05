@@ -10,8 +10,8 @@ use crate::domain::quests::{get_instance_state, QuestError};
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestStateResponse {
-    quest: Quest,
-    state: QuestState,
+    pub quest: Quest,
+    pub state: QuestState,
 }
 
 #[utoipa::path(

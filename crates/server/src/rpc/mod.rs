@@ -3,6 +3,7 @@ mod warp_ws_transport;
 
 use crate::configuration::Config;
 use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
+use log::{error, info};
 use quests_db::Database;
 use quests_message_broker::{
     channel::{ChannelSubscriber, RedisChannelSubscriber},
@@ -51,15 +52,16 @@ pub async fn run_rpc_server(
     redis_quests_channel_subscriber.subscribe(
         QUEST_UPDATES_CHANNEL_NAME,
         move |user_update: UserUpdate| {
+            info!("User Update received > user_update: {user_update:?}");
             let subscriptions = subscriptions.clone();
             async move {
                 if let Some(Message::QuestState(state)) = &user_update.message {
                     let subs = subscriptions.read().await;
                     if let Some(generator) = subs.get(&state.quest_instance_id) {
-                        generator
-                            .r#yield(user_update)
-                            .await
-                            .expect("to be able to send the update"); // todo: handle error
+                        info!("User Update received > user_update: {user_update:?}");
+                        if generator.r#yield(user_update).await.is_err() {
+                            error!("User Update received > Couldn't send update to subscriptors");
+                        }
                     }
                 }
             }
@@ -79,7 +81,7 @@ pub async fn run_rpc_server(
                     .send_attach_transport(Arc::new(WarpWebSocketTransport::new(websocket)))
                     .is_err()
                 {
-                    log::error!("Couldn't attach web socket transport");
+                    error!("Couldn't attach web socket transport");
                 }
             })
         })

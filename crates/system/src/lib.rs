@@ -57,7 +57,20 @@ pub async fn start_event_processing() -> EventProcessingResult<()> {
 
     info!("Listening to events to process...");
     loop {
-        let _ = process(&event_processor).await;
+        match process(&event_processor).await {
+            // TODO: remove this handle await and move logging to event processing itself
+            Ok(handle) => match handle.await {
+                Ok(result) => match result {
+                    Ok(instances) => info!(
+                        "Event processed successfully and applied to {} instances",
+                        instances
+                    ),
+                    Err(e) => error!("Failed to process event with error: {e:?}"),
+                },
+                Err(e) => info!("Error while processing event {e:?}"),
+            },
+            _ => {}
+        }
     }
 }
 

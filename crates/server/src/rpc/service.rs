@@ -106,8 +106,6 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
                 }
             }
         }
-        // populate current states
-
         match ctx.db.get_user_quest_instances(&req.user_address).await {
             Ok(instances) => {
                 log::debug!(

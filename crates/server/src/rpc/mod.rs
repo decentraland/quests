@@ -35,7 +35,10 @@ pub async fn run_rpc_server(
         RedisChannelSubscriber,
     ),
 ) -> (JoinHandle<()>, JoinHandle<()>) {
-    let ws_server_address = ([0, 0, 0, 0], config.ws_server_port.parse::<u16>().unwrap());
+    let ws_server_address = (
+        [0, 0, 0, 0],
+        config.ws_server_port.parse::<u16>().unwrap_or(5001),
+    );
     let ctx = QuestsRpcServerContext {
         config,
         db,
@@ -72,9 +75,12 @@ pub async fn run_rpc_server(
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
             ws.on_upgrade(|websocket| async move {
-                server_events_sender
+                if server_events_sender
                     .send_attach_transport(Arc::new(WarpWebSocketTransport::new(websocket)))
-                    .unwrap();
+                    .is_err()
+                {
+                    log::error!("Couldn't attach web socket transport");
+                }
             })
         })
         .recover(handle_rejection);

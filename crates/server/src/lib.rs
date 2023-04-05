@@ -30,14 +30,10 @@ pub async fn run_app() {
     ))
     .await;
 
-    let config_arc = config_arc.into_inner();
-    let db_arc = db_arc.into_inner();
-    let redis_events_queue_arc = redis_events_queue_arc.into_inner();
-
     let (warp_websocket_server, rpc_server) = rpc::run_rpc_server((
-        config_arc,
-        db_arc,
-        redis_events_queue_arc,
+        config_arc.into_inner(),
+        db_arc.into_inner(),
+        redis_events_queue_arc.into_inner(),
         redis_quests_channel,
     ))
     .await;

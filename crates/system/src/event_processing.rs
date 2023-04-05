@@ -53,8 +53,14 @@ pub async fn process_event(
         Ok(quest_instances) => {
             let mut event_applied_to_instances = 0;
             for quest_instance in quest_instances {
-                match process_event_for_quest_instance(&quest_instance, &event, database.clone())
-                    .await
+                let quest = get_quest(&quest_instance.id, database.clone()).await?;
+                match process_event_for_quest_instance(
+                    &quest,
+                    &quest_instance,
+                    &event,
+                    database.clone(),
+                )
+                .await
                 {
                     Ok(ApplyEventResult::NewState(quest_state)) => {
                         let add_event = AddEvent {
@@ -65,6 +71,8 @@ pub async fn process_event(
                         quests_channel
                             .publish(UserUpdate {
                                 message: Some(user_update::Message::QuestState(QuestStateUpdate {
+                                    name: quest.name,
+                                    description: quest.description,
                                     quest_instance_id: quest_instance.id.clone(),
                                     quest_state: Some(quest_state),
                                 })),
@@ -99,20 +107,28 @@ pub async fn process_event(
     }
 }
 
-// TODO: handle concurrent events with different timestamps
-async fn process_event_for_quest_instance(
-    quest_instance: &QuestInstance,
-    event: &Event,
+async fn get_quest(
+    quest_id: &str,
     database: Arc<impl QuestsDatabase + ?Sized>,
-) -> Result<ApplyEventResult, ProcessEventError> {
-    // try to apply event to every instance
-    let quest = database.get_quest(&quest_instance.quest_id).await?;
+) -> Result<Quest, ProcessEventError> {
+    let quest = database.get_quest(quest_id).await?;
     let quest_definition = QuestDefinition::decode(&*quest.definition)?;
     let quest = Quest {
         name: quest.name,
         description: quest.description,
         definition: quest_definition,
     };
+    Ok(quest)
+}
+
+// TODO: handle concurrent events with different timestamps
+async fn process_event_for_quest_instance(
+    quest: &Quest,
+    quest_instance: &QuestInstance,
+    event: &Event,
+    database: Arc<impl QuestsDatabase + ?Sized>,
+) -> Result<ApplyEventResult, ProcessEventError> {
+    // try to apply event to every instance
 
     let last_events = database.get_events(&quest_instance.id).await?;
     let mut events = vec![];
@@ -120,8 +136,8 @@ async fn process_event_for_quest_instance(
         events.push(Event::decode(&*past_event.event)?);
     }
 
-    let quest_graph = QuestGraph::from(&quest);
-    let current_state = get_state(&quest, events);
+    let quest_graph = QuestGraph::from(quest);
+    let current_state = get_state(quest, events);
 
     let new_state = current_state.apply_event(&quest_graph, event);
 

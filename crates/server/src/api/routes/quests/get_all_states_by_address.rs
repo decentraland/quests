@@ -1,13 +1,13 @@
 use actix_web::{get, web, HttpResponse};
 use quests_db::Database;
-use quests_protocol::quests::QuestState;
+use quests_protocol::quests::{Quest, QuestState};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::quests::get_all_quest_states_by_user_address_controller;
 
 #[derive(Deserialize, Serialize)]
 pub struct GetQuestStateByUserAddressResponse {
-    pub states: Vec<(String, QuestState)>,
+    pub states: Vec<(String, (Quest, QuestState))>,
 }
 
 #[utoipa::path(

@@ -69,7 +69,7 @@ pub async fn start_event_processing() -> EventProcessingResult<()> {
                 },
                 Err(e) => info!("Error while processing event {e:?}"),
             },
-            _ => {}
+            Err(_) => todo!(),
         }
     }
 }

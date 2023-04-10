@@ -1,5 +1,3 @@
-extern crate prost_build;
-
 use std::{env, io::Result, path::PathBuf};
 
 fn main() -> Result<()> {

@@ -26,6 +26,7 @@ pub struct QuestsRpcServerContext {
     pub db: Arc<Database>,
     pub redis_events_queue: Arc<RedisMessagesQueue>,
     pub quest_subscriptions: Arc<RwLock<HashMap<String, GeneratorYielder<UserUpdate>>>>,
+    pub subscription_by_user_address: Arc<RwLock<HashMap<String, GeneratorYielder<UserUpdate>>>>,
 }
 
 pub async fn run_rpc_server(
@@ -45,6 +46,7 @@ pub async fn run_rpc_server(
         db,
         redis_events_queue,
         quest_subscriptions: Arc::new(RwLock::new(HashMap::new())),
+        subscription_by_user_address: Arc::new(RwLock::new(HashMap::new())),
     };
 
     let subscriptions = ctx.quest_subscriptions.clone();

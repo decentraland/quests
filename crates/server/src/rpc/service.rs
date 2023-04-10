@@ -3,7 +3,10 @@ use crate::{
     api::routes::quests::StartQuestRequest as StartQuestRequestAPI,
     domain::{
         events::add_event_controller,
-        quests::{get_all_quest_states_by_user_address_controller, start_quest_controller},
+        quests::{
+            get_all_quest_states_by_user_address_controller, get_instance_state,
+            start_quest_controller,
+        },
     },
 };
 use dcl_rpc::stream_protocol::Generator;
@@ -39,7 +42,38 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
         )
         .await
         {
-            Ok(_) => StartQuestResponse { accepted: true },
+            Ok(new_quest_instance_id) => {
+                let user_subscriptions_lock = ctx.subscription_by_user_address.read().await;
+                let user_subscription = user_subscriptions_lock.get(&user_address);
+                if let Some(user_subscription) = user_subscription {
+                    ctx.quest_subscriptions
+                        .write()
+                        .await
+                        .insert(new_quest_instance_id.clone(), user_subscription.clone());
+                    match get_instance_state(ctx.db.clone(), &quest_id, &new_quest_instance_id)
+                        .await
+                    {
+                        Ok((quest, quest_state)) => {
+                            let user_update = UserUpdate {
+                                message: Some(Message::QuestState(QuestStateUpdate {
+                                    quest_instance_id: new_quest_instance_id.clone(),
+                                    name: quest.name,
+                                    description: quest.description,
+                                    quest_state: Some(quest_state),
+                                })),
+                            };
+                            if user_subscription.r#yield(user_update).await.is_err() {
+                                log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription")
+                            }
+                        }
+                        Err(err) => {
+                            log::error!("QuestServiceImplementation > StartQuest Error > Calculating state >{err:?}");
+                        }
+                    }
+                }
+
+                StartQuestResponse { accepted: true }
+            }
             Err(err) => {
                 log::error!("QuestsServiceImplementation > StartQuest Error > {err:?}");
                 StartQuestResponse { accepted: false }
@@ -111,6 +145,15 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
                 log::debug!(
                     "QuestsServiceImplementation > Subscribe > Instances retrieved {instances:?}"
                 );
+
+                // store the subscription by the user address because if the user starts a new one
+                // we have to have a way to communicate the updates of the new one.
+                // TODO: could be done in another way?
+                ctx.subscription_by_user_address
+                    .write()
+                    .await
+                    .insert(req.user_address.clone(), generator_yielder.clone());
+
                 for instance in instances {
                     let yielder = generator_yielder.clone();
 

@@ -35,8 +35,8 @@ impl Config {
                     .with_list_parse_key(WS_SERVER_PORT)
                     .try_parsing(true),
             )
-            .set_default("server_port", 5000)? // It should be empty for local development
-            .set_default("ws_server_port", 5001)? // default for local development
+            .set_default("server_port", 3000)? // It's empty for local development
+            .set_default("ws_server_port", 3001)? // default for local development
             .set_default("env", "dev")?
             .set_default("wkc_metrics_bearer_token", "")?
             .set_default(

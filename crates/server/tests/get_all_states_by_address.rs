@@ -5,7 +5,7 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     create_quests_db_component,
 };
-use quests_definitions::ProstMessage;
+use quests_protocol::ProtocolMessage;
 use quests_server::api::routes::quests::{GetQuestStateByUserAddressResponse, StartQuestRequest};
 
 #[actix_web::test]
@@ -48,8 +48,10 @@ async fn get_all_states_by_user_address_should_be_200() {
     let response: GetQuestStateByUserAddressResponse = read_body_json(response).await;
     assert_eq!(response.states.len(), 1);
     assert!(response.states[0]
+        .1
+         .1
         .current_steps
         .get(&"A".to_string())
         .is_some());
-    assert_eq!(response.states[0].steps_left, 4);
+    assert_eq!(response.states[0].1 .1.steps_left, 4);
 }

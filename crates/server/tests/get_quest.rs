@@ -3,8 +3,8 @@ use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_definitions::quests::Quest;
-use quests_definitions::ProstMessage;
+use quests_protocol::quests::Quest;
+use quests_protocol::ProtocolMessage;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]

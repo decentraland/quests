@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-quests_definitions = { path = "../definitions" }
+quests_protocol = { path = "../protocol" }
 async-trait = "0.1.57"
 deadpool-redis = "0.11.0"
 log = { workspace = true }

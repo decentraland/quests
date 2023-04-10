@@ -1,6 +1,6 @@
 DOCKER_COMPOSE_EXISTS = $(shell which docker-compose > /dev/null && echo 1 || echo 0)
 
-RUN_LOCAL_DB = docker-compose -f docker-compose.local.yml up -d && docker exec quests_db bash -c "until pg_isready; do sleep 1; done" > /dev/null && sleep 5
+RUN_SERVICES = docker-compose -f docker-compose.local.yml up -d && docker exec quests_db bash -c "until pg_isready; do sleep 1; done" > /dev/null && sleep 5
 LOCAL_DB = $(shell docker ps | grep quests_db > /dev/null && echo 1 || echo 0)
 
 CARGO_RUN_SERVER_WATCH = RUST_LOG=debug cargo watch -x 'run --bin quests_server --'
@@ -13,7 +13,7 @@ export DATABASE_URL=postgres://postgres:postgres@localhost:5432/quests_db # due 
 
 runservices:
 ifeq ($(DOCKER_COMPOSE_EXISTS), 1)
-	@$(RUN_LOCAL_DB)
+	@$(RUN_SERVICES)
 else
 	@$(ERROR) "Install Docker in order to run the local DB"
 	@exit 1;
@@ -36,7 +36,7 @@ test-server: TEST_PROJECT=-p quests_server
 test-server: tests
 
 test-definitions:
-	-@cargo test --package quests_definitions
+	-@cargo test --package quests_protocol
 
 # run tests locally
 tests: 

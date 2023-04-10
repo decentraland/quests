@@ -78,7 +78,7 @@ message Task {
 
 message StepContent {
   repeated Task to_dos = 1;
-  repeated string tasks_completed = 2;
+  repeated Task tasks_completed = 2;
 }
 
 message QuestState {
@@ -90,7 +90,9 @@ message QuestState {
 
 message QuestStateUpdate {
   string quest_instance_id = 1;
-  QuestState quest_state = 2;
+  string name = 2;
+  string description = 3;
+  QuestState quest_state = 4;
 }
 
 message UserUpdate {

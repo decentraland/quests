@@ -165,9 +165,15 @@ impl QuestsDatabase for Database {
 
         Ok(StoredQuest {
             id: id.to_string(),
-            name: query_result.try_get("name").unwrap(),
-            description: query_result.try_get("description").unwrap(),
-            definition: query_result.try_get("definition").unwrap(),
+            name: query_result
+                .try_get("name")
+                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
+            description: query_result
+                .try_get("description")
+                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
+            definition: query_result
+                .try_get("definition")
+                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
         })
     }
 

@@ -8,8 +8,10 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     create_quests_db_component,
 };
-use quests_definitions::{quest_graph::QuestGraph, quests::QuestState, ProstMessage};
-use quests_server::api::routes::quests::{StartQuestRequest, StartQuestResponse};
+use quests_protocol::{quest_graph::QuestGraph, quests::QuestState, ProtocolMessage};
+use quests_server::api::routes::quests::{
+    GetQuestStateResponse, StartQuestRequest, StartQuestResponse,
+};
 use uuid::Uuid;
 
 #[actix_web::test]
@@ -59,8 +61,8 @@ async fn get_quest_state_should_be_200() {
     let quest_graph: QuestGraph = (&quest_definition).into();
     let initial_state: QuestState = (&quest_graph).into();
 
-    let response: QuestState = read_body_json(response).await;
-    assert_eq!(initial_state, response);
+    let response: GetQuestStateResponse = read_body_json(response).await;
+    assert_eq!(initial_state, response.state);
 }
 
 #[actix_web::test]

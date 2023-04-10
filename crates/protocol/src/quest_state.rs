@@ -38,7 +38,7 @@ impl QuestState {
                                 step.to_dos[i].action_items.remove(matched_action_index);
 
                                 if step.to_dos[i].action_items.is_empty() {
-                                    step.tasks_completed.push(task.id.clone());
+                                    step.tasks_completed.push(task.clone());
                                     step.to_dos.remove(i);
                                 }
                             });
@@ -76,8 +76,8 @@ impl QuestState {
 
 impl From<&QuestGraph> for QuestState {
     /// Returns the initial state of the Quest as it's not initialized
-    fn from(value: &QuestGraph) -> Self {
-        let next_possible_steps = value
+    fn from(graph: &QuestGraph) -> Self {
+        let next_possible_steps = graph
             .next(START_STEP_ID)
             .unwrap_or_default()
             .iter()
@@ -85,7 +85,7 @@ impl From<&QuestGraph> for QuestState {
                 (
                     step.clone(),
                     StepContent {
-                        to_dos: value.tasks_by_step.get(step).unwrap().clone(),
+                        to_dos: graph.tasks_by_step.get(step).unwrap().clone(),
                         ..Default::default()
                     },
                 )
@@ -94,8 +94,8 @@ impl From<&QuestGraph> for QuestState {
 
         Self {
             current_steps: next_possible_steps,
-            required_steps: value.required_for_end().unwrap_or_default(),
-            steps_left: value.total_steps() as u32,
+            required_steps: graph.required_for_end().unwrap_or_default(),
+            steps_left: graph.total_steps() as u32,
             steps_completed: Vec::default(),
         }
     }
@@ -498,7 +498,8 @@ mod tests {
             .get("A")
             .unwrap()
             .tasks_completed
-            .contains(&"A_1".to_string()));
+            .iter()
+            .any(|task| task.id == "A_1"));
 
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("A"));
@@ -527,7 +528,8 @@ mod tests {
             .get("A")
             .unwrap()
             .tasks_completed
-            .contains(&"A_1".to_string()));
+            .iter()
+            .any(|task| task.id == "A_1"));
 
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("B"));
@@ -624,7 +626,8 @@ mod tests {
             .get("B")
             .unwrap()
             .tasks_completed
-            .contains(&"B_1".to_string()));
+            .iter()
+            .any(|task| task.id == "B_1"));
 
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("B"));
@@ -653,13 +656,16 @@ mod tests {
             .get("B")
             .unwrap()
             .tasks_completed
-            .contains(&"B_1".to_string()));
+            .iter()
+            .any(|task| task.id == "B_1"));
+
         assert!(!state
             .current_steps
             .get("B")
             .unwrap()
             .tasks_completed
-            .contains(&"B_2".to_string()));
+            .iter()
+            .any(|task| task.id == "B_2"));
 
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("C"));

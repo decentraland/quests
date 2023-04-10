@@ -3,7 +3,7 @@ use std::sync::Arc;
 use actix_web::{put, web, HttpResponse};
 use derive_more::Deref;
 use quests_db::{core::definitions::QuestsDatabase, Database};
-use quests_definitions::quests::Quest;
+use quests_protocol::quests::Quest;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

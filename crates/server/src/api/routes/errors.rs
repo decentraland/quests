@@ -1,7 +1,7 @@
 use crate::domain::quests::QuestError;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use quests_db::core::errors::DBError;
-use quests_definitions::ProstDecodeError;
+use quests_protocol::ProtocolDecodeError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -65,8 +65,8 @@ pub fn query_extractor_config() -> web::QueryConfig {
         .error_handler(|err, _| CommonError::BadRequest(err.to_string()).into())
 }
 
-impl From<ProstDecodeError> for QuestError {
-    fn from(_value: ProstDecodeError) -> Self {
+impl From<ProtocolDecodeError> for QuestError {
+    fn from(_value: ProtocolDecodeError) -> Self {
         QuestError::DeserializationError
     }
 }

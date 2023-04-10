@@ -3,7 +3,7 @@ use crate::api::routes::{
     quests::{types::ToQuest, StartQuestRequest},
 };
 use futures_util::future::join_all;
-use quests_db::core::definitions::{QuestInstance, QuestsDatabase};
+use quests_db::core::definitions::QuestsDatabase;
 use quests_protocol::{
     quest_state::get_state,
     quests::{Event, Quest, QuestState},
@@ -49,7 +49,7 @@ pub async fn get_all_quest_states_by_user_address_controller(
         let handle = tokio::spawn(async move {
             (
                 quest_instance.id.clone(),
-                get_instance_state(db_cloned, quest_instance).await,
+                get_instance_state(db_cloned, &quest_instance.quest_id, &quest_instance.id).await,
             )
         });
         join_handles.push(handle);
@@ -70,13 +70,14 @@ pub async fn get_all_quest_states_by_user_address_controller(
 
 pub async fn get_instance_state(
     db: Arc<impl QuestsDatabase>,
-    quest_instance: QuestInstance,
+    quest_id: &str,
+    quest_instance: &str,
 ) -> Result<(Quest, QuestState), QuestError> {
-    let quest = db.get_quest(&quest_instance.quest_id).await;
+    let quest = db.get_quest(quest_id).await;
     match quest {
         Ok(stored_quest) => {
             let quest = stored_quest.to_quest()?;
-            let stored_events = db.get_events(&quest_instance.id).await?;
+            let stored_events = db.get_events(quest_instance).await?;
 
             let events = stored_events
                 .iter()

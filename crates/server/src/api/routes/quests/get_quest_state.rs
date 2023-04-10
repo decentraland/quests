@@ -42,7 +42,9 @@ async fn get_quest_instance_state_controller<DB: QuestsDatabase>(
     id: String,
 ) -> Result<(Quest, QuestState), QuestError> {
     match db.get_quest_instance(&id).await {
-        Ok(quest_instance) => get_instance_state(db.clone(), quest_instance).await,
+        Ok(quest_instance) => {
+            get_instance_state(db.clone(), &quest_instance.quest_id, &quest_instance.id).await
+        }
         Err(error) => Err(error.into()),
     }
 }

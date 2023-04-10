@@ -499,9 +499,8 @@ mod tests {
             .unwrap()
             .tasks_completed
             .iter()
-            .find(|task| task.id == "A_1".to_string())
-            .is_some());
-            
+            .any(|task| task.id == "A_1"));
+
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("A"));
         assert_eq!(state.current_steps.len(), 1);
@@ -530,8 +529,7 @@ mod tests {
             .unwrap()
             .tasks_completed
             .iter()
-            .find(|task| task.id == "A_1".to_string())
-            .is_some());
+            .any(|task| task.id == "A_1"));
 
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("B"));
@@ -629,8 +627,7 @@ mod tests {
             .unwrap()
             .tasks_completed
             .iter()
-            .find(|task| task.id == "B_1".to_string())
-            .is_some());
+            .any(|task| task.id == "B_1"));
 
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("B"));
@@ -660,17 +657,15 @@ mod tests {
             .unwrap()
             .tasks_completed
             .iter()
-            .find(|task| task.id == "B_1".to_string())
-            .is_some());
-            
+            .any(|task| task.id == "B_1"));
+
         assert!(!state
             .current_steps
             .get("B")
             .unwrap()
             .tasks_completed
             .iter()
-            .find(|task| task.id == "B_2".to_string())
-            .is_some());
+            .any(|task| task.id == "B_2"));
 
         state = state.apply_event(&quest_graph, &events.remove(0));
         assert!(state.current_steps.contains_key("C"));

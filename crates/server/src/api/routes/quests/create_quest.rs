@@ -23,7 +23,7 @@ pub struct CreateQuestRequest(Quest);
 #[utoipa::path(
     request_body = CreateQuestRequest, 
     responses(
-        (status = 201, description = "Quest created", body = [CreateQuestResponse]),
+        (status = 201, description = "Quest created", body = CreateQuestResponse),
         (status = 400, description = "Bad Request"),
         (status = 500, description = "Internal Server Error")
     )

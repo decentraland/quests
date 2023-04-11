@@ -19,7 +19,7 @@ pub struct GetQuestStateResponse {
         ("quest_instance_id" = String, description = "Quest Instance ID")
     ),
     responses(
-        (status = 200, description = "Quest State", body = [GetQuestStateResponse]),
+        (status = 200, description = "Quest State", body = GetQuestStateResponse),
         (status = 400, description = "Bad Request"),
         (status = 404, description = "Quest not found"),
         (status = 500, description = "Internal Server Error")

@@ -11,14 +11,16 @@ use crate::domain::quests::QuestError;
 use super::types::ToQuest;
 
 #[derive(Serialize, ToSchema)]
-pub struct GetQuestResponse(Quest);
+pub struct GetQuestResponse {
+    quest: Quest,
+}
 
 #[utoipa::path(
     params(
         ("quest_id" = String, description = "Quest ID")
     ),
     responses(
-        (status = 200, description = "Quest definition", body = [GetQuestResponse]),
+        (status = 200, description = "Quest definition", body = GetQuestResponse),
         (status = 404, description = "Quest not found"),
         (status = 500, description = "Internal Server Error")
     )
@@ -27,7 +29,7 @@ pub struct GetQuestResponse(Quest);
 pub async fn get_quest(data: web::Data<Database>, quest_id: web::Path<String>) -> HttpResponse {
     let db = data.into_inner();
     match get_quest_controller(db, quest_id.into_inner()).await {
-        Ok(quest) => HttpResponse::Ok().json(GetQuestResponse(quest)),
+        Ok(quest) => HttpResponse::Ok().json(GetQuestResponse { quest }),
         Err(err) => HttpResponse::from_error(err),
     }
 }

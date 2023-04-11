@@ -18,7 +18,7 @@ pub struct StartQuestResponse {
 #[utoipa::path(
     request_body = StartQuest,
     responses(
-        (status = 200, description = "Quest started"),
+        (status = 200, description = "Quest started", body = StartQuestResponse),
         (status = 400, description = "Bad Request"),
         (status = 404, description = "Quest not found"),
         (status = 500, description = "Internal Server Error")

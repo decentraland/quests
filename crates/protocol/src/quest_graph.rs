@@ -1,5 +1,5 @@
 use crate::quests::{Action, Connection, Step, Task};
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 use super::quests::*;
 use daggy::{
@@ -152,8 +152,32 @@ fn build_tasks_by_step_from_quest_definition(quest: &Quest) -> HashMap<StepID, V
     content_map
 }
 
-pub fn matches_action((action, event_action): (Action, Action)) -> bool {
-    action == event_action
+fn keys_match<T: Eq + Hash, U, V>(map1: &HashMap<T, U>, map2: &HashMap<T, V>) -> bool {
+    map1.len() == map2.len() && map1.keys().all(|k| map2.contains_key(k))
+}
+
+/// Case insensitive check on action type and parameters
+pub fn matches_action(action: &Action, other_action: &Action) -> bool {
+    if !action.r#type.eq_ignore_ascii_case(&other_action.r#type) {
+        return false;
+    };
+
+    if !keys_match(&action.parameters, &other_action.parameters) {
+        return false;
+    };
+
+    for (key, value) in &action.parameters {
+        let other_value = if let Some(other_value) = other_action.parameters.get(key) {
+            other_value
+        } else {
+            return false;
+        };
+        if !value.eq_ignore_ascii_case(other_value) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 #[cfg(test)]
@@ -577,40 +601,44 @@ mod tests {
 
     #[test]
     fn matches_action_works() {
-        let result = matches_action((
-            Action::location(Coordinates::new(10, 10)),
-            Action::location(Coordinates::new(10, 10)),
-        ));
+        let result = matches_action(
+            &Action::location(Coordinates::new(10, 10)),
+            &Action::location(Coordinates::new(10, 10)),
+        );
         assert!(result);
 
-        let result = matches_action((
-            Action::location(Coordinates::new(10, 10)),
-            Action::location(Coordinates::new(10, 20)),
-        ));
+        let result = matches_action(
+            &Action::location(Coordinates::new(10, 10)),
+            &Action::location(Coordinates::new(10, 20)),
+        );
         assert!(!result);
 
-        let result = matches_action((
-            Action::location(Coordinates::new(10, 10)),
-            Action::jump(Coordinates::new(10, 10)),
-        ));
+        let result = matches_action(
+            &Action::location(Coordinates::new(10, 10)),
+            &Action::jump(Coordinates::new(10, 10)),
+        );
         assert!(!result);
 
-        let result = matches_action((
-            Action::npc_interaction("NPC_ID"),
-            Action::npc_interaction("NPC_ID_2"),
-        ));
+        let result = matches_action(
+            &Action::npc_interaction("NPC_ID"),
+            &Action::npc_interaction("NPC_ID_2"),
+        );
         assert!(!result);
 
-        let result = matches_action((
-            Action::npc_interaction("NPC_ID"),
-            Action::npc_interaction("NPC_ID"),
-        ));
+        let result = matches_action(
+            &Action::npc_interaction("NPC_ID"),
+            &Action::npc_interaction("NPC_ID"),
+        );
         assert!(result);
 
-        let result = matches_action((
-            Action::emote(Coordinates::new(1, 2), "ID"),
-            Action::emote(Coordinates::new(1, 2), "ID"),
-        ));
+        let result = matches_action(
+            &Action::emote(Coordinates::new(1, 2), "ID"),
+            &Action::emote(Coordinates::new(1, 2), "ID"),
+        );
+        assert!(result);
+        let mut other_action = Action::emote(Coordinates::new(1, 2), "ID");
+        other_action.r#type = EMOTE.to_string().to_lowercase();
+        let result = matches_action(&Action::emote(Coordinates::new(1, 2), "ID"), &other_action);
         assert!(result);
     }
 }

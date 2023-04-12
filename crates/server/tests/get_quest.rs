@@ -3,8 +3,8 @@ use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_protocol::quests::Quest;
 use quests_protocol::ProtocolMessage;
+use quests_server::api::routes::quests::GetQuestResponse;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
@@ -32,18 +32,18 @@ async fn get_quest_should_be_200() {
     let response = call_service(&app, req).await;
 
     assert!(response.status().is_success());
-    let body: Quest = read_body_json(response).await;
-    assert_eq!(body.name, "QUEST-1");
-    assert_eq!(body.description, "Grab some apples");
+    let GetQuestResponse { quest } = read_body_json(response).await;
+    assert_eq!(quest.name, "QUEST-1");
+    assert_eq!(quest.description, "Grab some apples");
     assert_eq!(
-        body.definition.steps.len(),
+        quest.definition.steps.len(),
         quest_definition.definition.steps.len()
     );
     for step in quest_definition.definition.steps {
-        assert!(body.definition.steps.iter().any(|s| s.id == step.id));
+        assert!(quest.definition.steps.iter().any(|s| s.id == step.id));
     }
     assert_eq!(
-        body.definition.connections,
+        quest.definition.connections,
         quest_definition.definition.connections
     );
 }

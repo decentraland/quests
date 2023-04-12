@@ -47,7 +47,7 @@ async fn get_quests_controller<DB: QuestsDatabase>(
     offset: i64,
     limit: i64,
 ) -> Result<Vec<StoredQuest>, CommonError> {
-    db.get_quests(offset, limit)
+    db.get_active_quests(offset, limit)
         .await
         .map_err(|_| CommonError::Unknown)
 }

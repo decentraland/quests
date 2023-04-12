@@ -41,12 +41,43 @@ async fn start_quest_should_be_200() {
 
     assert!(response.status().is_success())
 }
-
 #[actix_web::test]
-async fn start_quest_should_be_404() {
+async fn start_quest_should_be_400() {
+    // should not be able to start a quest that is inactive
     let config = get_configuration().await;
+    let db = create_quests_db_component(&config.database_url)
+        .await
+        .unwrap();
+
     let app = init_service(build_app(&config).await).await;
 
+    let quest_definition = quest_samples::grab_some_apples();
+
+    let create_quest = CreateQuest {
+        name: &quest_definition.name,
+        description: &quest_definition.description,
+        definition: quest_definition.definition.encode_to_vec(),
+    };
+
+    let id = db.create_quest(&create_quest).await.unwrap();
+    db.deactivate_quest(&id).await.unwrap();
+
+    let start_quest = StartQuestRequest {
+        quest_id: id,
+        user_address: "0xA".to_string(),
+    };
+    // call start quest
+    let req = TestRequest::post()
+        .uri("/quests/instances")
+        .set_json(start_quest)
+        .to_request();
+
+    let response = call_service(&app, req).await;
+
+    assert!(!response.status().is_success());
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    // should not be able to start a quest that doesn't exist
     let uuid = Uuid::new_v4().to_string();
 
     let start_quest = StartQuestRequest {
@@ -60,6 +91,6 @@ async fn start_quest_should_be_404() {
         .to_request();
 
     let response = call_service(&app, req).await;
-
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    assert!(!response.status().is_success());
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }

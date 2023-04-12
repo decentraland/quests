@@ -9,7 +9,7 @@ use utoipa::ToSchema;
 
 use crate::domain::quests::QuestError;
 
-use super::types::ToUpdateQuest;
+use super::types::ToCreateQuest;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Deref)]
 pub struct UpdateQuestRequest(Quest);
@@ -50,7 +50,7 @@ async fn update_quest_controller<DB: QuestsDatabase>(
 ) -> Result<Quest, QuestError> {
     match quest.is_valid() {
         Ok(_) => db
-            .update_quest(&id, &quest.to_update_quest()?)
+            .update_quest(&id, &quest.to_create_quest()?)
             .await
             .map(|_| quest)
             .map_err(|error| error.into()),

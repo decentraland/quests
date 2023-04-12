@@ -1,25 +1,34 @@
-use super::{
-    definitions::{AddEvent, CreateQuest, QuestsDatabase, UpdateQuest},
-    errors::DBError,
-};
+use super::definitions::{AddEvent, CreateQuest, QuestsDatabase};
 
 pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQuest<'_>) {
     assert!(db.ping().await);
     let quest_id = db.create_quest(&quest).await.unwrap();
 
-    let update_quest = UpdateQuest {
+    let is_active = db.is_active_quest(&quest_id).await.unwrap();
+    assert!(is_active);
+
+    let updated_quest = CreateQuest {
         name: "UPDATED_QUEST",
         description: quest.description,
         definition: quest.definition.clone(),
     };
 
-    db.update_quest(&quest_id, &update_quest).await.unwrap();
+    let new_quest_id = db.update_quest(&quest_id, &updated_quest).await.unwrap();
 
+    let is_active = db.is_active_quest(&quest_id).await.unwrap();
+    assert!(!is_active);
+
+    // old quest is still there
     let get_quest = db.get_quest(&quest_id).await.unwrap();
-
     assert_eq!(get_quest.id, quest_id);
     assert_eq!(get_quest.description, quest.description);
     assert_eq!(get_quest.definition, quest.definition);
+
+    // old quest should not be active
+    let active_quests = db.get_active_quests(0, 2).await.unwrap();
+    assert_eq!(active_quests.len(), 1);
+    assert!(active_quests.iter().any(|quest| quest.id == new_quest_id));
+    assert!(!active_quests.iter().any(|quest| quest.id == quest_id));
 
     let quest_instance_id = db.start_quest(&quest_id, "0xA").await.unwrap();
 
@@ -45,13 +54,13 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert_eq!(quest_instance_events[0].user_address, "0xA");
     assert_eq!(quest_instance_events[0].event, vec![0]);
 
-    let get_all_quests = db.get_quests(0, 10).await.unwrap();
+    let active_quests = db.get_active_quests(0, 10).await.unwrap();
 
-    assert_eq!(get_all_quests.len(), 1);
-    assert_eq!(get_all_quests[0].name, "UPDATED_QUEST");
+    assert_eq!(active_quests.len(), 1);
+    assert_eq!(active_quests[0].name, "UPDATED_QUEST");
 
-    db.delete_quest(&quest_id).await.unwrap();
+    db.deactivate_quest(&new_quest_id).await.unwrap();
 
-    let err = db.get_quest(&quest_id).await.unwrap_err();
-    assert!(matches!(err, DBError::RowNotFound))
+    let active_quests = db.get_active_quests(0, 10).await.unwrap();
+    assert_eq!(active_quests.len(), 0);
 }

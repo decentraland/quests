@@ -1,4 +1,4 @@
-use quests_db::core::definitions::{StoredQuest, UpdateQuest};
+use quests_db::core::definitions::{CreateQuest, StoredQuest};
 use quests_protocol::{
     quests::{Quest, QuestDefinition},
     ProtocolMessage,
@@ -10,8 +10,8 @@ pub trait ToQuest {
     fn to_quest(&self) -> Result<Quest, QuestError>;
 }
 
-pub trait ToUpdateQuest {
-    fn to_update_quest(&self) -> Result<UpdateQuest, QuestError>;
+pub trait ToCreateQuest {
+    fn to_create_quest(&self) -> Result<CreateQuest, QuestError>;
 }
 
 impl ToQuest for StoredQuest {
@@ -25,9 +25,9 @@ impl ToQuest for StoredQuest {
     }
 }
 
-impl ToUpdateQuest for Quest {
-    fn to_update_quest(&self) -> Result<UpdateQuest, QuestError> {
-        Ok(UpdateQuest {
+impl ToCreateQuest for Quest {
+    fn to_create_quest(&self) -> Result<CreateQuest, QuestError> {
+        Ok(CreateQuest {
             name: &self.name,
             description: &self.description,
             definition: self.definition.encode_to_vec(),

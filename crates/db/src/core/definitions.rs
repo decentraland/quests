@@ -6,13 +6,14 @@ use serde::{Deserialize, Serialize};
 pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn ping(&self) -> bool;
 
-    async fn get_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>>;
     async fn create_quest(&self, quest: &CreateQuest) -> DBResult<String>;
-    async fn update_quest(&self, quest_id: &str, quest: &UpdateQuest) -> DBResult<()>;
+    async fn update_quest(&self, previous_quest_id: &str, quest: &CreateQuest) -> DBResult<String>;
+    async fn deactivate_quest(&self, id: &str) -> DBResult<String>;
     async fn get_quest(&self, id: &str) -> DBResult<StoredQuest>;
-    async fn delete_quest(&self, id: &str) -> DBResult<()>;
-    async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String>;
+    async fn get_active_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>>;
+    async fn is_active_quest(&self, quest_id: &str) -> DBResult<bool>;
 
+    async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String>;
     async fn get_quest_instance(&self, id: &str) -> DBResult<QuestInstance>;
     async fn get_user_quest_instances(&self, user_address: &str) -> DBResult<Vec<QuestInstance>>;
 
@@ -41,13 +42,6 @@ pub struct QuestInstance {
     pub quest_id: String,
     pub user_address: String,
     pub start_timestamp: i64,
-}
-
-#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
-pub struct UpdateQuest<'a> {
-    pub name: &'a str,
-    pub description: &'a str,
-    pub definition: Vec<u8>,
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]

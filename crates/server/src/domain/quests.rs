@@ -26,9 +26,15 @@ pub async fn start_quest_controller(
     db: Arc<impl QuestsDatabase>,
     start_quest_request: StartQuestRequest,
 ) -> Result<String, QuestError> {
-    db.get_quest(&start_quest_request.quest_id)
+    let is_active = db
+        .is_active_quest(&start_quest_request.quest_id)
         .await
         .map_err(|err| -> QuestError { err.into() })?;
+    if !is_active {
+        return Err(QuestError::CommonError(CommonError::BadRequest(
+            "Quest not found or inactive".to_string(),
+        )));
+    }
 
     db.start_quest(
         &start_quest_request.quest_id,

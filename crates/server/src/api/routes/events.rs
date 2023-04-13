@@ -11,7 +11,9 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 #[derive(Serialize, ToSchema)]
-pub struct AddEventResponse(String);
+pub struct AddEventResponse {
+    message: String,
+}
 
 #[utoipa::path(
     request_body = Event,
@@ -24,7 +26,9 @@ pub struct AddEventResponse(String);
 async fn add_event(data: web::Data<RedisMessagesQueue>, event: web::Json<Event>) -> HttpResponse {
     let events_queue = data.into_inner();
     match add_event_controller(events_queue, event.into_inner()).await {
-        Ok(_) => HttpResponse::Accepted().json(AddEventResponse("Event Accepted".to_string())),
+        Ok(_) => HttpResponse::Accepted().json(AddEventResponse {
+            message: "Event Accepted".to_string(),
+        }),
         Err(err) => HttpResponse::from_error(ErrorBadRequest(err)),
     }
 }

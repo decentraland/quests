@@ -177,7 +177,7 @@ pub fn matches_action(action: &Action, other_action: &Action) -> bool {
         }
     }
 
-    return true;
+    true
 }
 
 #[cfg(test)]

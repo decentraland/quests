@@ -28,12 +28,11 @@ async fn start_quest_should_be_200() {
     let id = db.create_quest(&create_quest).await.unwrap();
 
     let start_quest = StartQuestRequest {
-        quest_id: id,
         user_address: "0xA".to_string(),
     };
     // call start quest
     let req = TestRequest::post()
-        .uri("/quests/instances")
+        .uri(&format!("/quests/{id}/instances"))
         .set_json(start_quest)
         .to_request();
 
@@ -63,12 +62,11 @@ async fn start_quest_should_be_400() {
     db.deactivate_quest(&id).await.unwrap();
 
     let start_quest = StartQuestRequest {
-        quest_id: id,
         user_address: "0xA".to_string(),
     };
     // call start quest
     let req = TestRequest::post()
-        .uri("/quests/instances")
+        .uri(&format!("/quests/{id}/instances"))
         .set_json(start_quest)
         .to_request();
 
@@ -78,15 +76,14 @@ async fn start_quest_should_be_400() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     // should not be able to start a quest that doesn't exist
-    let uuid = Uuid::new_v4().to_string();
+    let id = Uuid::new_v4().to_string();
 
     let start_quest = StartQuestRequest {
-        quest_id: uuid,
         user_address: "0xA".to_string(),
     };
     // call start quest
     let req = TestRequest::post()
-        .uri("/quests/instances")
+        .uri(&format!("/quests/{id}/instances"))
         .set_json(start_quest)
         .to_request();
 

@@ -3,7 +3,7 @@ use quests_db::Database;
 use quests_protocol::quests::{Quest, QuestState};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::quests::get_all_quest_states_by_user_address_controller;
+use crate::domain::quests;
 
 #[derive(Deserialize, Serialize)]
 pub struct GetQuestStateByUserAddressResponse {
@@ -27,7 +27,7 @@ pub async fn get_all_quest_states_by_user_address(
     user_address: web::Path<String>,
 ) -> HttpResponse {
     let db = data.into_inner();
-    match get_all_quest_states_by_user_address_controller(db, user_address.into_inner()).await {
+    match quests::get_all_quest_states_by_user_address(db, user_address.into_inner()).await {
         Ok(quest_state) => HttpResponse::Ok().json(GetQuestStateByUserAddressResponse {
             states: quest_state,
         }),

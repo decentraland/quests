@@ -34,12 +34,11 @@ async fn get_quest_state_should_be_200() {
     let id = db.create_quest(&create_quest).await.unwrap();
 
     let start_quest = StartQuestRequest {
-        quest_id: id.clone(),
         user_address: "0xA".to_string(),
     };
     // call start quest
     let req = TestRequest::post()
-        .uri("/quests/instances")
+        .uri(&format!("/quests/{id}/instances"))
         .set_json(start_quest)
         .to_request();
 

@@ -28,19 +28,20 @@ async fn get_all_states_by_user_address_should_be_200() {
     let id = db.create_quest(&create_quest).await.unwrap();
 
     let start_quest = StartQuestRequest {
-        quest_id: id.clone(),
         user_address: "0xA".to_string(),
     };
     // call start quest
     let req = TestRequest::post()
-        .uri("/quests/instances")
+        .uri(&format!("/quests/{id}/instances"))
         .set_json(start_quest)
         .to_request();
 
     let response = call_service(&app, req).await;
     assert!(response.status().is_success());
 
-    let req = TestRequest::get().uri("/quests/instances/0xA").to_request();
+    let req = TestRequest::get()
+        .uri("/quests/{id}/instances/0xA")
+        .to_request();
 
     let response = call_service(&app, req).await;
     assert!(response.status().is_success());

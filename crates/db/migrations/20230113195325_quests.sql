@@ -22,6 +22,13 @@ CREATE TABLE IF NOT EXISTS events (
   timestamp TIMESTAMP NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS abandoned_quests (
+  ID UUID PRIMARY KEY NOT NULL,
+  quest_instance_id UUID references quest_instances(ID), 
+  created_at TIMESTAMP NOT NULL DEFAULT now(),
+  UNIQUE (quest_instance_id)
+);
+
 CREATE TABLE IF NOT EXISTS deactivated_quests (
   ID UUID PRIMARY KEY NOT NULL,
   quest_id UUID references quests(ID), 

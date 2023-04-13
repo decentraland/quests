@@ -1,13 +1,7 @@
 use super::QuestsRpcServerContext;
-use crate::{
-    api::routes::quests::StartQuestRequest as StartQuestRequestAPI,
-    domain::{
-        events::add_event_controller,
-        quests::{
-            get_all_quest_states_by_user_address_controller, get_instance_state,
-            start_quest_controller,
-        },
-    },
+use crate::domain::{
+    events::add_event_controller,
+    quests::{self, get_all_quest_states_by_user_address, get_instance_state, start_quest},
 };
 use dcl_rpc::stream_protocol::Generator;
 use quests_db::core::definitions::QuestsDatabase;
@@ -32,16 +26,7 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
             user_address,
             quest_id,
         } = req;
-        match start_quest_controller(
-            ctx.db.clone(),
-            // TODO: reuse the auto-generated type
-            StartQuestRequestAPI {
-                user_address: user_address.clone(),
-                quest_id: quest_id.clone(),
-            },
-        )
-        .await
-        {
+        match start_quest(ctx.db.clone(), &user_address, &quest_id).await {
             Ok(new_quest_instance_id) => {
                 let user_subscriptions_lock = ctx.subscription_by_user_address.read().await;
                 let user_subscription = user_subscriptions_lock.get(&user_address);
@@ -84,11 +69,15 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
     // TODO: Add tracing instrument
     async fn abort_quest(
         &self,
-        _req: AbortQuestRequest,
-        _ctx: Arc<QuestsRpcServerContext>,
+        req: AbortQuestRequest,
+        ctx: Arc<QuestsRpcServerContext>,
     ) -> AbortQuestResponse {
-        // TODO: missing business logic
-        AbortQuestResponse { accepted: true }
+        let accepted =
+            quests::abandon_quest(ctx.db.clone(), &req.user_address, &req.quest_instance_id)
+                .await
+                .is_ok();
+
+        AbortQuestResponse { accepted }
     }
 
     // TODO: Add tracing instrument
@@ -116,11 +105,9 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
     ) -> ServerStreamResponse<UserUpdate> {
         log::debug!("QuestsServiceImplementation > Subscribe > User {req:?} subscribed");
         let (generator, generator_yielder) = Generator::create();
-        let states = get_all_quest_states_by_user_address_controller(
-            ctx.db.clone(),
-            req.user_address.to_string(),
-        )
-        .await;
+        let states =
+            get_all_quest_states_by_user_address(ctx.db.clone(), req.user_address.to_string())
+                .await;
 
         if let Ok(states) = states {
             for (id, (quest, state)) in states {
@@ -140,7 +127,11 @@ impl QuestsServiceServer<QuestsRpcServerContext> for QuestsServiceImplementation
                 }
             }
         }
-        match ctx.db.get_user_quest_instances(&req.user_address).await {
+        match ctx
+            .db
+            .get_active_user_quest_instances(&req.user_address)
+            .await
+        {
             Ok(instances) => {
                 log::debug!(
                     "QuestsServiceImplementation > Subscribe > Instances retrieved {instances:?}"

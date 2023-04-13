@@ -227,7 +227,7 @@ const LOCATION: &str = "LOCATION";
 const JUMP: &str = "JUMP";
 const NPC_INTERACTION: &str = "NPC_INTERACTION";
 const CUSTOM: &str = "CUSTOM";
-const EMOTE: &str = "EMOTE";
+pub(crate) const EMOTE: &str = "EMOTE";
 
 impl Action {
     pub fn location(coords: Coordinates) -> Self {

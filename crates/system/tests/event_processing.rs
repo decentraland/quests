@@ -87,8 +87,6 @@ async fn can_process_events() {
 
     let quest_instance_id = result.unwrap();
 
-    println!("quest instance id: {quest_instance_id}");
-
     let mut config = Config::new().expect("Can parse config");
     config.database_url = db_url;
     let event_processor = EventProcessor::from_config(&config)
@@ -102,20 +100,21 @@ async fn can_process_events() {
         action: Some(action),
     };
 
-    println!("about to push event");
-    let _ = event_processor.events_queue.push(&event).await;
-
-    let process_event = quests_system::process(&event_processor)
+    event_processor
+        .events_queue
+        .push(&event)
         .await
-        .expect("can process event");
-    let result = process_event.await;
+        .expect("can push event");
 
-    match result {
-        Ok(Ok(result)) => {
-            assert_eq!(result, 1);
-        }
-        _ => panic!("Couldn't process event"),
-    }
+    let result = event_processor
+        .process()
+        .await
+        .expect("can spawn task to process event")
+        .await
+        .expect("can await join handle")
+        .expect("can process event");
+
+    assert_eq!(result, 1);
 
     let events = db
         .get_events(&quest_instance_id)

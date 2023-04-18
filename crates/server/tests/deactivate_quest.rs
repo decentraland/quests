@@ -7,7 +7,7 @@ use quests_protocol::quests::{Quest, QuestDefinition};
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
-async fn delete_quest_should_be_200() {
+async fn deactivate_quest_should_be_200() {
     let config = get_configuration().await;
     let db = create_quests_db_component(&config.database_url)
         .await
@@ -39,7 +39,7 @@ async fn delete_quest_should_be_200() {
 
     assert!(response.status().is_success());
 
-    assert!(db.get_quest(&id).await.is_err());
+    assert!(!db.is_active_quest(&id).await.unwrap());
 }
 
 #[actix_web::test]

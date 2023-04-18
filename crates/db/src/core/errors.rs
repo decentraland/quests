@@ -10,23 +10,35 @@ pub enum DBError {
     #[error("Unable to migrate: {0}")]
     MigrationError(BoxDynError),
 
+    #[error("Unable to begin transaction: {0}")]
+    TransactionBeginFailed(BoxDynError),
+
+    #[error("Unable to commit or rollback transaction: {0}")]
+    TransactionFailed(BoxDynError),
+
     #[error("Unable to create a quest: {0}")]
     CreateQuestFailed(BoxDynError),
 
     #[error("Unable to get a quest: {0}")]
     GetQuestFailed(BoxDynError),
 
+    #[error("Unable to get a quests")]
+    GetQuestsFailed(BoxDynError),
+
     #[error("Unable to update a quest: {0}")]
     UpdateQuestFailed(BoxDynError),
 
-    #[error("Unable to delete a quest: {0}")]
-    DeleteQuestFailed(BoxDynError),
+    #[error("Unable to deactivate a quest: {0}")]
+    DeactivateQuestFailed(BoxDynError),
 
     #[error("Unable to create a quest instance: {0}")]
     StartQuestFailed(BoxDynError),
 
     #[error("Unable to get a quest instance: {0}")]
     GetQuestInstanceFailed(BoxDynError),
+
+    #[error("Unable to get an event for a quest: {0}")]
+    GetQuestEventsFailed(BoxDynError),
 
     #[error("Unable to store an event for a quest: {0}")]
     CreateQuestEventFailed(BoxDynError),

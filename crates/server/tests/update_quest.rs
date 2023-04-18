@@ -7,6 +7,7 @@ use quests_protocol::quests::{
     Action, Connection, Coordinates, Quest, QuestDefinition, Step, Task,
 };
 use quests_protocol::ProtocolMessage;
+use quests_server::api::routes::quests::UpdateQuestResponse;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
@@ -87,11 +88,14 @@ async fn update_quest_should_be_200() {
         .to_request();
 
     let response = call_service(&app, req).await;
-
     assert!(response.status().is_success());
 
-    let quest_updated = db.get_quest(&id).await.unwrap();
+    let old_quest_is_inactive = !db.is_active_quest(&id).await.unwrap();
+    assert!(old_quest_is_inactive);
 
+    let body: UpdateQuestResponse = read_body_json(response).await;
+
+    let quest_updated = db.get_quest(&body.quest_id).await.unwrap();
     assert_eq!(quest_updated.name, "QUEST-1_UPDATE");
     assert_eq!(quest_updated.description, "Grab some apples - Updated");
     let definition = QuestDefinition::decode(quest_updated.definition.as_slice()).unwrap();

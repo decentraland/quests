@@ -28,7 +28,7 @@ async fn delete_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     id: String,
 ) -> Result<(), CommonError> {
-    db.delete_quest(&id)
+    db.deactivate_quest(&id)
         .await
         .map(|_| ())
         .map_err(|error| error.into())

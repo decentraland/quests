@@ -3,16 +3,14 @@ pub mod core;
 use std::str::FromStr;
 
 use crate::core::{
-    definitions::{
-        AddEvent, CreateQuest, Event, QuestInstance, QuestsDatabase, StoredQuest, UpdateQuest,
-    },
+    definitions::{AddEvent, CreateQuest, Event, QuestInstance, QuestsDatabase, StoredQuest},
     errors::{DBError, DBResult},
     ops::{Connect, GetConnection, Migrate},
 };
 use sqlx::{
     pool::PoolConnection,
     postgres::{PgConnectOptions, PgPoolOptions},
-    Error, PgPool, Postgres, Row,
+    Error, PgPool, Postgres, Row, Transaction,
 };
 
 use uuid::Uuid;
@@ -81,13 +79,20 @@ impl QuestsDatabase for Database {
         }
     }
 
-    async fn get_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>> {
-        let query_result = sqlx::query("SELECT * FROM quests OFFSET $1 LIMIT $2")
-            .bind(offset)
-            .bind(limit)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|err| DBError::CreateQuestFailed(Box::new(err)))?;
+    async fn get_active_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>> {
+        let query_result = sqlx::query(
+            "
+                SELECT * FROM quests
+                WHERE id NOT IN 
+                (SELECT quest_id as id FROM deactivated_quests)
+                OFFSET $1 LIMIT $2
+            ",
+        )
+        .bind(offset)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
 
         let mut quests = vec![];
 
@@ -113,44 +118,37 @@ impl QuestsDatabase for Database {
     }
 
     async fn create_quest(&self, quest: &CreateQuest) -> DBResult<String> {
-        let CreateQuest {
-            name,
-            description,
-            definition,
-        } = quest;
+        self.do_create_quest(quest, None).await
+    }
+
+    async fn update_quest(&self, previous_quest_id: &str, quest: &CreateQuest) -> DBResult<String> {
+        let mut transaction = self
+            .pool
+            .begin()
+            .await
+            .map_err(|err| DBError::TransactionBeginFailed(Box::new(err)))?;
+
+        let quest_id = self.do_create_quest(quest, Some(&mut transaction)).await?;
+        self.do_deactivate_quest(previous_quest_id, Some(&mut transaction))
+            .await?;
 
         let id = Uuid::new_v4().to_string();
         sqlx::query(
-            "INSERT INTO quests (id, name, description, definition) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO quest_updates (id, quest_id, previous_quest_id) VALUES ($1, $2, $3)",
         )
         .bind(parse_str_to_uuid(&id)?)
-        .bind(name)
-        .bind(description)
-        .bind(definition)
-        .execute(&self.pool)
+        .bind(parse_str_to_uuid(&quest_id)?)
+        .bind(parse_str_to_uuid(previous_quest_id)?)
+        .execute(&mut transaction)
         .await
-        .map_err(|err| DBError::CreateQuestFailed(Box::new(err)))?;
+        .map_err(|err| DBError::UpdateQuestFailed(Box::new(err)))?;
 
-        Ok(id)
-    }
-
-    async fn update_quest(&self, quest_id: &str, quest: &UpdateQuest) -> DBResult<()> {
-        let UpdateQuest {
-            name,
-            description,
-            definition,
-        } = quest;
-        sqlx::query("UPDATE quests SET name = $1, description = $2, definition = $3, updated_at = $4 WHERE id = $5")
-            .bind(name)
-            .bind(description)
-            .bind(definition)
-            .bind(sqlx::types::chrono::Utc::now().naive_utc())
-            .bind(parse_str_to_uuid(quest_id)?)
-            .execute(&self.pool)
+        transaction
+            .commit()
             .await
-            .map_err(|err| DBError::UpdateQuestFailed(Box::new(err)))?;
+            .map_err(|err| DBError::TransactionFailed(Box::new(err)))?;
 
-        Ok(())
+        Ok(quest_id)
     }
 
     async fn get_quest(&self, id: &str) -> DBResult<StoredQuest> {
@@ -177,14 +175,23 @@ impl QuestsDatabase for Database {
         })
     }
 
-    async fn delete_quest(&self, id: &str) -> DBResult<()> {
-        sqlx::query("DELETE FROM quests WHERE id = $1")
-            .bind(parse_str_to_uuid(id)?)
-            .execute(&self.pool)
-            .await
-            .map_err(|err| DBError::GetQuestFailed(Box::new(err)))?;
+    async fn is_active_quest(&self, quest_id: &str) -> DBResult<bool> {
+        let quest_exists: bool = sqlx::query_scalar(
+            "
+                SELECT EXISTS (SELECT 1 FROM quests
+                WHERE id = $1 AND id NOT IN (SELECT quest_id as id FROM deactivated_quests))
+            ",
+        )
+        .bind(parse_str_to_uuid(quest_id)?)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
 
-        Ok(())
+        Ok(quest_exists)
+    }
+
+    async fn deactivate_quest(&self, quest_id: &str) -> DBResult<String> {
+        self.do_deactivate_quest(quest_id, None).await
     }
 
     async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String> {
@@ -208,7 +215,7 @@ impl QuestsDatabase for Database {
             .await
             .map_err(|err| match err {
                 Error::RowNotFound => DBError::RowNotFound,
-                _ => DBError::GetQuestFailed(Box::new(err)),
+                _ => DBError::GetQuestInstanceFailed(Box::new(err)),
             })?;
 
         // QuestInstance uses a number as the timestamp (unix time) but SQLX returns a specific type (chrono)
@@ -276,7 +283,7 @@ impl QuestsDatabase for Database {
         .bind(parse_str_to_uuid(quest_instance_id)?)
         .execute(&self.pool)
         .await
-        .map_err(|err| DBError::StartQuestFailed(Box::new(err)))?;
+        .map_err(|err| DBError::CreateQuestEventFailed(Box::new(err)))?;
 
         Ok(())
     }
@@ -287,7 +294,7 @@ impl QuestsDatabase for Database {
                 .bind(parse_str_to_uuid(quest_instance_id)?)
                 .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
                 .await
-                .map_err(|err| DBError::GetQuestInstanceFailed(Box::new(err)))?;
+                .map_err(|err| DBError::GetQuestEventsFailed(Box::new(err)))?;
 
         let mut events = vec![];
 
@@ -319,19 +326,57 @@ impl QuestsDatabase for Database {
     }
 }
 
-#[async_trait::async_trait]
-impl Migrate for Database {
-    async fn migrate(&self) -> DBResult<()> {
-        if let Err(err) = sqlx::migrate!("./migrations").run(&self.pool).await {
-            return Err(DBError::MigrationError(Box::new(err)));
-        }
-
-        Ok(())
+impl Database {
+    async fn do_create_quest(
+        &self,
+        quest: &CreateQuest<'_>,
+        tx: Option<&mut Transaction<'_, Postgres>>,
+    ) -> DBResult<String> {
+        let quest_id = Uuid::new_v4().to_string();
+        let query = sqlx::query(
+            "INSERT INTO quests (id, name, description, definition) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(parse_str_to_uuid(&quest_id)?)
+        .bind(quest.name)
+        .bind(quest.description)
+        .bind(&quest.definition);
+        let result = if let Some(tx) = tx {
+            query.execute(tx).await
+        } else {
+            query.execute(&self.pool).await
+        };
+        result
+            .map_err(|err| DBError::CreateQuestFailed(Box::new(err)))
+            .map(|_| quest_id)
+    }
+    async fn do_deactivate_quest(
+        &self,
+        quest_id: &str,
+        tx: Option<&mut Transaction<'_, Postgres>>,
+    ) -> DBResult<String> {
+        let id = Uuid::new_v4().to_string();
+        let query = sqlx::query("INSERT INTO deactivated_quests (id, quest_id) VALUES ($1, $2)")
+            .bind(parse_str_to_uuid(&id)?)
+            .bind(parse_str_to_uuid(quest_id)?);
+        let result = if let Some(tx) = tx {
+            query.execute(tx).await
+        } else {
+            query.execute(&self.pool).await
+        };
+        result
+            .map_err(|err| DBError::DeactivateQuestFailed(Box::new(err)))
+            .map(|_| id)
     }
 }
 
-fn date_time_to_unix(time: sqlx::types::chrono::NaiveDateTime) -> i64 {
-    time.timestamp()
+#[async_trait::async_trait]
+impl Migrate for Database {
+    async fn migrate(&self) -> DBResult<()> {
+        sqlx::migrate!("./migrations")
+            .run(&self.pool)
+            .await
+            .map_err(|err| DBError::MigrationError(Box::new(err)))
+    }
 }
 
 pub async fn create_quests_db_component(db_url: &str) -> DBResult<Database> {
@@ -364,6 +409,10 @@ fn parse_str_to_uuid(id: &str) -> DBResult<sqlx::types::Uuid> {
 
 fn parse_uuid_to_str(uuid: sqlx::types::Uuid) -> String {
     uuid.to_string()
+}
+
+fn date_time_to_unix(time: sqlx::types::chrono::NaiveDateTime) -> i64 {
+    time.timestamp()
 }
 
 #[cfg(test)]

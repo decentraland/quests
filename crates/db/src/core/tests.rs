@@ -54,6 +54,22 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert_eq!(quest_instance_events[0].user_address, "0xA");
     assert_eq!(quest_instance_events[0].event, vec![0]);
 
+    let is_active_instance = db
+        .is_active_quest_instance(&get_quest_instance.id)
+        .await
+        .unwrap();
+    assert!(is_active_instance);
+
+    let active_instances = db.get_active_user_quest_instances("0xA").await.unwrap();
+    assert_eq!(active_instances.len(), 1);
+
+    db.abandon_quest(&get_quest_instance.id).await.unwrap();
+    let is_active_instance = db
+        .is_active_quest_instance(&get_quest_instance.id)
+        .await
+        .unwrap();
+    assert!(!is_active_instance);
+
     let active_quests = db.get_active_quests(0, 10).await.unwrap();
 
     assert_eq!(active_quests.len(), 1);

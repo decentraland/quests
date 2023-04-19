@@ -1,7 +1,4 @@
-use crate::api::routes::{
-    errors::CommonError,
-    quests::{types::ToQuest, StartQuestRequest},
-};
+use crate::api::routes::errors::CommonError;
 use futures_util::future::join_all;
 use quests_db::core::definitions::QuestsDatabase;
 use quests_protocol::{
@@ -11,6 +8,8 @@ use quests_protocol::{
 };
 use std::sync::Arc;
 use thiserror::Error;
+
+use super::types::ToQuest;
 
 #[derive(Error, Debug)]
 pub enum QuestError {
@@ -22,12 +21,31 @@ pub enum QuestError {
     QuestValidation(String),
 }
 
-pub async fn start_quest_controller(
+pub async fn abandon_quest(
     db: Arc<impl QuestsDatabase>,
-    start_quest_request: StartQuestRequest,
+    user_address: &str,
+    quest_instance_id: &str,
+) -> Result<(), QuestError> {
+    let quest_instance = db.get_quest_instance(quest_instance_id).await?;
+    if quest_instance.user_address != user_address {
+        return Err(QuestError::CommonError(CommonError::BadRequest(
+            "Cannot abandon a quest if you are not the user playing it".to_string(),
+        )));
+    }
+
+    db.abandon_quest(quest_instance_id)
+        .await
+        .map_err(|error| error.into())
+        .map(|_| ())
+}
+
+pub async fn start_quest(
+    db: Arc<impl QuestsDatabase>,
+    user_address: &str,
+    quest_id: &str,
 ) -> Result<String, QuestError> {
     let is_active = db
-        .is_active_quest(&start_quest_request.quest_id)
+        .is_active_quest(quest_id)
         .await
         .map_err(|err| -> QuestError { err.into() })?;
     if !is_active {
@@ -36,19 +54,17 @@ pub async fn start_quest_controller(
         )));
     }
 
-    db.start_quest(
-        &start_quest_request.quest_id,
-        &start_quest_request.user_address,
-    )
-    .await
-    .map_err(|error| error.into())
+    db.start_quest(quest_id, user_address)
+        .await
+        .map_err(|error| error.into())
 }
 
-pub async fn get_all_quest_states_by_user_address_controller(
+pub async fn get_all_quest_states_by_user_address(
     db: Arc<impl QuestsDatabase + 'static>,
     user_address: String,
 ) -> Result<Vec<(String, (Quest, QuestState))>, QuestError> {
-    let quest_instances = db.get_user_quest_instances(&user_address).await?;
+    let quest_instances = db.get_active_user_quest_instances(&user_address).await?;
+
     let mut join_handles = vec![];
     for quest_instance in quest_instances {
         let db_cloned = db.clone();

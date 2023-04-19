@@ -190,6 +190,34 @@ impl QuestsDatabase for Database {
         Ok(quest_exists)
     }
 
+    async fn abandon_quest(&self, quest_instance_id: &str) -> DBResult<String> {
+        let id = Uuid::new_v4().to_string();
+        let query =
+            sqlx::query("INSERT INTO abandoned_quests (id, quest_instance_id) VALUES ($1, $2)")
+                .bind(parse_str_to_uuid(&id)?)
+                .bind(parse_str_to_uuid(quest_instance_id)?);
+        query
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DBError::DeactivateQuestFailed(Box::new(err)))
+            .map(|_| id)
+    }
+
+    async fn is_active_quest_instance(&self, quest_instance_id: &str) -> DBResult<bool> {
+        let quest_instance_exists: bool = sqlx::query_scalar(
+            "
+                SELECT EXISTS (SELECT 1 FROM quest_instances
+                WHERE id = $1 AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests))
+            ",
+        )
+        .bind(parse_str_to_uuid(quest_instance_id)?)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
+
+        Ok(quest_instance_exists)
+    }
+
     async fn deactivate_quest(&self, quest_id: &str) -> DBResult<String> {
         self.do_deactivate_quest(quest_id, None).await
     }
@@ -239,12 +267,19 @@ impl QuestsDatabase for Database {
         })
     }
 
-    async fn get_user_quest_instances(&self, user_address: &str) -> DBResult<Vec<QuestInstance>> {
-        let query_result = sqlx::query("SELECT * FROM quest_instances WHERE user_address = $1")
-            .bind(user_address)
-            .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
-            .await
-            .map_err(|err| DBError::GetQuestInstanceFailed(Box::new(err)))?;
+    async fn get_active_user_quest_instances(
+        &self,
+        user_address: &str,
+    ) -> DBResult<Vec<QuestInstance>> {
+        let query_result = sqlx::query(
+            "SELECT * FROM quest_instances 
+            WHERE user_address = $1 
+            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests)",
+        )
+        .bind(user_address)
+        .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
+        .await
+        .map_err(|err| DBError::GetQuestInstanceFailed(Box::new(err)))?;
 
         let mut quests = vec![];
 

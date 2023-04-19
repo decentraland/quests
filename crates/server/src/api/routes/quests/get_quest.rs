@@ -6,9 +6,7 @@ use quests_protocol::quests::Quest;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::domain::quests::QuestError;
-
-use super::types::ToQuest;
+use crate::domain::{quests::QuestError, types::ToQuest};
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestResponse {

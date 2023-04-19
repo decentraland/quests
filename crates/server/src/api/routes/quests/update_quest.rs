@@ -7,9 +7,7 @@ use quests_protocol::quests::Quest;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::domain::quests::QuestError;
-
-use super::types::ToCreateQuest;
+use crate::domain::{quests::QuestError, types::ToCreateQuest};
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Deref)]
 pub struct UpdateQuestRequest(Quest);

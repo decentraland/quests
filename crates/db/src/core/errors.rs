@@ -31,6 +31,9 @@ pub enum DBError {
     #[error("Unable to deactivate a quest: {0}")]
     DeactivateQuestFailed(BoxDynError),
 
+    #[error("Unable to abandon a quest: {0}")]
+    AbandonQuestFailed(BoxDynError),
+
     #[error("Unable to create a quest instance: {0}")]
     StartQuestFailed(BoxDynError),
 

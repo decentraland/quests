@@ -66,7 +66,7 @@ async fn do_process_event(
     quests_channel: Arc<impl ChannelPublisher<UserUpdate> + ?Sized>,
 ) -> Result<usize, ProcessEventError> {
     let quest_instances = database
-        .get_user_quest_instances(&event.address)
+        .get_active_user_quest_instances(&event.address)
         .await
         .map_err(|err| {
             info!(

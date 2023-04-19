@@ -64,6 +64,7 @@ pub async fn get_all_quest_states_by_user_address(
     user_address: String,
 ) -> Result<Vec<(String, (Quest, QuestState))>, QuestError> {
     let quest_instances = db.get_active_user_quest_instances(&user_address).await?;
+
     let mut join_handles = vec![];
     for quest_instance in quest_instances {
         let db_cloned = db.clone();

@@ -272,8 +272,9 @@ impl QuestsDatabase for Database {
         user_address: &str,
     ) -> DBResult<Vec<QuestInstance>> {
         let query_result = sqlx::query(
-            "SELECT * FROM quest_instances WHERE user_address = $1 
-            WHERE id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests)",
+            "SELECT * FROM quest_instances 
+            WHERE user_address = $1 
+            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests)",
         )
         .bind(user_address)
         .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream

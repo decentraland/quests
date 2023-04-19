@@ -39,9 +39,7 @@ async fn get_all_states_by_user_address_should_be_200() {
     let response = call_service(&app, req).await;
     assert!(response.status().is_success());
 
-    let req = TestRequest::get()
-        .uri("/quests/{id}/instances/0xA")
-        .to_request();
+    let req = TestRequest::get().uri("/quests/instances/0xA").to_request();
 
     let response = call_service(&app, req).await;
     assert!(response.status().is_success());

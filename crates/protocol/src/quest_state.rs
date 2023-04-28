@@ -28,7 +28,7 @@ impl QuestState {
                 match task
                     .action_items
                     .iter()
-                    .position(|action| matches_action(&action, &event_action))
+                    .position(|action| matches_action(action, &event_action))
                 {
                     Some(matched_action_index) => {
                         state

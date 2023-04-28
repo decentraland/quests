@@ -8,7 +8,7 @@ use actix_web::web::Data;
 use api::middlewares::initialize_telemetry;
 use components::init_components;
 use env_logger::init as initialize_logger;
-use tokio::join;
+use tokio::{select, signal};
 
 pub async fn run_app() {
     initialize_logger();
@@ -38,5 +38,12 @@ pub async fn run_app() {
     ))
     .await;
 
-    let (_, _, _) = join!(actix_rest_api_server, warp_websocket_server, rpc_server);
+    select! {
+        _ = actix_rest_api_server => {},
+        _ = warp_websocket_server => {},
+        _ = rpc_server => {},
+        _ = signal::ctrl_c() => {
+            log::info!("> run_app > SIGINT catched. Exiting...");
+        }
+    }
 }

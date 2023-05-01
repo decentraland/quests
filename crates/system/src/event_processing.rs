@@ -1,4 +1,4 @@
-use log::{error, info};
+use log::{debug, error, info};
 use quests_db::core::{
     definitions::{AddEvent, QuestInstance, QuestsDatabase},
     errors::DBError,
@@ -69,7 +69,7 @@ async fn do_process_event(
         .get_active_user_quest_instances(&event.address)
         .await
         .map_err(|err| {
-            info!(
+            debug!(
                 "Processing event > Couldn't retrieve quests for user with address {:?}: {err:?}",
                 event.address
             );
@@ -83,10 +83,10 @@ async fn do_process_event(
 
     let mut event_applied_to_instances = 0;
     for quest_instance in quest_instances {
-        info!("Processing event > for instance {quest_instance:?}");
+        debug!("Processing event > for instance {quest_instance:?}");
         let quest = get_quest(&quest_instance.quest_id, database.clone()).await?;
 
-        info!("Processing event > for instance with quest {quest:?}");
+        debug!("Processing event > for instance with quest {quest:?}");
         match process_event_for_quest_instance(&quest, &quest_instance, event, database.clone())
             .await
         {
@@ -134,19 +134,19 @@ async fn add_event_and_notify(
     quest: Quest,
     quest_state: QuestState,
 ) -> Result<(), ProcessEventError> {
-    info!("Processing event > event applied with new state: {quest_state:?}");
+    debug!("Processing event > event applied with new state: {quest_state:?}");
     let add_event = AddEvent {
         user_address: &event.address,
         event: event.encode_to_vec(),
     };
 
-    info!(
+    debug!(
         "Processing event > adding event for instance: {:?}",
         quest_instance.id
     );
     database.add_event(&add_event, &quest_instance.id).await?;
 
-    info!(
+    debug!(
         "Processing event > publishing user update for instance: {:?}",
         quest_instance.id
     );
@@ -168,7 +168,7 @@ async fn get_quest(
     quest_id: &str,
     database: Arc<impl QuestsDatabase + ?Sized>,
 ) -> Result<Quest, ProcessEventError> {
-    info!("Processing event > Getting quest with id: {quest_id:?}");
+    debug!("Processing event > Getting quest with id: {quest_id:?}");
     let quest = database.get_quest(quest_id).await?;
 
     let quest_definition = QuestDefinition::decode(&*quest.definition)?;
@@ -187,18 +187,18 @@ async fn process_event_for_quest_instance(
     event: &Event,
     database: Arc<impl QuestsDatabase + ?Sized>,
 ) -> Result<ApplyEventResult, ProcessEventError> {
-    info!("Processing event > Quest instance > Retrieving old events");
+    debug!("Processing event > Quest instance > Retrieving old events");
     let last_events = database.get_events(&quest_instance.id).await?;
     let mut events = vec![];
     for past_event in last_events {
         events.push(Event::decode(&*past_event.event)?);
     }
 
-    info!("Processing event > Quest instance > About to apply old events");
+    debug!("Processing event > Quest instance > About to apply old events");
     let quest_graph = QuestGraph::from(quest);
     let current_state = get_state(quest, events);
 
-    info!("Processing event > Quest instance > About to apply new event");
+    debug!("Processing event > Quest instance > About to apply new event");
     let new_state = current_state.apply_event(&quest_graph, event);
 
     Ok(if current_state == new_state {

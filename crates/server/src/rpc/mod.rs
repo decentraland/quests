@@ -3,14 +3,10 @@ mod warp_ws_transport;
 
 use crate::configuration::Config;
 use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
-use log::{error, info};
+use log::error;
 use quests_db::Database;
-use quests_message_broker::{
-    channel::{ChannelSubscriber, RedisChannelSubscriber},
-    messages_queue::RedisMessagesQueue,
-    QUEST_UPDATES_CHANNEL_NAME,
-};
-use quests_protocol::quests::{user_update::Message, QuestsServiceRegistration, UserUpdate};
+use quests_message_broker::{channel::RedisChannelSubscriber, messages_queue::RedisMessagesQueue};
+use quests_protocol::quests::{QuestsServiceRegistration, UserUpdate};
 use service::QuestsServiceImplementation;
 use std::{collections::HashMap, sync::Arc};
 use tokio::{sync::RwLock, task::JoinHandle};
@@ -25,12 +21,13 @@ pub struct QuestsRpcServerContext {
     pub config: Arc<Config>,
     pub db: Arc<Database>,
     pub redis_events_queue: Arc<RedisMessagesQueue>,
-    pub quest_subscriptions: Arc<RwLock<HashMap<String, GeneratorYielder<UserUpdate>>>>,
-    pub subscription_by_user_address: Arc<RwLock<HashMap<String, GeneratorYielder<UserUpdate>>>>,
+    pub redis_channel_subscriber: RedisChannelSubscriber,
+    pub subscriptions_handle_by_transport_id: Arc<RwLock<HashMap<u32, JoinHandle<()>>>>,
+    pub subscription_by_transport_id: Arc<RwLock<HashMap<u32, GeneratorYielder<UserUpdate>>>>,
 }
 
 pub async fn run_rpc_server(
-    (config, db, redis_events_queue, redis_quests_channel_subscriber): (
+    (config, db, redis_events_queue, redis_channel_subscriber): (
         Arc<Config>,
         Arc<Database>,
         Arc<RedisMessagesQueue>,
@@ -45,30 +42,14 @@ pub async fn run_rpc_server(
         config,
         db,
         redis_events_queue,
-        quest_subscriptions: Arc::new(RwLock::new(HashMap::new())),
-        subscription_by_user_address: Arc::new(RwLock::new(HashMap::new())),
+        redis_channel_subscriber,
+        subscriptions_handle_by_transport_id: Arc::new(RwLock::new(HashMap::new())),
+        subscription_by_transport_id: Arc::new(RwLock::new(HashMap::new())),
     };
 
-    let subscriptions = ctx.quest_subscriptions.clone();
-
-    redis_quests_channel_subscriber.subscribe(
-        QUEST_UPDATES_CHANNEL_NAME,
-        move |user_update: UserUpdate| {
-            info!("User Update received > user_update: {user_update:?}");
-            let subscriptions = subscriptions.clone();
-            async move {
-                if let Some(Message::QuestState(state)) = &user_update.message {
-                    let subs = subscriptions.read().await;
-                    if let Some(generator) = subs.get(&state.quest_instance_id) {
-                        info!("User Update received > user_update: {user_update:?}");
-                        if generator.r#yield(user_update).await.is_err() {
-                            error!("User Update received > Couldn't send update to subscriptors");
-                        }
-                    }
-                }
-            }
-        },
-    );
+    let subscriptions_handle_by_transport_id_cloned =
+        ctx.subscriptions_handle_by_transport_id.clone();
+    let subscription_by_transport_id_cloned = ctx.subscription_by_transport_id.clone();
 
     let mut rpc_server = RpcServer::create(ctx);
 
@@ -89,9 +70,18 @@ pub async fn run_rpc_server(
         })
         .recover(handle_rejection);
 
-    rpc_server.set_handler(|port| {
+    rpc_server.set_module_registrator_handler(|port| {
         // Registers service for every port
         QuestsServiceRegistration::register_service(port, QuestsServiceImplementation {})
+    });
+
+    rpc_server.set_on_transport_closes_handler(move |_, transport_id| {
+        let subs_join_handle = subscriptions_handle_by_transport_id_cloned.clone();
+        let subs_generator = subscription_by_transport_id_cloned.clone();
+        tokio::spawn(async move {
+            subs_join_handle.write().await.remove(&transport_id);
+            subs_generator.write().await.remove(&transport_id)
+        });
     });
 
     let rpc_server_handle = tokio::spawn(async move {

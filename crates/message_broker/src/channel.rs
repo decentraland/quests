@@ -5,13 +5,17 @@ use futures_util::{Future, StreamExt as _};
 use log::{debug, error};
 use quests_protocol::ProtocolMessage;
 use std::sync::Arc;
+use tokio::task::JoinHandle;
 
-pub trait ChannelSubscriber: Send + Sync {
-    fn subscribe<NewPublishment: ProtocolMessage + Default, U: Future<Output = ()> + Send + Sync>(
+pub trait ChannelSubscriber<OnUpdateOutput>: Send + Sync {
+    fn subscribe<
+        NewPublishment: ProtocolMessage + Default,
+        U: Future<Output = OnUpdateOutput> + Send + Sync,
+    >(
         &self,
         channel_name: &str,
         on_update_fn: impl Fn(NewPublishment) -> U + Send + Sync + 'static,
-    );
+    ) -> JoinHandle<()>;
 }
 
 #[async_trait]
@@ -29,17 +33,17 @@ impl RedisChannelSubscriber {
     }
 }
 
-impl ChannelSubscriber for RedisChannelSubscriber {
+impl ChannelSubscriber<Result<(), ()>> for RedisChannelSubscriber {
     /// Listens to a specific channel for new messages
     fn subscribe<
         NewPublishment: ProtocolMessage + Default,
-        U: Future<Output = ()> + Send + Sync,
+        U: Future<Output = Result<(), ()>> + Send + Sync,
     >(
         &self,
         channel_name: &str,
         on_update_fn: impl Fn(NewPublishment) -> U + Send + Sync + 'static,
-    ) {
-        let redis = self.redis.clone(); // Should we have an Option to do an Option::take instead of clonning and leaving a useless and unused Arc instance?
+    ) -> JoinHandle<()> {
+        let redis = self.redis.clone();
         let channel_name = channel_name.to_string();
         tokio::spawn(async move {
             debug!("Subscribing to channel {channel_name}");
@@ -69,7 +73,9 @@ impl ChannelSubscriber for RedisChannelSubscriber {
                                 match update {
                                     Ok(update) => {
                                         debug!("New publishment parsed {update:?}");
-                                        on_update_fn(update).await;
+                                        if on_update_fn(update).await.is_err() {
+                                            break;
+                                        }
                                     }
                                     Err(_) => error!("Couldn't deserialize update"),
                                 }
@@ -80,7 +86,7 @@ impl ChannelSubscriber for RedisChannelSubscriber {
                     None => debug!("Couldn't read a message from stream"),
                 }
             }
-        });
+        })
     }
 }
 

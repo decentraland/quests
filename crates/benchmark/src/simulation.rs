@@ -158,9 +158,9 @@ impl ClientState {
                 mut updates,
                 quest_id,
             } => {
-                info!("User {} > Start Quest > Next.", &user_address[..4]);
+                debug!("User {} > Start Quest > Next.", &user_address[..4]);
                 let quest_updates = updates.next().await;
-                info!("User {} > Start Quest > Done.", &user_address[..4]);
+                debug!("User {} > Start Quest > Done.", &user_address[..4]);
 
                 match quest_updates {
                     Some(UserUpdate {
@@ -176,13 +176,7 @@ impl ClientState {
                             "User {} > Start Quest > Received update is not the quest state",
                             &user_address[..4]
                         );
-                        info!(
-                            "User {} > Start Quest > Update was {:?}",
-                            &user_address[..4],
-                            quest_updates
-                        );
-                        panic!("User {} > Start Quest > Failed", &user_address[..4]);
-                        // ClientState::StartQuestRequested { updates, quest_id }
+                        ClientState::StartQuestRequested { updates, quest_id }
                     }
                 }
             }
@@ -225,9 +219,9 @@ impl ClientState {
                 quest_instance_id,
                 quest_state,
             } => {
-                info!("User {} > Fetch next event > Next.", &user_address[..4]);
+                debug!("User {} > Fetch next event > Next.", &user_address[..4]);
                 let quest_update = updates.next().await;
-                info!("User {} > Fetch next event > Done.", &user_address[..4]);
+                debug!("User {} > Fetch next event > Done.", &user_address[..4]);
 
                 debug!("User {user_address} > quest_update received > {quest_update:?}");
 

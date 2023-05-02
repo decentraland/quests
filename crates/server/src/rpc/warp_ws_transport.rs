@@ -1,10 +1,11 @@
-use dcl_rpc::transports::{Transport, TransportError, TransportEvent};
+use dcl_rpc::transports::{Transport, TransportError, TransportMessage};
 use futures_util::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
 };
-use std::sync::atomic::{AtomicBool, Ordering};
+use log::{debug, error};
 use tokio::sync::Mutex;
+use tungstenite::Error as WsError;
 use warp::ws::{Message as WarpWSMessage, WebSocket};
 
 type ReadStream = SplitStream<WebSocket>;
@@ -13,7 +14,6 @@ type WriteStream = SplitSink<WebSocket, WarpWSMessage>;
 pub struct WarpWebSocketTransport {
     read: Mutex<ReadStream>,
     write: Mutex<WriteStream>,
-    ready: AtomicBool,
 }
 
 impl WarpWebSocketTransport {
@@ -23,62 +23,84 @@ impl WarpWebSocketTransport {
         Self {
             read: Mutex::new(read),
             write: Mutex::new(write),
-            ready: AtomicBool::new(false),
         }
     }
 }
 
 #[async_trait::async_trait]
 impl Transport for WarpWebSocketTransport {
-    async fn receive(&self) -> Result<TransportEvent, TransportError> {
+    async fn receive(&self) -> Result<TransportMessage, TransportError> {
         match self.read.lock().await.next().await {
             Some(Ok(message)) => {
                 if message.is_binary() {
-                    let message = self.message_to_transport_event(message.into_bytes());
-                    if let TransportEvent::Connect = message {
-                        self.ready.store(true, Ordering::SeqCst);
-                    }
-                    return Ok(message);
+                    let message_data = message.into_bytes();
+                    return Ok(message_data);
                 } else {
+                    if message.is_close() {
+                        return Err(TransportError::Closed);
+                    }
                     // Ignore messages that are not binary
-                    return Err(TransportError::Internal);
+                    error!("> WebSocketTransport > Received message is not binary");
+                    return Err(TransportError::NotBinaryMessage);
                 }
             }
             Some(Err(err)) => {
-                println!("Failed to receive message {err:?}");
+                error!(
+                    "> WebSocketTransport > Failed to receive message {}",
+                    err.to_string()
+                );
+                if let Some(transport_error) = translate_warp_error(&err) {
+                    Err(transport_error)
+                } else {
+                    Err(TransportError::Internal(Box::new(err)))
+                }
             }
             None => {
-                println!("No message")
+                error!("> WebSocketTransport > None received > Closing...");
+                return Err(TransportError::Closed);
             }
         }
-        println!("Closing transport...");
-        self.close().await;
-        Ok(TransportEvent::Close)
     }
 
     async fn send(&self, message: Vec<u8>) -> Result<(), TransportError> {
         let message = WarpWSMessage::binary(message);
-        self.write
-            .lock()
-            .await
-            .send(message)
-            .await
-            .map_err(|_| TransportError::Internal)?;
-        Ok(())
+        match self.write.lock().await.send(message).await {
+            Err(err) => {
+                error!(
+                    "> WebSocketTransport > Error on sending in a ws connection {}",
+                    err.to_string()
+                );
+                if let Some(transport_error) = translate_warp_error(&err) {
+                    Err(transport_error)
+                } else {
+                    Err(TransportError::Internal(Box::new(err)))
+                }
+            }
+            Ok(_) => Ok(()),
+        }
     }
 
     async fn close(&self) {
         match self.write.lock().await.close().await {
             Ok(_) => {
-                self.ready.store(false, Ordering::SeqCst);
+                debug!("> WebSocketTransport > Closed successfully")
             }
-            _ => {
-                println!("Couldn't close tranport")
+            Err(err) => {
+                error!("> WebSocketTransport > Error: Couldn't close tranport: {err:?}")
             }
         }
     }
+}
 
-    fn is_connected(&self) -> bool {
-        self.ready.load(Ordering::Relaxed)
+fn translate_warp_error(err: &warp::Error) -> Option<TransportError> {
+    use std::error::Error;
+    if let Some(source_error) = err.source() {
+        if let Some(error) = source_error.downcast_ref::<WsError>() {
+            match error {
+                WsError::ConnectionClosed | WsError::AlreadyClosed => Some(TransportError::Closed),
+                _ => None,
+            };
+        }
     }
+    None
 }

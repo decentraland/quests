@@ -32,6 +32,7 @@ dcl-rpc = { workspace = true }
 openssl = { version = "0.10.45", features = ["vendored"] }
 warp = "0.3.3"
 tokio = { version = "1.27.0", features = ["sync", "rt-multi-thread"] }
+tungstenite = "0.19.0"
 
 [dev-dependencies]
 uuid = {version = "1.2.2", features = ["v4"]}

@@ -35,8 +35,12 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
         } = req;
         match start_quest(ctx.server_context.db.clone(), &user_address, &quest_id).await {
             Ok(new_quest_instance_id) => {
-                let user_subscriptions_lock =
-                    ctx.server_context.subscription_by_transport_id.read().await;
+                let user_subscriptions_lock = ctx
+                    .server_context
+                    .transport_contexts
+                    .subscriptions
+                    .read()
+                    .await;
                 let user_subscription = user_subscriptions_lock.get(&ctx.transport_id);
                 if let Some(user_subscription) = user_subscription {
                     match get_instance_state(
@@ -154,7 +158,8 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                 }
 
                 ctx.server_context
-                    .subscription_by_transport_id
+                    .transport_contexts
+                    .subscriptions
                     .write()
                     .await
                     .insert(ctx.transport_id, generator_yielder.clone());
@@ -183,7 +188,8 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                 );
 
                 ctx.server_context
-                    .subscriptions_handle_by_transport_id
+                    .transport_contexts
+                    .subscriptions_handle
                     .write()
                     .await
                     .insert(ctx.transport_id, subscription_join_handle);

@@ -33,11 +33,11 @@ impl RedisChannelSubscriber {
     }
 }
 
-impl ChannelSubscriber<Result<(), ()>> for RedisChannelSubscriber {
+impl ChannelSubscriber<bool> for RedisChannelSubscriber {
     /// Listens to a specific channel for new messages
     fn subscribe<
         NewPublishment: ProtocolMessage + Default,
-        U: Future<Output = Result<(), ()>> + Send + Sync,
+        U: Future<Output = bool> + Send + Sync,
     >(
         &self,
         channel_name: &str,
@@ -73,7 +73,7 @@ impl ChannelSubscriber<Result<(), ()>> for RedisChannelSubscriber {
                                 match update {
                                     Ok(update) => {
                                         debug!("New publishment parsed {update:?}");
-                                        if on_update_fn(update).await.is_err() {
+                                        if !on_update_fn(update).await {
                                             break;
                                         }
                                     }

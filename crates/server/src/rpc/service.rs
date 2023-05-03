@@ -171,13 +171,13 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                                         error!(
                                             "User Update received > Couldn't send update to subscriptors"
                                         );
-                                        return Err(())
+                                        return false // Just return false on failure
                                     } else {
-                                        return Ok(());
+                                        return true
                                     }
                                 }
                             }
-                            Ok(())
+                            true
                         }
                     },
                 );

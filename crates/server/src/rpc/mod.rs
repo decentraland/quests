@@ -22,13 +22,12 @@ pub struct QuestsRpcServerContext {
     pub db: Arc<Database>,
     pub redis_events_queue: Arc<RedisMessagesQueue>,
     pub redis_channel_subscriber: RedisChannelSubscriber,
-    pub transport_contexts: TransportContext,
+    pub transport_contexts: Arc<RwLock<HashMap<u32, TransportContext>>>,
 }
 
-#[derive(Default)]
 pub struct TransportContext {
-    pub subscriptions: Arc<RwLock<HashMap<u32, GeneratorYielder<UserUpdate>>>>,
-    pub subscriptions_handle: Arc<RwLock<HashMap<u32, JoinHandle<()>>>>,
+    pub subscription: Option<GeneratorYielder<UserUpdate>>,
+    pub subscription_handle: Option<JoinHandle<()>>,
 }
 
 pub async fn run_rpc_server(
@@ -48,11 +47,11 @@ pub async fn run_rpc_server(
         db,
         redis_events_queue,
         redis_channel_subscriber,
-        transport_contexts: TransportContext::default(),
+        transport_contexts: Arc::new(RwLock::new(HashMap::new())),
     };
 
-    let subscription_handles_cloned = ctx.transport_contexts.subscriptions_handle.clone();
-    let subscriptions_cloned = ctx.transport_contexts.subscriptions.clone();
+    let transport_contexts: Arc<RwLock<HashMap<u32, TransportContext>>> =
+        ctx.transport_contexts.clone();
 
     let mut rpc_server = RpcServer::create(ctx);
 
@@ -79,11 +78,9 @@ pub async fn run_rpc_server(
     });
 
     rpc_server.set_on_transport_closes_handler(move |_, transport_id| {
-        let subs_join_handle = subscription_handles_cloned.clone();
-        let subs_generator = subscriptions_cloned.clone();
+        let transport_contexts = transport_contexts.clone();
         tokio::spawn(async move {
-            subs_join_handle.write().await.remove(&transport_id);
-            subs_generator.write().await.remove(&transport_id)
+            transport_contexts.write().await.remove(&transport_id);
         });
     });
 

@@ -1,9 +1,12 @@
 use super::QuestsRpcServerContext;
-use crate::domain::{
-    events::add_event_controller,
-    quests::{
-        self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
+use crate::{
+    domain::{
+        events::add_event_controller,
+        quests::{
+            self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
+        },
     },
+    rpc::TransportContext,
 };
 use dcl_rpc::{
     rpc_protocol::RemoteErrorResponse, service_module_definition::ProcedureContext,
@@ -35,14 +38,9 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
         } = req;
         match start_quest(ctx.server_context.db.clone(), &user_address, &quest_id).await {
             Ok(new_quest_instance_id) => {
-                let user_subscriptions_lock = ctx
-                    .server_context
-                    .transport_contexts
-                    .subscriptions
-                    .read()
-                    .await;
-                let user_subscription = user_subscriptions_lock.get(&ctx.transport_id);
-                if let Some(user_subscription) = user_subscription {
+                let user_subscriptions_lock = ctx.server_context.transport_contexts.read().await;
+                let transport_context = user_subscriptions_lock.get(&ctx.transport_id);
+                if let Some(transport_context) = transport_context {
                     match get_instance_state(
                         ctx.server_context.db.clone(),
                         &quest_id,
@@ -59,8 +57,10 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                                     quest_state: Some(quest_state),
                                 })),
                             };
-                            if user_subscription.r#yield(user_update).await.is_err() {
-                                log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription")
+                            if let Some(subscription) = &transport_context.subscription {
+                                if subscription.r#yield(user_update).await.is_err() {
+                                    log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription")
+                                }
                             }
                         }
                         Err(err) => {
@@ -157,17 +157,11 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                     }
                 }
 
-                ctx.server_context
-                    .transport_contexts
-                    .subscriptions
-                    .write()
-                    .await
-                    .insert(ctx.transport_id, generator_yielder.clone());
-
+                let yielder = generator_yielder.clone();
                 let subscription_join_handle = ctx.server_context.redis_channel_subscriber.subscribe(
                     QUEST_UPDATES_CHANNEL_NAME,
                     move |user_update: UserUpdate| {
-                        let generator_yielder = generator_yielder.clone();
+                        let generator_yielder = yielder.clone();
                         let ids = quest_instance_ids.clone();
                         async move {
                             if let Some(Message::QuestState(state)) = &user_update.message {
@@ -187,12 +181,13 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                     },
                 );
 
-                ctx.server_context
-                    .transport_contexts
-                    .subscriptions_handle
-                    .write()
-                    .await
-                    .insert(ctx.transport_id, subscription_join_handle);
+                ctx.server_context.transport_contexts.write().await.insert(
+                    ctx.transport_id,
+                    TransportContext {
+                        subscription: Some(generator_yielder),
+                        subscription_handle: Some(subscription_join_handle),
+                    },
+                );
                 Ok(generator)
             }
             Err(err) => Err(err),

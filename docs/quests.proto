@@ -44,7 +44,7 @@ message Event {
 }
 
 message EventResponse {
-  optional fixed32 event_id = 1;
+  fixed32 event_id = 1;
   bool accepted = 2;
 }
 
@@ -62,8 +62,6 @@ message Step {
   string id = 1;
   string description = 2;
   repeated Task tasks = 3;
-  /// Allow hooks on every completed step
-  optional string on_complete_hook = 4; // TODO: should we put this here?
 }
 
 message Action {
@@ -73,7 +71,7 @@ message Action {
 
 message Task {
   string id = 1;
-  optional string description = 2;
+  string description = 2;
   repeated Action action_items = 3;
 }
 
@@ -104,12 +102,18 @@ message UserUpdate {
 }
 
 message Quests {
-  repeated QuestDefinitionAndState quest = 1;
+  repeated QuestInstance quests = 1;
 }
 
-message QuestDefinitionAndState {
+message ProtoQuest {
+  string name = 1;
+  string description = 2;
+  QuestDefinition definition = 3;
+}
+
+message QuestInstance {
   string instance_id = 1;
-  QuestDefinition definition = 2;
+  ProtoQuest quest = 2;
   QuestState state = 3;
 }
 
@@ -124,5 +128,5 @@ service QuestsService {
 
   // Query quest information
   rpc GetAllQuests(UserAddress) returns (Quests) {}
-  rpc GetQuestDefinition(QuestDefinitionRequest) returns (QuestDefinition) {}
+  rpc GetQuestDefinition(QuestDefinitionRequest) returns (ProtoQuest) {}
 }

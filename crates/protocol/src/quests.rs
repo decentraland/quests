@@ -106,7 +106,7 @@ impl Quest {
         let mut unique_step_ids: HashSet<String> = HashSet::new();
 
         for step in &self.definition.steps {
-            // All steps should not contain Tasks::"".to_string() used for START and END nodes
+            // All steps should not contain Tasks::None used for START and END nodes
             if step.tasks.is_empty() {
                 return Err(QuestValidationError::MissingTasksForStep(step.id.clone()));
             }
@@ -209,7 +209,7 @@ pub enum QuestValidationError {
     /// Not unique ID for the Subtask
     #[error("Step's Task ID is not unique - Step ID: {0}")]
     NotUniqueIDForStepTask(StepID),
-    /// Step should not has Tasks::"".to_string()
+    /// Step should not has Tasks::None
     #[error("Step {0} doesn't have tasks defined")]
     MissingTasksForStep(StepID),
 }
@@ -601,7 +601,7 @@ mod tests {
         let err = QuestValidationError::NotUniqueIDForStepTask("A".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
 
-        // Should not be valid because of tasks:"".to_string()
+        // Should not be valid because of Tasks::None
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),

@@ -71,7 +71,6 @@ pub async fn handle_client() -> Result<(RpcClient<WebSocketTransport>, u128, u12
         .await
         .map_err(|e| {
             println!("Couldn't connect to ws: {e:?}");
-            ()
         })?;
     let transport = WebSocketTransport::new(ws);
 

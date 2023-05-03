@@ -189,16 +189,14 @@ impl ClientState {
                 let action = quest_state
                     .current_steps
                     .values()
-                    .into_iter()
                     .find(|step| !step.to_dos.is_empty())
-                    .map(|step| step.to_dos.first())
-                    .flatten()
-                    .map(|to_do| to_do.action_items.first())
-                    .flatten();
+                    .and_then(|step| step.to_dos.first())
+                    .and_then(|to_do| to_do.action_items.first());
+
                 let event = quests_service
                     .send_event(Event {
                         address: user_address.to_string(),
-                        action: action.map(|action| action.clone()),
+                        action: action.cloned(),
                     })
                     .await;
                 match event {

@@ -2,12 +2,11 @@ use quests_protocol::quests::*;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 pub fn create_random_string(length: usize) -> String {
-    let rand_string = thread_rng()
+    thread_rng()
         .sample_iter(&Alphanumeric)
         .take(length)
         .map(char::from)
-        .collect();
-    rand_string
+        .collect()
 }
 
 fn random_action() -> Action {

@@ -49,11 +49,7 @@ impl Transport for WarpWebSocketTransport {
                     "> WebSocketTransport > Failed to receive message {}",
                     err.to_string()
                 );
-                if let Some(transport_error) = translate_warp_error(&err) {
-                    Err(transport_error)
-                } else {
-                    Err(TransportError::Internal(Box::new(err)))
-                }
+                Err(return_ws_error(err))
             }
             None => {
                 error!("> WebSocketTransport > None received > Closing...");
@@ -70,11 +66,7 @@ impl Transport for WarpWebSocketTransport {
                     "> WebSocketTransport > Error on sending in a ws connection {}",
                     err.to_string()
                 );
-                if let Some(transport_error) = translate_warp_error(&err) {
-                    Err(transport_error)
-                } else {
-                    Err(TransportError::Internal(Box::new(err)))
-                }
+                Err(return_ws_error(err))
             }
             Ok(_) => Ok(()),
         }
@@ -103,4 +95,12 @@ fn translate_warp_error(err: &warp::Error) -> Option<TransportError> {
         }
     }
     None
+}
+
+fn return_ws_error(err: warp::Error) -> TransportError {
+    if let Some(transport_error) = translate_warp_error(&err) {
+        transport_error
+    } else {
+        TransportError::Internal(Box::new(err))
+    }
 }

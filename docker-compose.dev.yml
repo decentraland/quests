@@ -33,7 +33,8 @@ services:
         PROJECT: quests_server
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "3000:3000"
+      - "3001:3001"
     restart: always
     environment:
       - DATABASE_URL=postgres://postgres:postgres@quests_db:5432/quests_db

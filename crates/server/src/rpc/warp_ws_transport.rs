@@ -98,9 +98,5 @@ fn translate_warp_error(err: &warp::Error) -> Option<TransportError> {
 }
 
 fn return_ws_error(err: warp::Error) -> TransportError {
-    if let Some(transport_error) = translate_warp_error(&err) {
-        transport_error
-    } else {
-        TransportError::Internal(Box::new(err))
-    }
+    translate_warp_error(&err).unwrap_or(TransportError::Internal(Box::new(err)))
 }

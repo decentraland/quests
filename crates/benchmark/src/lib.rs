@@ -60,7 +60,7 @@ impl Simulation {
             )));
         }
 
-        while let Some(_) = futures.next().await {}
+        while futures.next().await.is_some() {}
     }
 }
 

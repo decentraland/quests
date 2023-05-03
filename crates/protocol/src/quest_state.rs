@@ -132,53 +132,48 @@ mod tests {
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "A1_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![
                                 Action::location(Coordinates::new(10, 10)),
                                 Action::jump(Coordinates::new(10, 11)),
                             ],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "A2".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "A2_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::npc_interaction("NPC_IDEN")],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "B_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::jump(Coordinates::new(20, 10))],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::jump(Coordinates::new(20, 20))],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "D".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "D_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::npc_interaction("OTHER_NPC")],
                         }],
-                        on_complete_hook: None,
                     },
                 ],
             },
@@ -306,7 +301,7 @@ mod tests {
                         tasks: vec![
                             Task {
                                 id: "A_1".to_string(),
-                                description: None,
+                                description: "".to_string(),
                                 action_items: vec![
                                     Action::jump(Coordinates::new(10, 10)),
                                     Action::location(Coordinates::new(15, 10)),
@@ -314,14 +309,13 @@ mod tests {
                             },
                             Task {
                                 id: "A_2".to_string(),
-                                description: None,
+                                description: "".to_string(),
                                 action_items: vec![
                                     Action::npc_interaction("NPC_ID"),
                                     Action::location(Coordinates::new(15, 14)),
                                 ],
                             },
                         ],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
@@ -329,7 +323,7 @@ mod tests {
                         tasks: vec![
                             Task {
                                 id: "B_1".to_string(),
-                                description: None,
+                                description: "".to_string(),
                                 action_items: vec![
                                     Action::jump(Coordinates::new(10, 20)),
                                     Action::location(Coordinates::new(23, 14)),
@@ -337,24 +331,22 @@ mod tests {
                             },
                             Task {
                                 id: "B_2".to_string(),
-                                description: None,
+                                description: "".to_string(),
                                 action_items: vec![
                                     Action::custom("a"),
                                     Action::location(Coordinates::new(40, 10)),
                                 ],
                             },
                         ],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::jump(Coordinates::new(20, 20))],
                         }],
-                        on_complete_hook: None,
                     },
                 ],
             },
@@ -408,7 +400,7 @@ mod tests {
             tasks.get(0).unwrap(),
             &Task {
                 id: "A_1".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![
                     Action::jump(Coordinates::new(10, 10)),
                     Action::location(Coordinates::new(15, 10)),
@@ -419,7 +411,7 @@ mod tests {
             tasks.get(1).unwrap(),
             &Task {
                 id: "A_2".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![
                     Action::npc_interaction("NPC_ID"),
                     Action::location(Coordinates::new(15, 14)),
@@ -443,7 +435,7 @@ mod tests {
             tasks.get(0).unwrap(),
             &Task {
                 id: "A_1".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![Action::location(Coordinates::new(15, 10))],
             }
         );
@@ -451,7 +443,7 @@ mod tests {
             tasks.get(1).unwrap(),
             &Task {
                 id: "A_2".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![
                     Action::npc_interaction("NPC_ID"),
                     Action::location(Coordinates::new(15, 14)),
@@ -478,7 +470,7 @@ mod tests {
             tasks.get(0).unwrap(),
             &Task {
                 id: "A_2".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![
                     Action::npc_interaction("NPC_ID"),
                     Action::location(Coordinates::new(15, 14)),
@@ -511,7 +503,7 @@ mod tests {
             subtasks.get(0).unwrap(),
             &Task {
                 id: "A_2".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![Action::location(Coordinates::new(15, 14)),],
             }
         );
@@ -542,7 +534,7 @@ mod tests {
             tasks.get(0).unwrap(),
             &Task {
                 id: "B_1".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![
                     Action::jump(Coordinates::new(10, 20)),
                     Action::location(Coordinates::new(23, 14)),
@@ -553,7 +545,7 @@ mod tests {
             tasks.get(1).unwrap(),
             &Task {
                 id: "B_2".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![
                     Action::custom("a"),
                     Action::location(Coordinates::new(40, 10)),
@@ -576,7 +568,7 @@ mod tests {
             tasks.get(0).unwrap(),
             &Task {
                 id: "B_1".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![Action::location(Coordinates::new(23, 14)),],
             },
         );
@@ -584,7 +576,7 @@ mod tests {
             tasks.get(1).unwrap(),
             &Task {
                 id: "B_2".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![
                     Action::custom("a"),
                     Action::location(Coordinates::new(40, 10)),
@@ -605,7 +597,7 @@ mod tests {
             tasks.get(0).unwrap(),
             &Task {
                 id: "B_2".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![
                     Action::custom("a"),
                     Action::location(Coordinates::new(40, 10)),
@@ -638,7 +630,7 @@ mod tests {
             tasks.get(0).unwrap(),
             &Task {
                 id: "B_2".to_string(),
-                description: None,
+                description: "".to_string(),
                 action_items: vec![Action::location(Coordinates::new(40, 10)),],
             },
         );

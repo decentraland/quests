@@ -349,9 +349,8 @@ mod tests {
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 10))],
                             id: "A1_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
@@ -359,9 +358,8 @@ mod tests {
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 15))],
                             id: "B_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
@@ -369,9 +367,8 @@ mod tests {
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 20))],
                             id: "C_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                         }],
-                        on_complete_hook: None,
                     },
                 ],
             },
@@ -408,10 +405,9 @@ mod tests {
                     description: "".to_string(),
                     tasks: vec![Task {
                         id: "B_1".to_string(),
-                        description: None,
+                        description: "".to_string(),
                         action_items: vec![Action::location(Coordinates::new(10, 15))],
                     }],
-                    on_complete_hook: None,
                 }],
             },
         };
@@ -429,10 +425,9 @@ mod tests {
                     description: "".to_string(),
                     tasks: vec![Task {
                         id: "A1_1".to_string(),
-                        description: None,
+                        description: "".to_string(),
                         action_items: vec![Action::location(Coordinates::new(10, 15))],
                     }],
-                    on_complete_hook: None,
                 }],
             },
         };
@@ -451,30 +446,27 @@ mod tests {
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "A1_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(10, 15))],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "B_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(20, 15))],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(10, 25))],
                         }],
-                        on_complete_hook: None,
                     },
                 ],
             },
@@ -494,20 +486,18 @@ mod tests {
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "A1_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(20, 15))],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(30, 15))],
                         }],
-                        on_complete_hook: None,
                     },
                 ],
             },
@@ -527,40 +517,36 @@ mod tests {
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "A_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(10, 15))],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "B_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(20, 15))],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
                         description: "".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(10, 2))],
                         }],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "A".to_string(),
                         description: "Another A".to_string(),
                         tasks: vec![Task {
                             id: "A_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(1, 15))],
                         }],
-                        on_complete_hook: None,
                     },
                 ],
             },
@@ -581,24 +567,22 @@ mod tests {
                         tasks: vec![
                             Task {
                                 id: "A_1".to_string(),
-                                description: None,
+                                description: "".to_string(),
                                 action_items: vec![Action::location(Coordinates::new(10, 20))],
                             },
                             Task {
                                 id: "A_1".to_string(),
-                                description: None,
+                                description: "".to_string(),
                                 action_items: vec![Action::jump(Coordinates::new(30, 20))],
                             },
                         ],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
-                        on_complete_hook: None,
                         tasks: vec![Task {
                             id: "B_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                             action_items: vec![Action::location(Coordinates::new(20, 15))],
                         }],
                     },
@@ -608,9 +592,8 @@ mod tests {
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 2))],
                             id: "C_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                         }],
-                        on_complete_hook: None,
                     },
                 ],
             },
@@ -618,7 +601,7 @@ mod tests {
         let err = QuestValidationError::NotUniqueIDForStepTask("A".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
 
-        // Should not be valid because of tasks:None
+        // Should not be valid because of Tasks::None
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
@@ -631,22 +614,20 @@ mod tests {
                         tasks: vec![
                             Task {
                                 id: "A_1".to_string(),
-                                description: None,
+                                description: "".to_string(),
                                 action_items: vec![Action::location(Coordinates::new(10, 20))],
                             },
                             Task {
                                 id: "A_2".to_string(),
-                                description: None,
+                                description: "".to_string(),
                                 action_items: vec![Action::location(Coordinates::new(30, 20))],
                             },
                         ],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "B".to_string(),
                         description: "".to_string(),
                         tasks: vec![],
-                        on_complete_hook: None,
                     },
                     Step {
                         id: "C".to_string(),
@@ -654,9 +635,8 @@ mod tests {
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 2))],
                             id: "C_1".to_string(),
-                            description: None,
+                            description: "".to_string(),
                         }],
-                        on_complete_hook: None,
                     },
                 ],
             },

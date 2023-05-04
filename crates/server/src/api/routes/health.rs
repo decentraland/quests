@@ -7,7 +7,7 @@ use actix_web::{get, web::ServiceConfig, HttpResponse};
 )]
 #[get("/health/live")]
 async fn live() -> HttpResponse {
-    HttpResponse::Ok().finish()
+    HttpResponse::Ok().json("alive")
 }
 
 pub fn services(config: &mut ServiceConfig) {

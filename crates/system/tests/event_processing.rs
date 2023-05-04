@@ -4,7 +4,7 @@ use quests_protocol::{
     quests::{Event, *},
     ProtocolMessage,
 };
-use quests_system::{configuration::Config, EventProcessor};
+use quests_system::{configuration::Config, event_processing::EventProcessor};
 
 use crate::common::database::create_test_db;
 

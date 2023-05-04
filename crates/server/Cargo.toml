@@ -7,10 +7,12 @@ edition = "2021"
 quests_protocol = { path = "../protocol/" }
 quests_db = { path = "../db" }
 quests_message_broker = { path = "../message_broker/" }
-actix-web = "4.2.1"
-config = "0.13"
-serde = "1.0.136"
-log = "0.4.16"
+dcl-rpc = { workspace = true }
+actix-web = { workspace = true } 
+tokio = { workspace = true }
+serde = { workspace = true }
+config = { workspace = true }
+log = { workspace = true }
 actix-web-prom = "0.6.0"
 async-trait = "0.1.57"
 tracing = "0.1"
@@ -28,10 +30,8 @@ env_logger = { workspace = true }
 utoipa = { version = "3.0.3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "3.0.2", features = ["actix-web"] }
 derive_more = "0.99.17"
-dcl-rpc = { workspace = true }
 openssl = { version = "0.10.45", features = ["vendored"] }
 warp = "0.3.3"
-tokio = { version = "1.27.0", features = ["sync", "rt-multi-thread"] }
 tungstenite = "0.19.0"
 
 [dev-dependencies]

@@ -57,7 +57,7 @@ pub async fn run_rpc_server(
 
     let rpc_server_events_sender = rpc_server.get_server_events_sender();
 
-    let routes = warp::path::end()
+    let ws_routes = warp::path::end()
         .and(warp::ws())
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
@@ -69,7 +69,15 @@ pub async fn run_rpc_server(
                     error!("Couldn't attach web socket transport");
                 }
             })
-        })
+        });
+
+    let health_route = warp::path("health")
+        .and(warp::path("live"))
+        .and(warp::path::end())
+        .map(|| "\"alive\"".to_string());
+
+    let routes = warp::get()
+        .and(health_route.or(ws_routes))
         .recover(handle_rejection);
 
     rpc_server.set_module_registrator_handler(|port| {

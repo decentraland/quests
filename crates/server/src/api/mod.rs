@@ -16,7 +16,7 @@ use tracing_actix_web::TracingLogger;
 pub async fn run_server(
     (config, db, redis_events_queue): (Data<Config>, Data<Database>, Data<RedisMessagesQueue>),
 ) -> Server {
-    let server_address = format!("0.0.0.0:{}", config.server_port);
+    let server_address = format!("0.0.0.0:{}", config.http_server_port);
 
     let server = HttpServer::new(move || get_app_router(&config, &db, &redis_events_queue))
         .bind(&server_address)

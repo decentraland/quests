@@ -77,7 +77,7 @@ pub async fn run_rpc_server(
         .map(|| "\"alive\"".to_string());
 
     let routes = warp::get()
-        .and(health_route.or(ws_routes))
+        .and(ws_routes.or(health_route))
         .recover(handle_rejection);
 
     rpc_server.set_module_registrator_handler(|port| {

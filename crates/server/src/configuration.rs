@@ -7,16 +7,15 @@ pub struct Config {
     pub redis_url: String,
     pub env: String,
     pub wkc_metrics_bearer_token: String,
-    pub http_port: u16,
-    pub ws_port: String,
+    pub server_port: u16,
+    pub ws_server_port: String,
 }
 
 const METRICS_TOKEN: &str = "WKC_METRICS_BEARER_TOKEN"; // WCK ENV
 const ENV_VAR: &str = "ENV";
 const DATABASE_URL: &str = "DATABASE_URL";
 const REDIS_URL: &str = "REDIS_URL";
-const HTTP_PORT: &str = "HTTP_PORT";
-const WS_PORT: &str = "WS_PORT"; // Server port for the Websocket server used by the RpcServer
+const WS_SERVER_PORT: &str = "WS_SERVER_PORT"; // Server port for the Websocket server used by the RpcServer
 
 impl Config {
     pub fn new() -> Result<Self, ConfigError> {
@@ -33,12 +32,11 @@ impl Config {
                     .with_list_parse_key(ENV_VAR)
                     .with_list_parse_key(DATABASE_URL)
                     .with_list_parse_key(REDIS_URL)
-                    .with_list_parse_key(HTTP_PORT)
-                    .with_list_parse_key(WS_PORT)
+                    .with_list_parse_key(WS_SERVER_PORT)
                     .try_parsing(true),
             )
-            .set_default("http_port", 5000)? // It's empty for local development
-            .set_default("ws_port", 5001)? // default for local development
+            .set_default("server_port", 3000)? // It's empty for local development
+            .set_default("ws_server_port", 3001)? // default for local development
             .set_default("env", "dev")?
             .set_default("wkc_metrics_bearer_token", "")?
             .set_default(

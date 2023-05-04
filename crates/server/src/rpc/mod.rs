@@ -38,7 +38,10 @@ pub async fn run_rpc_server(
         RedisChannelSubscriber,
     ),
 ) -> (JoinHandle<()>, JoinHandle<()>) {
-    let ws_server_address = ([0, 0, 0, 0], config.ws_port.parse::<u16>().unwrap_or(5001));
+    let ws_server_address = (
+        [0, 0, 0, 0],
+        config.ws_server_port.parse::<u16>().unwrap_or(5001),
+    );
     let ctx = QuestsRpcServerContext {
         config,
         db,

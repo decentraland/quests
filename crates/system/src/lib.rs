@@ -7,7 +7,7 @@ pub mod event_processing;
 
 pub async fn run_app(config: &Config) {
     let server = api::start_server(&config.http_port).await;
-    let event_processing = event_processing::start_event_processing(&config).await;
+    let event_processing = event_processing::start_event_processing(config).await;
 
     select! {
         _ = server => {},

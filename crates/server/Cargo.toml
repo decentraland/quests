@@ -11,8 +11,8 @@ dcl-rpc = { workspace = true }
 actix-web = { workspace = true } 
 tokio = { workspace = true }
 serde = { workspace = true }
-config = { worskpace = true }
-log = { worskpace = true }
+config = { workspace = true }
+log = { workspace = true }
 actix-web-prom = "0.6.0"
 async-trait = "0.1.57"
 tracing = "0.1"

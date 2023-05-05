@@ -1,12 +1,9 @@
 use super::QuestsRpcServerContext;
-use crate::{
-    domain::{
-        events::add_event_controller,
-        quests::{
-            self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
-        },
+use crate::domain::{
+    events::add_event_controller,
+    quests::{
+        self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
     },
-    rpc::TransportContext,
 };
 use dcl_rpc::{
     rpc_protocol::RemoteErrorResponse, service_module_definition::ProcedureContext,
@@ -188,13 +185,11 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                     .transport_contexts
                     .write()
                     .await
-                    .insert(
-                        context.transport_id,
-                        TransportContext {
-                            subscription: Some(generator_yielder),
-                            subscription_handle: Some(subscription_join_handle),
-                        },
-                    );
+                    .entry(context.transport_id)
+                    .and_modify(|current_context| {
+                        current_context.subscription = Some(generator_yielder);
+                        current_context.subscription_handle = Some(subscription_join_handle);
+                    });
                 Ok(generator)
             }
             Err(err) => Err(err),

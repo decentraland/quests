@@ -10,7 +10,7 @@ pub async fn init_components() -> (Config, Database, RedisMessagesQueue, RedisCh
 
     log::debug!("Configuration: {config:?}");
 
-    let quests_database = create_quests_db_component(&config.database_url)
+    let quests_database = create_quests_db_component(&config.database_url, true)
         .await
         .expect("unable to run the migrations"); // we know that the migrations failed because if connection fails, the app panics
 

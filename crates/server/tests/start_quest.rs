@@ -11,7 +11,7 @@ use uuid::Uuid;
 #[actix_web::test]
 async fn start_quest_should_be_200() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
+    let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
 
@@ -44,7 +44,7 @@ async fn start_quest_should_be_200() {
 async fn start_quest_should_be_400() {
     // should not be able to start a quest that is inactive
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
+    let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
 

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use quests_db::{core::definitions::*, create_quests_db_component};
 use quests_message_broker::messages_queue::MessagesQueue;
 use quests_protocol::{
@@ -14,7 +16,7 @@ mod common;
 async fn can_process_events() {
     env_logger::init();
     let db_url = create_test_db().await;
-    let db = create_quests_db_component(&db_url)
+    let db = create_quests_db_component(&db_url, true)
         .await
         .expect("can create db");
 
@@ -101,6 +103,8 @@ async fn can_process_events() {
         .push(&event)
         .await
         .expect("can push event");
+
+    let event_processor = Arc::new(event_processor);
 
     let result = event_processor
         .process()

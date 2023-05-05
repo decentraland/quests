@@ -11,7 +11,7 @@ use quests_server::api::routes::quests::{GetQuestStateByUserAddressResponse, Sta
 #[actix_web::test]
 async fn get_all_states_by_user_address_should_be_200() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
+    let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
 

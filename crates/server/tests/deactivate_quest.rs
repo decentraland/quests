@@ -9,7 +9,7 @@ use quests_server::api::routes::ErrorResponse;
 #[actix_web::test]
 async fn deactivate_quest_should_be_200() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
+    let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
 

@@ -13,7 +13,7 @@ use quests_server::api::routes::quests::{
 #[actix_web::test]
 async fn abandon_quest_should_be_200() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
+    let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
 
@@ -74,7 +74,7 @@ async fn abandon_quest_should_be_200() {
 #[actix_web::test]
 async fn abandon_quest_should_be_403() {
     let config = get_configuration().await;
-    let db = create_quests_db_component(&config.database_url)
+    let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
 

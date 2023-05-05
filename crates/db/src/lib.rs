@@ -414,7 +414,7 @@ impl Migrate for Database {
     }
 }
 
-pub async fn create_quests_db_component(db_url: &str) -> DBResult<Database> {
+pub async fn create_quests_db_component(db_url: &str, run_migrations: bool) -> DBResult<Database> {
     println!("Database URL: {}", &db_url);
     let mut db_options = DatabaseOptions::new(db_url);
     db_options.pool_options = db_options
@@ -426,7 +426,9 @@ pub async fn create_quests_db_component(db_url: &str) -> DBResult<Database> {
 
     match db_pool {
         Ok(db) => {
-            db.migrate().await?;
+            if run_migrations {
+                db.migrate().await?;
+            }
             Ok(db)
         }
         Err(error) => {

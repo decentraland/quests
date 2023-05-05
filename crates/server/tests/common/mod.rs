@@ -29,7 +29,7 @@ pub async fn build_app(
         InitError = (),
     >,
 > {
-    let db = create_quests_db_component(&config.database_url)
+    let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
 

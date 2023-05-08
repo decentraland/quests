@@ -1,23 +1,20 @@
 mod service;
 mod warp_ws_transport;
 
-use crate::configuration::Config;
-use dcl_crypto::{Address, AuthChain, Authenticator};
+use crate::{auth::authenticate_dcl_user, configuration::Config};
+use dcl_crypto::Address;
 use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
-use futures_util::{SinkExt, StreamExt};
 use log::{debug, error};
 use quests_db::Database;
 use quests_message_broker::{channel::RedisChannelSubscriber, messages_queue::RedisMessagesQueue};
 use quests_protocol::quests::{QuestsServiceRegistration, UserUpdate};
 use service::QuestsServiceImplementation;
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc};
 use tokio::{sync::RwLock, task::JoinHandle};
 use warp::{
     http::StatusCode,
     reject::{MissingHeader, Reject},
-    reply,
-    ws::{Message, WebSocket},
-    Filter, Rejection, Reply,
+    reply, Filter, Rejection, Reply,
 };
 use warp_ws_transport::WarpWebSocketTransport;
 
@@ -67,14 +64,20 @@ pub async fn run_rpc_server(
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
             ws.on_upgrade(|websocket| async move {
-                if let Ok((websocket, address)) = authenticate_dcl_user(websocket).await {
-                    if server_events_sender
-                        .send_attach_transport(Arc::new(WarpWebSocketTransport::new(
-                            websocket, address,
-                        )))
-                        .is_err()
-                    {
-                        error!("Couldn't attach web socket transport");
+                match authenticate_dcl_user(websocket).await {
+                    Ok((ws, address)) => {
+                        if server_events_sender
+                            .send_attach_transport(Arc::new(WarpWebSocketTransport::new(
+                                ws, address,
+                            )))
+                            .is_err()
+                        {
+                            error!("Couldn't attach web socket transport");
+                        }
+                    }
+                    Err((ws, err)) => {
+                        error!("Couldn't authenticate a user {err:?}");
+                        let _ = ws.close().await;
                     }
                 }
             })
@@ -144,62 +147,5 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, std::convert::In
             "INTERNAL_SERVER_ERROR",
             StatusCode::INTERNAL_SERVER_ERROR,
         ))
-    }
-}
-
-pub enum AuthenticationErrors {
-    FailedToSendChallenge,
-    WrongSignature,
-    Timeout,
-    NotTextMessage,
-    UnexpectedError(Box<dyn std::error::Error + Send + Sync>),
-}
-
-pub async fn authenticate_dcl_user(
-    ws: WebSocket,
-) -> Result<(WebSocket, Address), AuthenticationErrors> {
-    let authenticator = Authenticator::new();
-    let (mut ws_write, mut ws_read) = ws.split();
-
-    let message_to_be_firmed = format!("signature_challenge_{}", fastrand::u32(..));
-
-    if ws_write
-        .send(Message::text(&message_to_be_firmed))
-        .await
-        .is_err()
-    {
-        return Err(AuthenticationErrors::FailedToSendChallenge);
-    }
-
-    match tokio::time::timeout(Duration::from_secs(30), ws_read.next()).await {
-        Ok(client_response) => {
-            let response = client_response.unwrap().unwrap();
-            if let Ok(auth_chain) = response.to_str() {
-                let auth_chain = AuthChain::from_json(auth_chain).unwrap();
-                if let Ok(address) = authenticator
-                    .verify_signature(&auth_chain, &message_to_be_firmed)
-                    .await
-                {
-                    let address = address.to_owned();
-                    match ws_write.reunite(ws_read) {
-                        Ok(ws) => Ok((ws, address)),
-                        Err(err) => Err(AuthenticationErrors::UnexpectedError(Box::new(err))),
-                    }
-                } else if let Err(err) = ws_write.close().await {
-                    Err(AuthenticationErrors::UnexpectedError(Box::new(err)))
-                } else {
-                    Err(AuthenticationErrors::WrongSignature)
-                }
-            } else {
-                Err(AuthenticationErrors::NotTextMessage)
-            }
-        }
-        Err(_) => {
-            if let Err(err) = ws_write.close().await {
-                Err(AuthenticationErrors::UnexpectedError(Box::new(err)))
-            } else {
-                Err(AuthenticationErrors::Timeout)
-            }
-        }
     }
 }

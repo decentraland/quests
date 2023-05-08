@@ -63,21 +63,21 @@ pub async fn run_rpc_server(
         .and(warp::ws())
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
-            ws.on_upgrade(|websocket| async move {
-                match authenticate_dcl_user(websocket).await {
-                    Ok((ws, address)) => {
+            ws.on_upgrade(|mut websocket| async move {
+                match authenticate_dcl_user(&mut websocket).await {
+                    Ok(address) => {
                         if server_events_sender
                             .send_attach_transport(Arc::new(WarpWebSocketTransport::new(
-                                ws, address,
+                                websocket, address,
                             )))
                             .is_err()
                         {
                             error!("Couldn't attach web socket transport");
                         }
                     }
-                    Err((ws, err)) => {
+                    Err(err) => {
                         error!("Couldn't authenticate a user {err:?}");
-                        let _ = ws.close().await;
+                        let _ = websocket.close().await;
                     }
                 }
             })

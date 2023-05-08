@@ -13,25 +13,16 @@ pub enum AuthenticationError {
     ConnectionError,
 }
 
-pub async fn authenticate_dcl_user(
-    ws: WebSocket,
-) -> Result<(WebSocket, Address), (WebSocket, AuthenticationError)> {
+pub async fn authenticate_dcl_user(ws: &mut WebSocket) -> Result<Address, AuthenticationError> {
     let authenticator = Authenticator::new();
     let (mut ws_write, mut ws_read) = ws.split();
 
     let message_to_be_firmed = format!("signature_challenge_{}", fastrand::u32(..));
 
-    if ws_write
+    ws_write
         .send(Message::text(&message_to_be_firmed))
         .await
-        .is_err()
-    {
-        return Err((
-            // Safe to unwrap
-            ws_write.reunite(ws_read).unwrap(),
-            AuthenticationError::FailedToSendChallenge,
-        ));
-    }
+        .map_err(|_| AuthenticationError::FailedToSendChallenge)?;
 
     match tokio::time::timeout(Duration::from_secs(30), ws_read.next()).await {
         Ok(client_response) => {
@@ -42,36 +33,17 @@ pub async fn authenticate_dcl_user(
                         .verify_signature(&auth_chain, &message_to_be_firmed)
                         .await
                     {
-                        let address = address.to_owned();
-
-                        // Safe to unwrap
-                        Ok((ws_write.reunite(ws_read).unwrap(), address))
+                        Ok(address.to_owned())
                     } else {
-                        Err((
-                            // Safe to unwrap
-                            ws_write.reunite(ws_read).unwrap(),
-                            AuthenticationError::WrongSignature,
-                        ))
+                        Err(AuthenticationError::WrongSignature)
                     }
                 } else {
-                    Err((
-                        // Safe to unwrap
-                        ws_write.reunite(ws_read).unwrap(),
-                        AuthenticationError::NotTextMessage,
-                    ))
+                    Err(AuthenticationError::NotTextMessage)
                 }
             } else {
-                Err((
-                    // Safe to unwrap
-                    ws_write.reunite(ws_read).unwrap(),
-                    AuthenticationError::ConnectionError,
-                ))
+                Err(AuthenticationError::ConnectionError)
             }
         }
-        Err(_) => Err((
-            // Safe to unwrap
-            ws_write.reunite(ws_read).unwrap(),
-            AuthenticationError::Timeout,
-        )),
+        Err(_) => Err(AuthenticationError::Timeout),
     }
 }

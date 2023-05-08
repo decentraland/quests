@@ -5,7 +5,7 @@ use crate::configuration::Config;
 use dcl_crypto::{Address, AuthChain, Authenticator};
 use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
 use futures_util::{SinkExt, StreamExt};
-use log::error;
+use log::{debug, error};
 use quests_db::Database;
 use quests_message_broker::{channel::RedisChannelSubscriber, messages_queue::RedisMessagesQueue};
 use quests_protocol::quests::{QuestsServiceRegistration, UserUpdate};
@@ -102,21 +102,20 @@ pub async fn run_rpc_server(
         });
     });
 
-    rpc_server.set_on_transport_connected_handler(
-        move |transport: Arc<WarpWebSocketTransport>, transport_id| {
-            let transport_contexts = transport_contexts.clone();
-            tokio::spawn(async move {
-                transport_contexts.write().await.insert(
-                    transport_id,
-                    TransportContext {
-                        subscription: None,
-                        subscription_handle: None,
-                        user_address: transport.user_address.clone(),
-                    },
-                )
-            });
-        },
-    );
+    rpc_server.set_on_transport_connected_handler(move |transport, transport_id| {
+        let transport_contexts = transport_contexts.clone();
+        tokio::spawn(async move {
+            debug!("> OnConnected > Address: {:?}", transport.user_address);
+            transport_contexts.write().await.insert(
+                transport_id,
+                TransportContext {
+                    subscription: None,
+                    subscription_handle: None,
+                    user_address: transport.user_address.clone(),
+                },
+            );
+        });
+    });
 
     let rpc_server_handle = tokio::spawn(async move {
         rpc_server.run().await;

@@ -9,7 +9,7 @@ pub enum AuthenticationError {
     FailedToSendChallenge,
     WrongSignature,
     Timeout,
-    NotTextMessage,
+    InvalidMessage,
     ConnectionError,
 }
 
@@ -28,17 +28,20 @@ pub async fn authenticate_dcl_user(ws: &mut WebSocket) -> Result<Address, Authen
         Ok(client_response) => {
             if let Some(Ok(response)) = client_response {
                 if let Ok(auth_chain) = response.to_str() {
-                    let auth_chain = AuthChain::from_json(auth_chain).unwrap();
-                    if let Ok(address) = authenticator
-                        .verify_signature(&auth_chain, &message_to_be_firmed)
-                        .await
-                    {
-                        Ok(address.to_owned())
+                    if let Ok(auth_chain) = AuthChain::from_json(auth_chain) {
+                        if let Ok(address) = authenticator
+                            .verify_signature(&auth_chain, &message_to_be_firmed)
+                            .await
+                        {
+                            Ok(address.to_owned())
+                        } else {
+                            Err(AuthenticationError::WrongSignature)
+                        }
                     } else {
-                        Err(AuthenticationError::WrongSignature)
+                        Err(AuthenticationError::InvalidMessage)
                     }
                 } else {
-                    Err(AuthenticationError::NotTextMessage)
+                    Err(AuthenticationError::InvalidMessage)
                 }
             } else {
                 Err(AuthenticationError::ConnectionError)

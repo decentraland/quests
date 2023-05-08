@@ -1,7 +1,9 @@
+mod auth;
 mod service;
 mod warp_ws_transport;
 
-use crate::{auth::authenticate_dcl_user, configuration::Config};
+use crate::configuration::Config;
+use auth::authenticate_dcl_user;
 use dcl_crypto::Address;
 use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
 use log::{debug, error};

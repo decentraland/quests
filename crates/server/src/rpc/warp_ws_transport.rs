@@ -33,30 +33,34 @@ impl WarpWebSocketTransport {
 #[async_trait::async_trait]
 impl Transport for WarpWebSocketTransport {
     async fn receive(&self) -> Result<TransportMessage, TransportError> {
-        match self.read.lock().await.next().await {
-            Some(Ok(message)) => {
-                if message.is_binary() {
-                    let message_data = message.into_bytes();
-                    return Ok(message_data);
-                } else {
-                    if message.is_close() {
-                        return Err(TransportError::Closed);
+        loop {
+            match self.read.lock().await.next().await {
+                Some(Ok(message)) => {
+                    if message.is_binary() {
+                        let message_data = message.into_bytes();
+                        return Ok(message_data);
+                    } else if message.is_ping() || message.is_pong() {
+                        continue;
+                    } else {
+                        if message.is_close() {
+                            return Err(TransportError::Closed);
+                        }
+                        // Ignore messages that are not binary
+                        error!("> WebSocketTransport > Received message is not binary");
+                        return Err(TransportError::NotBinaryMessage);
                     }
-                    // Ignore messages that are not binary
-                    error!("> WebSocketTransport > Received message is not binary");
-                    return Err(TransportError::NotBinaryMessage);
                 }
-            }
-            Some(Err(err)) => {
-                error!(
-                    "> WebSocketTransport > Failed to receive message {}",
-                    err.to_string()
-                );
-                Err(return_ws_error(err))
-            }
-            None => {
-                error!("> WebSocketTransport > None received > Closing...");
-                return Err(TransportError::Closed);
+                Some(Err(err)) => {
+                    error!(
+                        "> WebSocketTransport > Failed to receive message {}",
+                        err.to_string()
+                    );
+                    return Err(return_ws_error(err));
+                }
+                None => {
+                    error!("> WebSocketTransport > None received > Closing...");
+                    return Err(TransportError::Closed);
+                }
             }
         }
     }

@@ -22,12 +22,12 @@ pub struct TestContext {
 }
 
 impl TestContext {
-    pub async fn create_random_quest() -> Result<String, String> {
+    pub async fn create_random_quest(api_host: &str) -> Result<String, String> {
         let quest = random_quest();
 
         let client = reqwest::Client::new();
         let res = client
-            .post(format!("{}/quests", SERVER_HTTP))
+            .post(format!("{api_host}/quests"))
             .json(&quest)
             .send()
             .await
@@ -270,11 +270,11 @@ impl ClientState {
 
 #[async_trait]
 impl Context for TestContext {
-    async fn init() -> Self {
+    async fn init(args: &Args) -> Self {
         let mut quest_ids = vec![];
 
         for _ in 0..50 {
-            match Self::create_random_quest().await {
+            match Self::create_random_quest(&args.api_host).await {
                 Ok(quest_id) => quest_ids.push(quest_id),
                 Err(reason) => debug!("Quest Creation > Couldn't POST quest: {reason}"),
             }

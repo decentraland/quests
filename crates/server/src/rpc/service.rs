@@ -39,6 +39,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                             id: request.quest_id,
                             name: quest.name,
                             description: quest.description,
+                            definition: Some(quest.definition),
                         })),
                     };
                     if subscription.r#yield(user_update).await.is_err() {

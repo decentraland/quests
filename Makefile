@@ -35,7 +35,10 @@ test-message-broker: tests
 test-server: TEST_PROJECT=-p quests_server
 test-server: tests
 
-test-definitions:
+test-system: TEST_PROJECT=-p quests_system
+test-system: tests
+
+test-protocol:
 	-@cargo test --package quests_protocol
 
 # run tests locally

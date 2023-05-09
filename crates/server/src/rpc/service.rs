@@ -2,7 +2,8 @@ use super::QuestsRpcServerContext;
 use crate::domain::{
     events::add_event_controller,
     quests::{
-        self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
+        self, get_all_quest_states_by_user_address, get_instance_state, get_quest, start_quest,
+        QuestError,
     },
 };
 use dcl_rpc::{
@@ -13,8 +14,9 @@ use log::error;
 use quests_message_broker::{channel::ChannelSubscriber, QUEST_UPDATES_CHANNEL_NAME};
 use quests_protocol::quests::{
     user_update::Message, AbortQuestRequest, AbortQuestResponse, Event, EventResponse, ProtoQuest,
-    QuestDefinitionRequest, QuestInstance, QuestStateUpdate, Quests, QuestsServiceServer,
-    ServerStreamResponse, StartQuestRequest, StartQuestResponse, UserAddress, UserUpdate,
+    QuestDefinitionRequest, QuestInstance, QuestOfferRequest, QuestOfferResponse, QuestOffering,
+    QuestStateUpdate, Quests, QuestsServiceServer, ServerStreamResponse, StartQuestRequest,
+    StartQuestResponse, UserAddress, UserUpdate,
 };
 
 pub struct QuestsServiceImplementation {}
@@ -23,6 +25,34 @@ type QuestRpcResult<T> = Result<T, QuestError>;
 
 #[async_trait::async_trait]
 impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceImplementation {
+    async fn get_quest_offer(
+        &self,
+        request: QuestOfferRequest,
+        context: ProcedureContext<QuestsRpcServerContext>,
+    ) -> QuestRpcResult<QuestOfferResponse> {
+        if let Ok(quest) = get_quest(context.server_context.db.clone(), &request.quest_id).await {
+            let user_subscriptions_lock = context.server_context.transport_contexts.read().await;
+            if let Some(transport_context) = user_subscriptions_lock.get(&context.transport_id) {
+                if let Some(subscription) = &transport_context.subscription {
+                    let user_update = UserUpdate {
+                        message: Some(Message::QuestOffer(QuestOffering {
+                            id: request.quest_id,
+                            name: quest.name,
+                            description: quest.description,
+                        })),
+                    };
+                    if subscription.r#yield(user_update).await.is_err() {
+                        log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription")
+                    }
+                }
+            }
+
+            Ok(QuestOfferResponse { offered: true })
+        } else {
+            Ok(QuestOfferResponse { offered: false })
+        }
+    }
+
     // TODO: Add tracing instrument
     async fn start_quest(
         &self,
@@ -37,33 +67,33 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
             Ok(new_quest_instance_id) => {
                 let user_subscriptions_lock =
                     context.server_context.transport_contexts.read().await;
-                let transport_context = user_subscriptions_lock.get(&context.transport_id);
-                if let Some(transport_context) = transport_context {
-                    match get_instance_state(
-                        context.server_context.db.clone(),
-                        &quest_id,
-                        &new_quest_instance_id,
-                    )
-                    .await
-                    {
-                        Ok((quest, quest_state)) => {
-                            let user_update = UserUpdate {
-                                message: Some(Message::QuestState(QuestStateUpdate {
-                                    quest_instance_id: new_quest_instance_id.clone(),
-                                    name: quest.name,
-                                    description: quest.description,
-                                    quest_state: Some(quest_state),
-                                })),
-                            };
-                            if let Some(subscription) = &transport_context.subscription {
+                if let Some(transport_context) = user_subscriptions_lock.get(&context.transport_id)
+                {
+                    if let Some(subscription) = &transport_context.subscription {
+                        match get_instance_state(
+                            context.server_context.db.clone(),
+                            &quest_id,
+                            &new_quest_instance_id,
+                        )
+                        .await
+                        {
+                            Ok((quest, quest_state)) => {
+                                let user_update = UserUpdate {
+                                    message: Some(Message::QuestState(QuestStateUpdate {
+                                        quest_instance_id: new_quest_instance_id.clone(),
+                                        name: quest.name,
+                                        description: quest.description,
+                                        quest_state: Some(quest_state),
+                                    })),
+                                };
                                 if subscription.r#yield(user_update).await.is_err() {
                                     log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription")
                                 }
                             }
-                        }
-                        Err(err) => {
-                            log::error!("QuestServiceImplementation > StartQuest Error > Calculating state >{err:?}");
-                            // TODO: Returns an error instead of false?
+                            Err(err) => {
+                                log::error!("QuestServiceImplementation > StartQuest Error > Calculating state >{err:?}");
+                                // TODO: Returns an error instead of false?
+                            }
                         }
                     }
                 }
@@ -229,7 +259,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
         request: QuestDefinitionRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<ProtoQuest> {
-        let quest = quests::get_quest(context.server_context.db.clone(), request.quest_id).await?;
+        let quest = quests::get_quest(context.server_context.db.clone(), &request.quest_id).await?;
 
         Ok(ProtoQuest {
             name: quest.name,

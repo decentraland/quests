@@ -6,6 +6,14 @@ message UserAddress {
   string user_address = 1;
 }
 
+message QuestOfferRequest {
+  string quest_id = 1;
+}
+
+message QuestOfferResponse {
+  bool offered = 1;
+}
+
 message StartQuestRequest {
   string user_address = 1;
   string quest_id = 2;
@@ -94,10 +102,17 @@ message QuestStateUpdate {
   QuestState quest_state = 4;
 }
 
+message QuestOffering {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
 message UserUpdate {
   oneof message {
     QuestStateUpdate quest_state = 1;
     fixed32 event_ignored = 2;
+    QuestOffering quest_offer = 3;
   }
 }
 
@@ -118,6 +133,7 @@ message QuestInstance {
 }
 
 service QuestsService {
+  rpc GetQuestOffer(QuestOfferRequest) returns (QuestOfferResponse) {}
   // User actions
   rpc StartQuest(StartQuestRequest) returns (StartQuestResponse) {}
   rpc AbortQuest(AbortQuestRequest) returns (AbortQuestResponse) {}

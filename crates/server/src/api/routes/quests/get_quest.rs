@@ -24,7 +24,7 @@ pub struct GetQuestResponse {
 #[get("/quests/{quest_id}")]
 pub async fn get_quest(data: web::Data<Database>, quest_id: web::Path<String>) -> HttpResponse {
     let db = data.into_inner();
-    match quests::get_quest(db, quest_id.into_inner()).await {
+    match quests::get_quest(db, &quest_id.into_inner()).await {
         Ok(quest) => HttpResponse::Ok().json(GetQuestResponse { quest }),
         Err(err) => HttpResponse::from_error(err),
     }

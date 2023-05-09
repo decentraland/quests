@@ -116,8 +116,8 @@ pub async fn get_instance_state(
     }
 }
 
-pub async fn get_quest<DB: QuestsDatabase>(db: Arc<DB>, id: String) -> Result<Quest, QuestError> {
-    db.get_quest(&id)
+pub async fn get_quest<DB: QuestsDatabase>(db: Arc<DB>, id: &str) -> Result<Quest, QuestError> {
+    db.get_quest(id)
         .await
         .map(|stored_quest| stored_quest.to_quest())?
 }

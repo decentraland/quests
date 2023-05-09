@@ -1,9 +1,12 @@
+mod auth;
 mod service;
 mod warp_ws_transport;
 
 use crate::configuration::Config;
+use auth::authenticate_dcl_user;
+use dcl_crypto::Address;
 use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
-use log::error;
+use log::{debug, error};
 use quests_db::Database;
 use quests_message_broker::{channel::RedisChannelSubscriber, messages_queue::RedisMessagesQueue};
 use quests_protocol::quests::{QuestsServiceRegistration, UserUpdate};
@@ -28,6 +31,7 @@ pub struct QuestsRpcServerContext {
 pub struct TransportContext {
     pub subscription: Option<GeneratorYielder<UserUpdate>>,
     pub subscription_handle: Option<JoinHandle<()>>,
+    pub user_address: Address,
 }
 
 pub async fn run_rpc_server(
@@ -61,12 +65,22 @@ pub async fn run_rpc_server(
         .and(warp::ws())
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
-            ws.on_upgrade(|websocket| async move {
-                if server_events_sender
-                    .send_attach_transport(Arc::new(WarpWebSocketTransport::new(websocket)))
-                    .is_err()
-                {
-                    error!("Couldn't attach web socket transport");
+            ws.on_upgrade(|mut websocket| async move {
+                match authenticate_dcl_user(&mut websocket).await {
+                    Ok(address) => {
+                        if server_events_sender
+                            .send_attach_transport(Arc::new(WarpWebSocketTransport::new(
+                                websocket, address,
+                            )))
+                            .is_err()
+                        {
+                            error!("Couldn't attach web socket transport");
+                        }
+                    }
+                    Err(err) => {
+                        error!("Couldn't authenticate a user {err:?}");
+                        let _ = websocket.close().await;
+                    }
                 }
             })
         });
@@ -85,10 +99,26 @@ pub async fn run_rpc_server(
         QuestsServiceRegistration::register_service(port, QuestsServiceImplementation {})
     });
 
+    let cloned_transport_contexts_closes = transport_contexts.clone();
     rpc_server.set_on_transport_closes_handler(move |_, transport_id| {
-        let transport_contexts = transport_contexts.clone();
+        let transport_contexts = cloned_transport_contexts_closes.clone();
         tokio::spawn(async move {
             transport_contexts.write().await.remove(&transport_id);
+        });
+    });
+
+    rpc_server.set_on_transport_connected_handler(move |transport, transport_id| {
+        let transport_contexts = transport_contexts.clone();
+        tokio::spawn(async move {
+            debug!("> OnConnected > Address: {:?}", transport.user_address);
+            transport_contexts.write().await.insert(
+                transport_id,
+                TransportContext {
+                    subscription: None,
+                    subscription_handle: None,
+                    user_address: transport.user_address.clone(),
+                },
+            );
         });
     });
 

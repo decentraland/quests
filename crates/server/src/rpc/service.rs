@@ -37,9 +37,11 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                     let user_update = UserUpdate {
                         message: Some(Message::QuestOffer(QuestOffering {
                             id: request.quest_id,
-                            name: quest.name,
-                            description: quest.description,
-                            definition: Some(quest.definition),
+                            quest: Some(ProtoQuest {
+                                name: quest.name,
+                                description: quest.description,
+                                definition: Some(quest.definition),
+                            }),
                         })),
                     };
                     if subscription.r#yield(user_update).await.is_err() {

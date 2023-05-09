@@ -43,12 +43,14 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                         })),
                     };
                     if subscription.r#yield(user_update).await.is_err() {
-                        log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription")
+                        log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription");
+                        return Ok(QuestOfferResponse { offered: false });
                     }
+                    return Ok(QuestOfferResponse { offered: true });
                 }
             }
 
-            Ok(QuestOfferResponse { offered: true })
+            Ok(QuestOfferResponse { offered: false })
         } else {
             Ok(QuestOfferResponse { offered: false })
         }

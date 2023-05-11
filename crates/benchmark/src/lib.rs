@@ -6,21 +6,53 @@ use std::{
 };
 
 use async_trait::async_trait;
+use clap::{command, Parser};
 use dcl_rpc::{client::RpcClient, transports::web_socket::WebSocketTransport};
 use futures_util::{lock::Mutex, stream::FuturesUnordered};
 use rand::{seq::IteratorRandom, thread_rng};
 
 include!(concat!(env!("OUT_DIR"), "/decentraland.quests.rs"));
 
-pub const SERVER_HTTP: &str = "http://0.0.0.0:3000";
-pub const SERVER_WS: &str = "ws://0.0.0.0:3001";
-
 pub mod quests;
 pub mod simulation;
 
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+pub struct Args {
+    #[arg(short, long, default_value = "ws://127.0.0.1:3001", help = "Hostname")]
+    pub rpc_host: String,
+
+    #[arg(
+        short,
+        long,
+        default_value = "http://127.0.0.1:3000",
+        help = "Hostname"
+    )]
+    pub api_host: String,
+
+    #[arg(short, long, default_value_t = 50, help = "Parallel")]
+    pub parallel: u8,
+
+    #[arg(
+        short,
+        long,
+        default_value_t = 10000,
+        help = "Amount of clients to connect"
+    )]
+    pub clients: usize,
+
+    #[arg(
+        short,
+        long,
+        default_value_t = 5,
+        help = "Simulation duration in minutes"
+    )]
+    pub duration: u8,
+}
+
 #[async_trait]
 pub trait Context {
-    async fn init() -> Self;
+    async fn init(args: &Args) -> Self;
 }
 
 #[async_trait]
@@ -32,12 +64,15 @@ pub trait Client<C: Context> {
 pub struct Simulation;
 
 impl Simulation {
-    pub async fn run<SC, C>(rpc_clients: Vec<RpcClient<WebSocketTransport>>)
-    where
+    pub async fn run<SC, C>(
+        args: &Args,
+        rpc_clients: Vec<RpcClient<WebSocketTransport>>,
+        duration: Duration,
+    ) where
         SC: Context + Send + Sync + 'static,
         C: Client<SC> + Send + Sync + 'static,
     {
-        let context = SC::init().await;
+        let context = SC::init(args).await;
         let mut clients = vec![];
         for rpc_client in rpc_clients {
             clients.push(C::from_rpc_client(rpc_client).await);
@@ -46,15 +81,13 @@ impl Simulation {
         let clients = Arc::new(Mutex::new(clients));
         let context = Arc::new(context);
 
-        let test_duration = Duration::from_secs(60 * 5);
-
         debug!("Simulation > Wait for 10s before start...");
         sleep(Duration::from_secs(10));
         let mut futures = FuturesUnordered::new();
-        for worker_id in 0..100 {
+        for worker_id in 0..args.parallel {
             futures.push(tokio::spawn(worker(
-                worker_id,
-                test_duration,
+                worker_id as usize,
+                duration,
                 clients.clone(),
                 context.clone(),
             )));

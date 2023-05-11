@@ -2,6 +2,17 @@
 syntax = "proto3";
 package decentraland.quests;
 
+// Errors 
+message InvalidQuest {}
+
+message NotUUID {}
+
+message InternalServerError {}
+
+message NotFoundQuestInstance {}
+
+message NotOwner {}
+
 message UserAddress {
   string user_address = 1;
 }
@@ -17,7 +28,13 @@ message StartQuestResponse {
   *  - Quest is deactivated (the owner deleted it)
   *  - User already started the quest
   *  - Internal errors (DB connection failed or something like that) */
-  bool accepted = 1;
+  message Accepted {}
+  oneof response {
+    Accepted accepted = 1;
+    InvalidQuest invalid_quest = 2;
+    NotUUID not_uuid_error = 3;
+    InternalServerError internal_server_error = 4;
+  }
 }
 
 message AbortQuestRequest {
@@ -31,11 +48,14 @@ message AbortQuestResponse {
   *  - Quest instance is from another user 
   *  - Quest instance already aborted
   *  - Internal errors (DB connection failed or something like that) */
-  bool accepted = 1;
-}
-
-message QuestDefinitionRequest {
-  string quest_id = 1;
+  message Accepted {}
+  oneof response {
+    Accepted accepted = 1;
+    NotFoundQuestInstance not_found_quest_instance = 2;
+    NotUUID not_uuid_error = 3;
+    NotOwner not_owner = 4;
+    InternalServerError internal_server_error = 5;
+  }
 }
 
 message Event {
@@ -44,7 +64,7 @@ message Event {
 }
 
 message EventResponse {
-  fixed32 event_id = 1;
+  optional fixed32 event_id = 1;
   bool accepted = 2;
 }
 
@@ -105,10 +125,28 @@ message Quests {
   repeated QuestInstance quests = 1;
 }
 
+message GetAllQuestsResponse {
+  oneof response {
+    Quests quests = 1;
+    InternalServerError internal_server_error = 2;
+  }
+}
+
 message ProtoQuest {
   string name = 1;
   string description = 2;
   QuestDefinition definition = 3;
+}
+
+message GetQuestDefinitionRequest {
+  string quest_id = 1;
+}
+
+message GetQuestDefinitionResponse {
+  oneof response {
+    ProtoQuest quest = 1;
+    InternalServerError internal_server_error = 2;
+  }
 }
 
 message QuestInstance {
@@ -127,6 +165,6 @@ service QuestsService {
   rpc Subscribe(UserAddress) returns (stream UserUpdate) {}
 
   // Query quest information
-  rpc GetAllQuests(UserAddress) returns (Quests) {}
-  rpc GetQuestDefinition(QuestDefinitionRequest) returns (ProtoQuest) {}
+  rpc GetAllQuests(UserAddress) returns (GetAllQuestsResponse) {}
+  rpc GetQuestDefinition(GetQuestDefinitionRequest) returns (GetQuestDefinitionResponse) {}
 }

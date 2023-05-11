@@ -1,8 +1,11 @@
 use super::QuestsRpcServerContext;
-use crate::domain::{
-    events::add_event_controller,
-    quests::{
-        self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
+use crate::{
+    api::routes::errors::CommonError,
+    domain::{
+        events::add_event_controller,
+        quests::{
+            self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
+        },
     },
 };
 use dcl_rpc::{
@@ -12,17 +15,20 @@ use dcl_rpc::{
 use log::error;
 use quests_message_broker::{channel::ChannelSubscriber, QUEST_UPDATES_CHANNEL_NAME};
 use quests_protocol::quests::{
-    user_update::Message, AbortQuestRequest, AbortQuestResponse, Event, EventResponse, ProtoQuest,
-    QuestDefinitionRequest, QuestInstance, QuestStateUpdate, Quests, QuestsServiceServer,
-    ServerStreamResponse, StartQuestRequest, StartQuestResponse, UserAddress, UserUpdate,
+    user_update, AbortQuestRequest, AbortQuestResponse, Event, EventResponse, GetAllQuestsResponse,
+    GetQuestDefinitionRequest, GetQuestDefinitionResponse, ProtoQuest, QuestInstance,
+    QuestStateUpdate, QuestsServiceServer, ServerStreamResponse, StartQuestRequest,
+    StartQuestResponse, UserAddress, UserUpdate,
 };
 
 pub struct QuestsServiceImplementation {}
 
-type QuestRpcResult<T> = Result<T, QuestError>;
+type QuestRpcResult<T> = Result<T, UnableToOpenStream>;
 
 #[async_trait::async_trait]
-impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceImplementation {
+impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
+    for QuestsServiceImplementation
+{
     // TODO: Add tracing instrument
     async fn start_quest(
         &self,
@@ -48,7 +54,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                     {
                         Ok((quest, quest_state)) => {
                             let user_update = UserUpdate {
-                                message: Some(Message::QuestState(QuestStateUpdate {
+                                message: Some(user_update::Message::QuestState(QuestStateUpdate {
                                     quest_instance_id: new_quest_instance_id.clone(),
                                     name: quest.name,
                                     description: quest.description,
@@ -68,12 +74,17 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                     }
                 }
 
-                Ok(StartQuestResponse { accepted: true })
+                Ok(StartQuestResponse::accepted())
             }
             Err(err) => {
                 log::error!("QuestsServiceImplementation > StartQuest Error > {err:?}");
-                // TODO: Returns an error instead of false?
-                Ok(StartQuestResponse { accepted: false })
+                match err {
+                    QuestError::NotFoundOrInactive => Ok(StartQuestResponse::invalid_quest()),
+                    QuestError::CommonError(CommonError::NotUUID) => {
+                        Ok(StartQuestResponse::not_uuid_error())
+                    }
+                    _ => Ok(StartQuestResponse::internal_server_error()),
+                }
             }
         }
     }
@@ -84,16 +95,25 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
         request: AbortQuestRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<AbortQuestResponse> {
-        let accepted = quests::abandon_quest(
+        match quests::abandon_quest(
             context.server_context.db.clone(),
             &request.user_address,
             &request.quest_instance_id,
         )
         .await
-        .is_ok();
-
-        // TODO: Returns an error instead of false?
-        Ok(AbortQuestResponse { accepted })
+        {
+            Ok(_) => Ok(AbortQuestResponse::accepted()),
+            Err(err) => match err {
+                QuestError::NotInstanceOwner => Ok(AbortQuestResponse::not_owner()),
+                QuestError::CommonError(CommonError::NotFound) => {
+                    Ok(AbortQuestResponse::not_found_quest_instance())
+                }
+                QuestError::CommonError(CommonError::NotUUID) => {
+                    Ok(AbortQuestResponse::not_uuid_error())
+                }
+                _ => Ok(AbortQuestResponse::internal_server_error()),
+            },
+        }
     }
 
     // TODO: Add tracing instrument
@@ -104,17 +124,10 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
     ) -> QuestRpcResult<EventResponse> {
         match add_event_controller(context.server_context.redis_events_queue.clone(), request).await
         {
-            Ok(event_id) => Ok(EventResponse {
-                event_id: event_id as u32,
-                accepted: true,
-            }),
+            Ok(event_id) => Ok(EventResponse::accepted(event_id as u32)),
             Err(error) => {
                 log::error!("QuestsServiceImplementation > SendEvent Error > {error:?}");
-                // TODO: Returns an error instead of false?
-                Ok(EventResponse {
-                    event_id: 0,
-                    accepted: false,
-                })
+                Ok(EventResponse::error())
             }
         }
     }
@@ -139,7 +152,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                     quest_instance_ids.push(id.clone());
                     if (generator_yielder
                         .r#yield(UserUpdate {
-                            message: Some(Message::QuestState(QuestStateUpdate {
+                            message: Some(user_update::Message::QuestState(QuestStateUpdate {
                                 name: quest.name,
                                 description: quest.description,
                                 quest_instance_id: id,
@@ -152,7 +165,6 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                         log::error!(
                             "QuestsServiceImplementation > Failed to push state to response stream"
                         );
-                        // TODO: Return an error
                     }
                 }
 
@@ -163,7 +175,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                         let generator_yielder = yielder.clone();
                         let ids = quest_instance_ids.clone();
                         async move {
-                            if let Some(Message::QuestState(state)) = &user_update.message {
+                            if let Some(user_update::Message::QuestState(state)) = &user_update.message {
                                 if ids.contains(&state.quest_instance_id) {
                                     if generator_yielder.r#yield(user_update).await.is_err() {
                                         error!(
@@ -192,7 +204,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
                     });
                 Ok(generator)
             }
-            Err(err) => Err(err),
+            Err(_) => Err(UnableToOpenStream {}),
         }
     }
 
@@ -200,55 +212,53 @@ impl QuestsServiceServer<QuestsRpcServerContext, QuestError> for QuestsServiceIm
         &self,
         request: UserAddress,
         context: ProcedureContext<QuestsRpcServerContext>,
-    ) -> QuestRpcResult<Quests> {
-        let quest_states = quests::get_all_quest_states_by_user_address(
+    ) -> QuestRpcResult<GetAllQuestsResponse> {
+        match quests::get_all_quest_states_by_user_address(
             context.server_context.db.clone(),
             request.user_address,
         )
-        .await?;
-
-        let mut quests = Vec::new();
-        for (instance_id, (quest, state)) in quest_states {
-            let quest_definition_and_state = QuestInstance {
-                instance_id,
-                quest: Some(ProtoQuest {
-                    name: quest.name,
-                    description: quest.description,
-                    definition: Some(quest.definition),
-                }),
-                state: Some(state),
-            };
-            quests.push(quest_definition_and_state);
+        .await
+        {
+            Ok(quest_states) => {
+                let mut quests = Vec::new();
+                for (instance_id, (quest, state)) in quest_states {
+                    let quest_definition_and_state = QuestInstance {
+                        instance_id,
+                        quest: Some(ProtoQuest {
+                            name: quest.name,
+                            description: quest.description,
+                            definition: Some(quest.definition),
+                        }),
+                        state: Some(state),
+                    };
+                    quests.push(quest_definition_and_state);
+                }
+                Ok(GetAllQuestsResponse::ok(quests))
+            }
+            Err(_) => Ok(GetAllQuestsResponse::internal_server_error()),
         }
-
-        Ok(Quests { quests })
     }
 
     async fn get_quest_definition(
         &self,
-        request: QuestDefinitionRequest,
+        request: GetQuestDefinitionRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
-    ) -> QuestRpcResult<ProtoQuest> {
-        let quest = quests::get_quest(context.server_context.db.clone(), request.quest_id).await?;
-
-        Ok(ProtoQuest {
-            name: quest.name,
-            description: quest.description,
-            definition: Some(quest.definition),
-        })
+    ) -> QuestRpcResult<GetQuestDefinitionResponse> {
+        match quests::get_quest(context.server_context.db.clone(), request.quest_id).await {
+            Ok(quest) => Ok(GetQuestDefinitionResponse::ok(quest)),
+            Err(_) => Ok(GetQuestDefinitionResponse::internal_server_error()),
+        }
     }
 }
 
-impl RemoteErrorResponse for QuestError {
+pub struct UnableToOpenStream;
+
+impl RemoteErrorResponse for UnableToOpenStream {
     fn error_code(&self) -> u32 {
-        match self {
-            QuestError::QuestValidation(_) => 400,
-            QuestError::CommonError(_) => 500,
-            QuestError::DeserializationError => 400,
-        }
+        500
     }
 
     fn error_message(&self) -> String {
-        self.to_string()
+        "Service Error: Unable to open a stream".to_string()
     }
 }

@@ -148,7 +148,12 @@ impl ClientState {
                     response
                 );
                 match response {
-                    Ok(response) if response.accepted => {
+                    Ok(response)
+                        if matches!(
+                            response.response,
+                            Some(start_quest_response::Response::Accepted(_))
+                        ) =>
+                    {
                         ClientState::StartQuestRequested { updates, quest_id }
                     }
                     _ => ClientState::Subscribed { updates },

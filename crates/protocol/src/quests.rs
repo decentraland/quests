@@ -285,6 +285,130 @@ impl Action {
     }
 }
 
+impl StartQuestResponse {
+    pub fn accepted() -> Self {
+        Self {
+            response: Some(start_quest_response::Response::Accepted(
+                start_quest_response::Accepted {},
+            )),
+        }
+    }
+
+    pub fn invalid_quest() -> Self {
+        Self {
+            response: Some(start_quest_response::Response::InvalidQuest(
+                InvalidQuest {},
+            )),
+        }
+    }
+
+    pub fn not_uuid_error() -> Self {
+        Self {
+            response: Some(start_quest_response::Response::NotUuidError(NotUuid {})),
+        }
+    }
+
+    pub fn internal_server_error() -> Self {
+        Self {
+            response: Some(start_quest_response::Response::InternalServerError(
+                InternalServerError {},
+            )),
+        }
+    }
+}
+
+impl AbortQuestResponse {
+    pub fn accepted() -> Self {
+        Self {
+            response: Some(abort_quest_response::Response::Accepted(
+                abort_quest_response::Accepted {},
+            )),
+        }
+    }
+
+    pub fn not_found_quest_instance() -> Self {
+        Self {
+            response: Some(abort_quest_response::Response::NotFoundQuestInstance(
+                NotFoundQuestInstance {},
+            )),
+        }
+    }
+
+    pub fn not_owner() -> Self {
+        Self {
+            response: Some(abort_quest_response::Response::NotOwner(NotOwner {})),
+        }
+    }
+
+    pub fn not_uuid_error() -> Self {
+        Self {
+            response: Some(abort_quest_response::Response::NotUuidError(NotUuid {})),
+        }
+    }
+
+    pub fn internal_server_error() -> Self {
+        Self {
+            response: Some(abort_quest_response::Response::InternalServerError(
+                InternalServerError {},
+            )),
+        }
+    }
+}
+
+impl EventResponse {
+    pub fn accepted(event_id: u32) -> Self {
+        Self {
+            event_id: Some(event_id),
+            accepted: true,
+        }
+    }
+
+    pub fn error() -> Self {
+        Self {
+            event_id: None,
+            accepted: false,
+        }
+    }
+}
+
+impl GetAllQuestsResponse {
+    pub fn ok(quests: Vec<QuestInstance>) -> Self {
+        Self {
+            response: Some(get_all_quests_response::Response::Quests(Quests { quests })),
+        }
+    }
+
+    pub fn internal_server_error() -> Self {
+        Self {
+            response: Some(get_all_quests_response::Response::InternalServerError(
+                InternalServerError {},
+            )),
+        }
+    }
+}
+
+impl GetQuestDefinitionResponse {
+    pub fn ok(quest: Quest) -> Self {
+        Self {
+            response: Some(get_quest_definition_response::Response::Quest(ProtoQuest {
+                name: quest.name,
+                description: quest.description,
+                definition: Some(quest.definition),
+            })),
+        }
+    }
+
+    pub fn internal_server_error() -> Self {
+        Self {
+            response: Some(
+                get_quest_definition_response::Response::InternalServerError(
+                    InternalServerError {},
+                ),
+            ),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -41,7 +41,7 @@ async fn start_quest_should_be_200() {
     assert!(response.status().is_success())
 }
 #[actix_web::test]
-async fn start_quest_should_be_400() {
+async fn start_quest_should_be_404() {
     // should not be able to start a quest that is inactive
     let config = get_configuration().await;
     let db = create_quests_db_component(&config.database_url, true)
@@ -73,7 +73,7 @@ async fn start_quest_should_be_400() {
     let response = call_service(&app, req).await;
 
     assert!(!response.status().is_success());
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
     // should not be able to start a quest that doesn't exist
     let id = Uuid::new_v4().to_string();
@@ -84,6 +84,27 @@ async fn start_quest_should_be_400() {
     // call start quest
     let req = TestRequest::post()
         .uri(&format!("/quests/{id}/instances"))
+        .set_json(start_quest)
+        .to_request();
+
+    let response = call_service(&app, req).await;
+    assert!(!response.status().is_success());
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[actix_web::test]
+async fn start_quest_should_be_400() {
+    // should not be able to start a quest that is inactive
+    let config = get_configuration().await;
+
+    let app = init_service(build_app(&config).await).await;
+
+    let start_quest = StartQuestRequest {
+        user_address: "0xA".to_string(),
+    };
+    // call start quest
+    let req = TestRequest::post()
+        .uri("/quests/1adki1293939920/instances")
         .set_json(start_quest)
         .to_request();
 

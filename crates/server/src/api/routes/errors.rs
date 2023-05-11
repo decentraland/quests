@@ -19,7 +19,8 @@ pub enum CommonError {
     BadRequest(String),
     #[error("Not Found")]
     NotFound,
-    // TODO: Here we should add errors like "Bad Request", "Forbidden", "Unathorized", "Not Found"
+    #[error("Bad Request: the given ID is not valid")]
+    NotUUID,
 }
 
 impl ResponseError for CommonError {
@@ -28,6 +29,7 @@ impl ResponseError for CommonError {
             Self::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
             Self::BadRequest(_) => StatusCode::BAD_REQUEST,
             Self::NotFound => StatusCode::NOT_FOUND,
+            Self::NotUUID => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -47,6 +49,8 @@ impl ResponseError for QuestError {
             Self::DeserializationError => StatusCode::INTERNAL_SERVER_ERROR,
             Self::CommonError(base) => base.status_code(),
             Self::QuestValidation(_) => StatusCode::BAD_REQUEST,
+            Self::NotInstanceOwner => StatusCode::FORBIDDEN,
+            Self::NotFoundOrInactive => StatusCode::NOT_FOUND,
         }
     }
 
@@ -74,9 +78,7 @@ impl From<ProtocolDecodeError> for QuestError {
 impl From<DBError> for QuestError {
     fn from(error: DBError) -> Self {
         match error {
-            DBError::NotUUID => QuestError::CommonError(CommonError::BadRequest(
-                "the ID given is not a valid".to_string(),
-            )),
+            DBError::NotUUID => QuestError::CommonError(CommonError::NotUUID),
             DBError::RowNotFound => QuestError::CommonError(CommonError::NotFound),
             _ => QuestError::CommonError(CommonError::Unknown),
         }

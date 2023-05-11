@@ -19,6 +19,10 @@ pub enum QuestError {
     DeserializationError,
     #[error("Quest Validation Error: {0}")]
     QuestValidation(String),
+    #[error("Cannot modify a quest if you are not the user playing the quest")]
+    NotInstanceOwner,
+    #[error("Quest doesn't exist or is inactive")]
+    NotFoundOrInactive,
 }
 
 pub async fn abandon_quest(
@@ -28,9 +32,7 @@ pub async fn abandon_quest(
 ) -> Result<(), QuestError> {
     let quest_instance = db.get_quest_instance(quest_instance_id).await?;
     if quest_instance.user_address != user_address {
-        return Err(QuestError::CommonError(CommonError::BadRequest(
-            "Cannot abandon a quest if you are not the user playing it".to_string(),
-        )));
+        return Err(QuestError::NotInstanceOwner);
     }
 
     db.abandon_quest(quest_instance_id)
@@ -49,9 +51,7 @@ pub async fn start_quest(
         .await
         .map_err(|err| -> QuestError { err.into() })?;
     if !is_active {
-        return Err(QuestError::CommonError(CommonError::BadRequest(
-            "Quest not found or inactive".to_string(),
-        )));
+        return Err(QuestError::NotFoundOrInactive);
     }
 
     db.start_quest(quest_id, user_address)

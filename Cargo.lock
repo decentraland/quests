@@ -2658,6 +2658,7 @@ dependencies = [
  "quests_protocol",
  "serde",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -2672,6 +2673,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "uuid",
 ]
 
 [[package]]

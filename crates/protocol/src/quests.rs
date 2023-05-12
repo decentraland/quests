@@ -356,17 +356,25 @@ impl AbortQuestResponse {
 }
 
 impl EventResponse {
-    pub fn accepted(event_id: u32) -> Self {
+    pub fn accepted(event_id: uuid::Uuid) -> Self {
         Self {
-            event_id: Some(event_id),
-            accepted: true,
+            response: Some(event_response::Response::AcceptedEventId(
+                event_id.to_string(),
+            )),
         }
     }
 
-    pub fn error() -> Self {
+    pub fn ignored() -> Self {
         Self {
-            event_id: None,
-            accepted: false,
+            response: Some(event_response::Response::IgnoredEvent(IgnoredEvent {})),
+        }
+    }
+
+    pub fn internal_server_error() -> Self {
+        Self {
+            response: Some(event_response::Response::InternalServerError(
+                InternalServerError {},
+            )),
         }
     }
 }

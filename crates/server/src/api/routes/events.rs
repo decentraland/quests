@@ -1,12 +1,12 @@
-use crate::domain::events::add_event_controller;
+use crate::domain::events::{add_event_controller, AddEventError};
 use actix_web::{
-    error::ErrorBadRequest,
+    error::{ErrorBadRequest, ErrorInternalServerError},
     put,
     web::{self, ServiceConfig},
     HttpResponse,
 };
 use quests_message_broker::messages_queue::RedisMessagesQueue;
-use quests_protocol::quests::Event;
+use quests_protocol::quests::EventRequest;
 use serde::Serialize;
 use utoipa::ToSchema;
 
@@ -16,20 +16,27 @@ pub struct AddEventResponse {
 }
 
 #[utoipa::path(
-    request_body = Event,
+    request_body = EventRequest,
     responses(
         (status = 202, description = "Event accepted", body = AddEventResponse),
-        (status = 400, description = "Bad Request")
+        (status = 400, description = "Bad Request"),
+        (status = 500, description = "Internal Server Error")
     )
 )]
 #[put("/events")]
-async fn add_event(data: web::Data<RedisMessagesQueue>, event: web::Json<Event>) -> HttpResponse {
+async fn add_event(
+    data: web::Data<RedisMessagesQueue>,
+    event: web::Json<EventRequest>,
+) -> HttpResponse {
     let events_queue = data.into_inner();
     match add_event_controller(events_queue, event.into_inner()).await {
         Ok(_) => HttpResponse::Accepted().json(AddEventResponse {
             message: "Event Accepted".to_string(),
         }),
-        Err(err) => HttpResponse::from_error(ErrorBadRequest(err)),
+        Err(err) => match err {
+            AddEventError::NoAction => HttpResponse::from_error(ErrorBadRequest(err)),
+            AddEventError::PushFailed => HttpResponse::from_error(ErrorInternalServerError(err)),
+        },
     }
 }
 

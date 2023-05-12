@@ -8,6 +8,7 @@ const ADDRESS: &str = "0xA";
 
 fn build_location_event(coordinates: Coordinates) -> Event {
     Event {
+        id: uuid::Uuid::new_v4().to_string(),
         address: ADDRESS.to_string(),
         action: Some(Action::location(coordinates)),
     }

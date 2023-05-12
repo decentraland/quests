@@ -308,11 +308,10 @@ impl QuestsDatabase for Database {
     }
 
     async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()> {
-        let id = Uuid::new_v4().to_string();
         sqlx::query(
             "INSERT INTO events (id, user_address, event, quest_instance_id) VALUES ($1, $2, $3, $4)",
         )
-        .bind(parse_str_to_uuid(&id)?)
+        .bind(parse_str_to_uuid(&event.id)?)
         .bind(event.user_address)
         .bind(&event.event)
         .bind(parse_str_to_uuid(quest_instance_id)?)

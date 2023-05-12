@@ -6,13 +6,13 @@ use std::{
 };
 
 use async_trait::async_trait;
-use dcl_rpc::{client::RpcClient, transports::web_socket::WebSocketTransport};
+use dcl_rpc::client::RpcClient;
 use futures_util::{stream::FuturesUnordered, StreamExt};
 use log::{debug, info};
 use rand::{seq::IteratorRandom, thread_rng};
 use tokio::sync::Mutex;
 
-use crate::args::Args;
+use crate::{args::Args, client::TestWebSocketTransport};
 
 #[async_trait]
 pub trait Context {
@@ -21,14 +21,14 @@ pub trait Context {
 
 #[async_trait]
 pub trait Client<C: Context> {
-    async fn from_rpc_client(client: RpcClient<WebSocketTransport>) -> Self;
+    async fn from_rpc_client(client: RpcClient<TestWebSocketTransport>) -> Self;
     async fn act(self, context: &C) -> Self;
 }
 
 pub struct Simulation;
 
 impl Simulation {
-    pub async fn run<SC, C>(args: &Args, rpc_clients: Vec<RpcClient<WebSocketTransport>>)
+    pub async fn run<SC, C>(args: &Args, rpc_clients: Vec<RpcClient<TestWebSocketTransport>>)
     where
         SC: Context + Send + Sync + 'static,
         C: Client<SC> + Send + Sync + 'static,

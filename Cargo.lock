@@ -916,8 +916,6 @@ dependencies = [
 [[package]]
 name = "dcl-rpc"
 version = "2.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfaaab52c0dcedb6ccb4283bd4a0678092c46b80a24e74bff24eaa58a1b08a3f"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -933,6 +931,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util 0.7.8",
+ "warp",
 ]
 
 [[package]]

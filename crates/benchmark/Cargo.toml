@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dcl-rpc = { workspace = true, features = ["client"] }
+dcl-rpc = { workspace = true, features = ["client", "tungstenite"] }
 env_logger = { workspace = true }
 log = { workspace = true }
 quests_protocol = { path = "../protocol" }

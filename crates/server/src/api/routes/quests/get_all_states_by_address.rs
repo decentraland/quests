@@ -1,7 +1,6 @@
 use actix_web::{get, web, HttpResponse};
 use quests_db::Database;
 use quests_protocol::definitions::*;
-use quests_protocol::quests::Quest;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::quests;

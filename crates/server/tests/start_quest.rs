@@ -22,7 +22,11 @@ async fn start_quest_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: quest_definition.definition.encode_to_vec(),
+        definition: quest_definition
+            .definition
+            .as_ref()
+            .unwrap()
+            .encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();
@@ -55,7 +59,11 @@ async fn start_quest_should_be_404() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: quest_definition.definition.encode_to_vec(),
+        definition: quest_definition
+            .definition
+            .as_ref()
+            .unwrap()
+            .encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();

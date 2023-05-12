@@ -1,6 +1,13 @@
+pub mod builders;
+pub mod graph;
+pub mod state;
+
+pub use self::builders::*;
+pub use self::graph::*;
+pub use self::state::*;
+
 use crate::definitions::*;
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use thiserror::Error;
 
 pub const START_STEP_ID: &str = "_START_";
@@ -8,25 +15,21 @@ pub const END_STEP_ID: &str = "_END_";
 
 pub type StepID = String;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Quest {
-    pub name: String,
-    pub description: String,
-    pub definition: QuestDefinition,
-}
-
 impl Quest {
     /// Check if the quest has a step defined by its id
     pub fn contanins_step(&self, step_id: &StepID) -> bool {
-        self.definition.steps.iter().any(|step| step.id == *step_id)
+        let Some(definition) = &self.definition else {
+            return false;
+        };
+        definition.steps.iter().any(|step| step.id == *step_id)
     }
 
     /// Get step defined in the quest by its id
     pub fn get_step(&self, step_id: &StepID) -> Option<&Step> {
-        self.definition
-            .steps
-            .iter()
-            .find(|step| step.id == *step_id)
+        let Some(definition) = &self.definition else {
+            return None;
+        };
+        definition.steps.iter().find(|step| step.id == *step_id)
     }
 
     /// Get all steps in `connections` that don't have a connection defined in which they are the `from` pointing to other node.
@@ -35,9 +38,11 @@ impl Quest {
     ///
     pub(crate) fn get_steps_without_to(&self) -> HashSet<StepID> {
         let mut steps = HashSet::new();
-        for connection in &self.definition.connections {
-            if self
-                .definition
+        let Some(definition) = &self.definition else {
+            return steps;
+        };
+        for connection in &definition.connections {
+            if definition
                 .connections
                 .iter()
                 .all(|conn| conn.step_from != connection.step_to)
@@ -55,9 +60,11 @@ impl Quest {
     ///
     pub(crate) fn get_steps_without_from(&self) -> HashSet<StepID> {
         let mut steps = HashSet::new();
-        for connection in &self.definition.connections {
-            if self
-                .definition
+        let Some(definition) = &self.definition else {
+            return steps;
+        };
+        for connection in &definition.connections {
+            if definition
                 .connections
                 .iter()
                 .all(|conn| conn.step_to != connection.step_from)
@@ -72,7 +79,10 @@ impl Quest {
     /// Validates a Quest struct to check if it meets all the requirements to be a valid quests
     ///
     pub fn is_valid(&self) -> Result<(), QuestValidationError> {
-        if self.definition.connections.is_empty() || self.definition.steps.is_empty() {
+        let Some(definition) = &self.definition else {
+            return Err(QuestValidationError::InvalidDefinition);
+        };
+        if definition.connections.is_empty() || definition.steps.is_empty() {
             return Err(QuestValidationError::InvalidDefinition);
         }
         let starting_nodes = self.get_steps_without_from();
@@ -104,7 +114,7 @@ impl Quest {
         let mut unique_task_ids: HashSet<String> = HashSet::new();
         let mut unique_step_ids: HashSet<String> = HashSet::new();
 
-        for step in &self.definition.steps {
+        for step in &definition.steps {
             // All steps should not contain Tasks::None used for START and END nodes
             if step.tasks.is_empty() {
                 return Err(QuestValidationError::MissingTasksForStep(step.id.clone()));
@@ -126,8 +136,7 @@ impl Quest {
             }
 
             // All steps have at least one defined connection
-            if !self
-                .definition
+            if !definition
                 .connections
                 .iter()
                 .any(|connection| connection.step_from == step.id || connection.step_to == step.id)
@@ -142,7 +151,7 @@ impl Quest {
         for Connection {
             ref step_from,
             ref step_to,
-        } in &self.definition.connections
+        } in &definition.connections
         {
             if !self.contanins_step(step_from) {
                 return Err(QuestValidationError::NoStepDefinedForConnectionHalf(
@@ -158,18 +167,6 @@ impl Quest {
         }
 
         Ok(())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct Coordinates {
-    x: isize,
-    y: isize,
-}
-
-impl Coordinates {
-    pub fn new(x: isize, y: isize) -> Self {
-        Self { x, y }
     }
 }
 
@@ -222,200 +219,6 @@ impl Connection {
     }
 }
 
-const LOCATION: &str = "LOCATION";
-const JUMP: &str = "JUMP";
-const NPC_INTERACTION: &str = "NPC_INTERACTION";
-const CUSTOM: &str = "CUSTOM";
-pub(crate) const EMOTE: &str = "EMOTE";
-
-impl Action {
-    pub fn location(coords: Coordinates) -> Self {
-        let parameters = HashMap::from_iter([
-            ("x".to_string(), coords.x.to_string()),
-            ("y".to_string(), coords.y.to_string()),
-        ]);
-
-        Self {
-            r#type: LOCATION.to_string(),
-            parameters,
-        }
-    }
-
-    pub fn jump(coords: Coordinates) -> Self {
-        let parameters = HashMap::from_iter([
-            ("x".to_string(), coords.x.to_string()),
-            ("y".to_string(), coords.y.to_string()),
-        ]);
-
-        Self {
-            r#type: JUMP.to_string(),
-            parameters,
-        }
-    }
-
-    pub fn emote(coords: Coordinates, emote_id: &str) -> Self {
-        let parameters = HashMap::from_iter([
-            ("x".to_string(), coords.x.to_string()),
-            ("y".to_string(), coords.y.to_string()),
-            ("emote_id".to_string(), emote_id.to_string()),
-        ]);
-
-        Self {
-            r#type: EMOTE.to_string(),
-            parameters,
-        }
-    }
-
-    pub fn custom(id: &str) -> Self {
-        let parameters = HashMap::from_iter([("id".to_string(), id.to_string())]);
-        Self {
-            r#type: CUSTOM.to_string(),
-            parameters,
-        }
-    }
-
-    pub fn npc_interaction(npc_id: &str) -> Self {
-        let parameters = HashMap::from_iter([("npc_id".to_string(), npc_id.to_string())]);
-
-        Self {
-            r#type: NPC_INTERACTION.to_string(),
-            parameters,
-        }
-    }
-}
-
-impl StartQuestResponse {
-    pub fn accepted() -> Self {
-        Self {
-            response: Some(start_quest_response::Response::Accepted(
-                start_quest_response::Accepted {},
-            )),
-        }
-    }
-
-    pub fn invalid_quest() -> Self {
-        Self {
-            response: Some(start_quest_response::Response::InvalidQuest(
-                InvalidQuest {},
-            )),
-        }
-    }
-
-    pub fn not_uuid_error() -> Self {
-        Self {
-            response: Some(start_quest_response::Response::NotUuidError(NotUuid {})),
-        }
-    }
-
-    pub fn internal_server_error() -> Self {
-        Self {
-            response: Some(start_quest_response::Response::InternalServerError(
-                InternalServerError {},
-            )),
-        }
-    }
-}
-
-impl AbortQuestResponse {
-    pub fn accepted() -> Self {
-        Self {
-            response: Some(abort_quest_response::Response::Accepted(
-                abort_quest_response::Accepted {},
-            )),
-        }
-    }
-
-    pub fn not_found_quest_instance() -> Self {
-        Self {
-            response: Some(abort_quest_response::Response::NotFoundQuestInstance(
-                NotFoundQuestInstance {},
-            )),
-        }
-    }
-
-    pub fn not_owner() -> Self {
-        Self {
-            response: Some(abort_quest_response::Response::NotOwner(NotOwner {})),
-        }
-    }
-
-    pub fn not_uuid_error() -> Self {
-        Self {
-            response: Some(abort_quest_response::Response::NotUuidError(NotUuid {})),
-        }
-    }
-
-    pub fn internal_server_error() -> Self {
-        Self {
-            response: Some(abort_quest_response::Response::InternalServerError(
-                InternalServerError {},
-            )),
-        }
-    }
-}
-
-impl EventResponse {
-    pub fn accepted(event_id: uuid::Uuid) -> Self {
-        Self {
-            response: Some(event_response::Response::AcceptedEventId(
-                event_id.to_string(),
-            )),
-        }
-    }
-
-    pub fn ignored() -> Self {
-        Self {
-            response: Some(event_response::Response::IgnoredEvent(IgnoredEvent {})),
-        }
-    }
-
-    pub fn internal_server_error() -> Self {
-        Self {
-            response: Some(event_response::Response::InternalServerError(
-                InternalServerError {},
-            )),
-        }
-    }
-}
-
-impl GetAllQuestsResponse {
-    pub fn ok(quests: Vec<QuestInstance>) -> Self {
-        Self {
-            response: Some(get_all_quests_response::Response::Quests(Quests { quests })),
-        }
-    }
-
-    pub fn internal_server_error() -> Self {
-        Self {
-            response: Some(get_all_quests_response::Response::InternalServerError(
-                InternalServerError {},
-            )),
-        }
-    }
-}
-
-impl GetQuestDefinitionResponse {
-    pub fn ok(quest: Quest) -> Self {
-        Self {
-            response: Some(get_quest_definition_response::Response::Quest(ProtoQuest {
-                name: quest.name,
-                description: quest.description,
-                definition: Some(quest.definition),
-            })),
-        }
-    }
-
-    pub fn internal_server_error() -> Self {
-        Self {
-            response: Some(
-                get_quest_definition_response::Response::InternalServerError(
-                    InternalServerError {},
-                ),
-            ),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -425,7 +228,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
                     Connection::new("B", "C"),
@@ -433,7 +236,7 @@ mod tests {
                     Connection::new("A3", "E"),
                 ],
                 steps: vec![], // not needed for test
-            },
+            }),
         };
 
         let starting_steps = quest.get_steps_without_from();
@@ -448,7 +251,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
                     Connection::new("B", "C"),
@@ -456,7 +259,7 @@ mod tests {
                     Connection::new("A3", "E"),
                 ],
                 steps: vec![], // not needed for test
-            },
+            }),
         };
 
         let steps_pointing_to_end = quest.get_steps_without_to();
@@ -471,7 +274,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
@@ -502,7 +305,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
 
         assert!(quest.is_valid().is_ok())
@@ -514,10 +317,10 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![],
                 steps: vec![], // not needed for test
-            },
+            }),
         };
         let assert = matches!(
             quest.is_valid().unwrap_err(),
@@ -529,7 +332,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B")],
                 steps: vec![Step {
                     id: "B".to_string(),
@@ -540,7 +343,7 @@ mod tests {
                         action_items: vec![Action::location(Coordinates::new(10, 15))],
                     }],
                 }],
-            },
+            }),
         };
         let err = QuestValidationError::MissingStepForStartingNode("A1".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -549,7 +352,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B")],
                 steps: vec![Step {
                     id: "A1".to_string(),
@@ -560,7 +363,7 @@ mod tests {
                         action_items: vec![Action::location(Coordinates::new(10, 15))],
                     }],
                 }],
-            },
+            }),
         };
         let err = QuestValidationError::MissingStepForEndNode("B".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -569,7 +372,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("B", "C")],
                 steps: vec![
                     Step {
@@ -600,7 +403,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
         let err = QuestValidationError::NoConnectionDefinedForStep("A1".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -609,7 +412,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
@@ -631,7 +434,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
         let err = QuestValidationError::NoStepDefinedForConnectionHalf("B".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -640,7 +443,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
@@ -680,7 +483,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
         let err = QuestValidationError::NotUniqueIDForStep("A".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -689,7 +492,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
@@ -727,7 +530,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
         let err = QuestValidationError::NotUniqueIDForStepTask("A".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -736,7 +539,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
@@ -770,7 +573,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
         let err = QuestValidationError::MissingTasksForStep("B".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);

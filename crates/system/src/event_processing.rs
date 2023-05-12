@@ -13,9 +13,7 @@ use quests_message_broker::{
     init_message_broker_components_with_publisher,
     messages_queue::{MessagesQueue, RedisMessagesQueue},
 };
-use quests_protocol::{
-    definitions::*, quest_graph::QuestGraph, quest_state::get_state, quests::Quest,
-};
+use quests_protocol::{definitions::*, quests::*};
 use tokio::task::JoinHandle;
 
 use crate::configuration::Config;
@@ -178,7 +176,7 @@ impl EventProcessor {
         let quest = Quest {
             name: quest.name,
             description: quest.description,
-            definition: quest_definition,
+            definition: Some(quest_definition),
         };
         Ok(quest)
     }

@@ -1,4 +1,4 @@
-use quests_message_broker::messages_queue::{MessagesQueue, MessagesQueueResult};
+use quests_message_broker::messages_queue::MessagesQueue;
 use quests_protocol::definitions::*;
 use std::sync::Arc;
 use thiserror::Error;

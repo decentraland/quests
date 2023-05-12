@@ -207,11 +207,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
                 for (instance_id, (quest, state)) in quest_states {
                     let quest_definition_and_state = QuestInstance {
                         instance_id,
-                        quest: Some(ProtoQuest {
-                            name: quest.name,
-                            description: quest.description,
-                            definition: Some(quest.definition),
-                        }),
+                        quest: Some(quest),
                         state: Some(state),
                     };
                     quests.push(quest_definition_and_state);

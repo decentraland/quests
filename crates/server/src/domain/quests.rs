@@ -2,7 +2,7 @@ use crate::api::routes::errors::CommonError;
 use futures_util::future::join_all;
 use quests_db::core::definitions::QuestsDatabase;
 use quests_protocol::definitions::*;
-use quests_protocol::{quest_state::get_state, quests::Quest};
+use quests_protocol::quests::get_state;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -84,8 +84,11 @@ pub async fn get_instance_state(
     quest_id: &str,
     quest_instance: &str,
 ) -> Result<(Quest, QuestState), QuestError> {
-    let quest = db.get_quest(quest_id).await?;
-    let quest = quest.to_quest()?;
+    let quest = db.get_quest(quest_id).await.map_err(|_| {
+        QuestError::CommonError(CommonError::BadRequest(
+            "the quest instance ID given doesn't correspond to a valid quest".to_string(),
+        ))
+    })?;
     let stored_events = db.get_events(quest_instance).await?;
 
     let events = stored_events
@@ -93,6 +96,7 @@ pub async fn get_instance_state(
         .map(|event| Event::decode(event.event.as_slice()))
         .collect::<Result<Vec<_>, _>>()?;
 
+    let quest = quest.to_quest()?;
     let state = get_state(&quest, events);
 
     Ok((quest, state))

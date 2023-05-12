@@ -2,7 +2,7 @@ use super::QuestsRpcServerContext;
 use crate::{
     api::routes::errors::CommonError,
     domain::{
-        events::add_event_controller,
+        events::{add_event_controller, AddEventError},
         quests::{
             self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
         },
@@ -15,10 +15,10 @@ use dcl_rpc::{
 use log::error;
 use quests_message_broker::{channel::ChannelSubscriber, QUEST_UPDATES_CHANNEL_NAME};
 use quests_protocol::quests::{
-    user_update, AbortQuestRequest, AbortQuestResponse, Event, EventResponse, GetAllQuestsResponse,
-    GetQuestDefinitionRequest, GetQuestDefinitionResponse, ProtoQuest, QuestInstance,
-    QuestStateUpdate, QuestsServiceServer, ServerStreamResponse, StartQuestRequest,
-    StartQuestResponse, UserAddress, UserUpdate,
+    user_update, AbortQuestRequest, AbortQuestResponse, EventRequest, EventResponse,
+    GetAllQuestsResponse, GetQuestDefinitionRequest, GetQuestDefinitionResponse, ProtoQuest,
+    QuestInstance, QuestStateWithData, QuestsServiceServer, ServerStreamResponse,
+    StartQuestRequest, StartQuestResponse, UserAddress, UserUpdate,
 };
 
 pub struct QuestsServiceImplementation {}
@@ -43,33 +43,35 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
             Ok(new_quest_instance_id) => {
                 let user_subscriptions_lock =
                     context.server_context.transport_contexts.read().await;
-                let transport_context = user_subscriptions_lock.get(&context.transport_id);
-                if let Some(transport_context) = transport_context {
-                    match get_instance_state(
-                        context.server_context.db.clone(),
-                        &quest_id,
-                        &new_quest_instance_id,
-                    )
-                    .await
-                    {
-                        Ok((quest, quest_state)) => {
-                            let user_update = UserUpdate {
-                                message: Some(user_update::Message::QuestState(QuestStateUpdate {
-                                    quest_instance_id: new_quest_instance_id.clone(),
-                                    name: quest.name,
-                                    description: quest.description,
-                                    quest_state: Some(quest_state),
-                                })),
-                            };
-                            if let Some(subscription) = &transport_context.subscription {
+                if let Some(transport_context) = user_subscriptions_lock.get(&context.transport_id)
+                {
+                    if let Some(subscription) = &transport_context.subscription {
+                        match get_instance_state(
+                            context.server_context.db.clone(),
+                            &quest_id,
+                            &new_quest_instance_id,
+                        )
+                        .await
+                        {
+                            Ok((quest, quest_state)) => {
+                                let user_update = UserUpdate {
+                                    message: Some(user_update::Message::NewQuestStarted(
+                                        QuestStateWithData {
+                                            quest_instance_id: new_quest_instance_id.clone(),
+                                            name: quest.name,
+                                            description: quest.description,
+                                            quest_state: Some(quest_state),
+                                        },
+                                    )),
+                                };
                                 if subscription.r#yield(user_update).await.is_err() {
                                     log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription")
                                 }
                             }
-                        }
-                        Err(err) => {
-                            log::error!("QuestServiceImplementation > StartQuest Error > Calculating state >{err:?}");
-                            // TODO: Returns an error instead of false?
+                            Err(err) => {
+                                log::error!("QuestServiceImplementation > StartQuest Error > Calculating state >{err:?}");
+                                // TODO: Returns an error instead of false?
+                            }
                         }
                     }
                 }
@@ -119,15 +121,18 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
     // TODO: Add tracing instrument
     async fn send_event(
         &self,
-        request: Event,
+        request: EventRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<EventResponse> {
         match add_event_controller(context.server_context.redis_events_queue.clone(), request).await
         {
-            Ok(event_id) => Ok(EventResponse::accepted(event_id as u32)),
+            Ok(event_id) => Ok(EventResponse::accepted(event_id)),
             Err(error) => {
                 log::error!("QuestsServiceImplementation > SendEvent Error > {error:?}");
-                Ok(EventResponse::error())
+                match error {
+                    AddEventError::NoAction => Ok(EventResponse::ignored()),
+                    AddEventError::PushFailed => Ok(EventResponse::internal_server_error()),
+                }
             }
         }
     }
@@ -152,12 +157,14 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
                     quest_instance_ids.push(id.clone());
                     if (generator_yielder
                         .r#yield(UserUpdate {
-                            message: Some(user_update::Message::QuestState(QuestStateUpdate {
-                                name: quest.name,
-                                description: quest.description,
-                                quest_instance_id: id,
-                                quest_state: Some(state),
-                            })),
+                            message: Some(user_update::Message::CurrentQuestState(
+                                QuestStateWithData {
+                                    name: quest.name,
+                                    description: quest.description,
+                                    quest_instance_id: id,
+                                    quest_state: Some(state),
+                                },
+                            )),
                         })
                         .await)
                         .is_err()
@@ -175,15 +182,17 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
                         let generator_yielder = yielder.clone();
                         let ids = quest_instance_ids.clone();
                         async move {
-                            if let Some(user_update::Message::QuestState(state)) = &user_update.message {
-                                if ids.contains(&state.quest_instance_id) {
-                                    if generator_yielder.r#yield(user_update).await.is_err() {
-                                        error!(
-                                            "User Update received > Couldn't send update to subscriptors"
-                                        );
-                                        return false // Just return false on failure
-                                    } else {
-                                        return true
+                            if let Some(user_update::Message::QuestStateUpdate(state)) = &user_update.message {
+                                if let Some(quest) = &state.quest_data {
+                                    if ids.contains(&quest.quest_instance_id) {
+                                        if generator_yielder.r#yield(user_update).await.is_err() {
+                                            error!(
+                                                "User Update received > Couldn't send update to subscriptors"
+                                            );
+                                            return false // Just return false on failure
+                                        } else {
+                                            return true
+                                        }
                                     }
                                 }
                             }

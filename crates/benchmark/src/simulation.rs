@@ -169,13 +169,27 @@ impl ClientState {
 
                 match quest_updates {
                     Some(UserUpdate {
-                        message: Some(Message::QuestState(state)),
+                        message: Some(Message::QuestStateUpdate(ref state)),
                         ..
-                    }) if state.quest_state.is_some() => ClientState::MakeQuestProgress {
-                        updates,
-                        quest_instance_id: state.quest_instance_id,
-                        quest_state: state.quest_state.unwrap(),
-                    },
+                    }) if state.quest_data.as_ref().unwrap().quest_state.is_some() => {
+                        ClientState::MakeQuestProgress {
+                            updates,
+                            quest_instance_id: state
+                                .quest_data
+                                .as_ref()
+                                .unwrap()
+                                .quest_instance_id
+                                .clone(),
+                            quest_state: state
+                                .quest_data
+                                .as_ref()
+                                .unwrap()
+                                .quest_state
+                                .as_ref()
+                                .unwrap()
+                                .clone(),
+                        }
+                    }
                     _ => {
                         error!(
                             "User {} > Start Quest > Received update is not the quest state",
@@ -199,7 +213,7 @@ impl ClientState {
                     .and_then(|to_do| to_do.action_items.first());
 
                 let event = quests_service
-                    .send_event(Event {
+                    .send_event(EventRequest {
                         address: user_address.to_string(),
                         action: action.cloned(),
                     })
@@ -230,11 +244,12 @@ impl ClientState {
 
                 match quest_update {
                     Some(update) => match update.message {
-                        Some(Message::QuestState(state))
-                            if state.quest_instance_id == quest_instance_id
-                                && state.quest_state.is_some() =>
+                        Some(Message::QuestStateUpdate(state))
+                            if state.quest_data.as_ref().unwrap().quest_instance_id
+                                == quest_instance_id
+                                && state.quest_data.as_ref().unwrap().quest_state.is_some() =>
                         {
-                            let new_quest_state = state.quest_state.unwrap();
+                            let new_quest_state = state.quest_data.unwrap().quest_state.unwrap();
                             if new_quest_state.steps_left == 0 {
                                 ClientState::QuestFinished { updates }
                             } else {

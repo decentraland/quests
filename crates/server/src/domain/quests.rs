@@ -95,25 +95,22 @@ pub async fn get_instance_state(
     quest_id: &str,
     quest_instance: &str,
 ) -> Result<(Quest, QuestState), QuestError> {
-    let quest = db.get_quest(quest_id).await;
-    match quest {
-        Ok(stored_quest) => {
-            let quest = stored_quest.to_quest()?;
-            let stored_events = db.get_events(quest_instance).await?;
-
-            let events = stored_events
-                .iter()
-                .map(|event| Event::decode(event.event.as_slice()))
-                .collect::<Result<Vec<_>, _>>()?;
-
-            let state = get_state(&quest, events);
-
-            Ok((quest, state))
-        }
-        Err(_) => Err(QuestError::CommonError(CommonError::BadRequest(
+    let quest = db.get_quest(quest_id).await.map_err(|_| {
+        QuestError::CommonError(CommonError::BadRequest(
             "the quest instance ID given doesn't correspond to a valid quest".to_string(),
-        ))),
-    }
+        ))
+    })?;
+    let quest = quest.to_quest()?;
+    let stored_events = db.get_events(quest_instance).await?;
+
+    let events = stored_events
+        .iter()
+        .map(|event| Event::decode(event.event.as_slice()))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let state = get_state(&quest, events);
+
+    Ok((quest, state))
 }
 
 pub async fn get_quest<DB: QuestsDatabase>(db: Arc<DB>, id: String) -> Result<Quest, QuestError> {

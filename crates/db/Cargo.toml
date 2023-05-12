@@ -10,7 +10,7 @@ async-trait = "0.1.61"
 serde = { version = "1.0.152", features = ["derive"] }
 thiserror = "1.0.38"
 actix-rt = "2"
-sqlx.workspace = true
+sqlx = { workspace = true }
 uuid = {version = "1.2.2", features = ["v4"]}
 
 [dev-dependencies]

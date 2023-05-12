@@ -3,9 +3,7 @@ use crate::{
     api::routes::errors::CommonError,
     domain::{
         events::{add_event_controller, AddEventError},
-        quests::{
-            self, get_all_quest_states_by_user_address, get_instance_state, start_quest, QuestError,
-        },
+        quests::{self, get_instance_state, start_quest, QuestError},
     },
 };
 use dcl_rpc::{
@@ -14,12 +12,7 @@ use dcl_rpc::{
 };
 use log::error;
 use quests_message_broker::{channel::ChannelSubscriber, QUEST_UPDATES_CHANNEL_NAME};
-use quests_protocol::quests::{
-    user_update, AbortQuestRequest, AbortQuestResponse, EventRequest, EventResponse,
-    GetAllQuestsResponse, GetQuestDefinitionRequest, GetQuestDefinitionResponse, ProtoQuest,
-    QuestInstance, QuestStateUpdate, QuestStateWithData, QuestsServiceServer, ServerStreamResponse,
-    StartQuestRequest, StartQuestResponse, UserAddress, UserUpdate,
-};
+use quests_protocol::definitions::*;
 
 pub struct QuestsServiceImplementation {}
 

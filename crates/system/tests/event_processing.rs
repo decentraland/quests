@@ -3,8 +3,8 @@ use std::sync::Arc;
 use quests_db::{core::definitions::*, create_quests_db_component};
 use quests_message_broker::messages_queue::MessagesQueue;
 use quests_protocol::{
-    quests::{Event, *},
-    ProtocolMessage,
+    definitions::{Event as ProtoEvent, *},
+    quests::{Coordinates, Quest},
 };
 use quests_system::{configuration::Config, event_processing::EventProcessor};
 
@@ -93,7 +93,7 @@ async fn can_process_events() {
 
     let action = Action::location(Coordinates::new(10, 20));
 
-    let event = Event {
+    let event = ProtoEvent {
         id: uuid::Uuid::new_v4().to_string(),
         address: user_address.to_string(),
         action: Some(action),

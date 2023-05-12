@@ -1,7 +1,8 @@
 mod common;
 use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 use common::*;
-use quests_protocol::quests::{Quest, QuestDefinition};
+use quests_protocol::definitions::*;
+use quests_protocol::quests::Quest;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]

@@ -10,7 +10,7 @@ use futures_util::lock::Mutex;
 use log::{debug, error};
 use quests_db::Database;
 use quests_message_broker::{channel::RedisChannelSubscriber, messages_queue::RedisMessagesQueue};
-use quests_protocol::quests::{QuestsServiceRegistration, UserUpdate};
+use quests_protocol::definitions::*;
 use service::QuestsServiceImplementation;
 use std::{collections::HashMap, sync::Arc};
 use tokio::{sync::RwLock, task::JoinHandle};

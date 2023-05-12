@@ -1,3 +1,4 @@
+use quests_protocol::definitions::*;
 use quests_protocol::quests::*;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 

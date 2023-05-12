@@ -1,8 +1,6 @@
 use quests_db::core::definitions::{CreateQuest, StoredQuest};
-use quests_protocol::{
-    quests::{Quest, QuestDefinition},
-    ProtocolMessage,
-};
+use quests_protocol::definitions::*;
+use quests_protocol::quests::Quest;
 
 use crate::domain::quests::QuestError;
 

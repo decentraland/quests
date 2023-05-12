@@ -14,13 +14,7 @@ use quests_message_broker::{
     messages_queue::{MessagesQueue, RedisMessagesQueue},
 };
 use quests_protocol::{
-    quest_graph::QuestGraph,
-    quest_state::get_state,
-    quests::{
-        user_update, Event, Quest, QuestDefinition, QuestState, QuestStateUpdate,
-        QuestStateWithData, UserUpdate,
-    },
-    ProtocolDecodeError, ProtocolMessage,
+    definitions::*, quest_graph::QuestGraph, quest_state::get_state, quests::Quest,
 };
 use tokio::task::JoinHandle;
 

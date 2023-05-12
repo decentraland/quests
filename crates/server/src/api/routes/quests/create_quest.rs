@@ -6,7 +6,7 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     Database,
 };
-use quests_protocol::{quests::Quest, ProtocolMessage};
+use quests_protocol::{quests::Quest, definitions::*};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

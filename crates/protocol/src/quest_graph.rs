@@ -1,4 +1,4 @@
-use crate::quests::{Action, Connection, Step, Task};
+use crate::definitions::*;
 use std::{collections::HashMap, hash::Hash};
 
 use super::quests::*;

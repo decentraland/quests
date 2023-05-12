@@ -1,8 +1,11 @@
 use std::{fmt::Display, time::Duration};
 
 use async_trait::async_trait;
-use dcl_rpc::{client::RpcClient, transports::web_socket::WebSocketTransport};
+use dcl_rpc::{
+    client::RpcClient, stream_protocol::Generator, transports::web_socket::WebSocketTransport,
+};
 use log::{debug, error, info};
+use quests_protocol::definitions::*;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::Deserialize;
 use tokio::time::timeout;
@@ -11,8 +14,6 @@ use crate::{
     args::Args,
     quests::{create_random_string, random_quest},
     simulation::{Client, Context},
-    user_update::Message,
-    *,
 };
 
 #[derive(Deserialize)]
@@ -260,7 +261,7 @@ impl ClientState {
                                 }
                             }
                         }
-                        Some(Message::EventIgnored(_)) => {
+                        Some(user_update::Message::EventIgnored(_)) => {
                             error!("User {user_address} > Event ignored");
                             ClientState::MakeQuestProgress {
                                 updates,

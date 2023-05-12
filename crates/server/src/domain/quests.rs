@@ -1,11 +1,8 @@
 use crate::api::routes::errors::CommonError;
 use futures_util::future::join_all;
 use quests_db::core::definitions::QuestsDatabase;
-use quests_protocol::{
-    quest_state::get_state,
-    quests::{Event, Quest, QuestState},
-    ProtocolMessage,
-};
+use quests_protocol::definitions::*;
+use quests_protocol::{quest_state::get_state, quests::Quest};
 use std::sync::Arc;
 use thiserror::Error;
 

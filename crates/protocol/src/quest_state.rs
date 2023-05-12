@@ -1,6 +1,7 @@
 use crate::{
+    definitions::*,
     quest_graph::{matches_action, QuestGraph},
-    quests::{Event, Quest, QuestState, StepContent, END_STEP_ID, START_STEP_ID},
+    quests::{Quest, END_STEP_ID, START_STEP_ID},
 };
 use std::collections::HashMap;
 
@@ -111,7 +112,7 @@ pub fn get_state(quest: &Quest, events: Vec<Event>) -> QuestState {
 
 #[cfg(test)]
 mod tests {
-    use crate::quests::{Action, Connection, Coordinates, QuestDefinition, Step, Task};
+    use crate::quests::Coordinates;
 
     use super::*;
 

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use deadpool_redis::redis::AsyncCommands;
 use futures_util::{Future, StreamExt as _};
 use log::{debug, error};
-use quests_protocol::ProtocolMessage;
+use quests_protocol::definitions::*;
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 

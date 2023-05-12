@@ -1,5 +1,6 @@
 use quests_message_broker::messages_queue::{MessagesQueue, RedisMessagesQueue};
-use quests_protocol::quests::{Action, Coordinates, Event};
+use quests_protocol::definitions::*;
+use quests_protocol::quests::Coordinates;
 
 mod common;
 use common::redis::build_redis;

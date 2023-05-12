@@ -8,7 +8,8 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     create_quests_db_component,
 };
-use quests_protocol::{quest_graph::QuestGraph, quests::QuestState, ProtocolMessage};
+use quests_protocol::definitions::*;
+use quests_protocol::quest_graph::QuestGraph;
 use quests_server::api::routes::quests::{
     GetQuestStateResponse, StartQuestRequest, StartQuestResponse,
 };

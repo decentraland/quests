@@ -7,7 +7,7 @@ edition = "2021"
 quests_protocol = { path = "../protocol/" }
 quests_db = { path = "../db" }
 quests_message_broker = { path = "../message_broker/" }
-dcl-rpc = { workspace = true }
+dcl-rpc = { workspace = true, features = ["warp"] }
 actix-web = { workspace = true } 
 tokio = { workspace = true }
 serde = { workspace = true }

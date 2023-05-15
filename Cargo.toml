@@ -10,7 +10,7 @@ env_logger = "0.10.0"
 config = "0.13"
 serde = "1"
 serde_json = "1"
-dcl-rpc = "2.3.2"
+dcl-rpc = "2.3.3" 
 dcl-crypto = { git = "https://github.com/decentraland/decentraland-crypto-rust.git", rev = "db4e107307012ad8bd7bf7f56974163be9aec0d4" } 
 uuid = {version = "1.2.2", features = ["v4"]}
 

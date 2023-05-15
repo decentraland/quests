@@ -6,11 +6,15 @@ use dcl_crypto::{
 };
 use dcl_rpc::{
     client::RpcClient,
-    transports::web_socket::{WebSocketClient, WebSocketTransport},
+    transports::web_sockets::{
+        tungstenite::{TungsteniteWebSocket, WebSocketClient},
+        Message, WebSocket, WebSocketTransport,
+    },
 };
-use tungstenite::Message;
 
 use crate::args::Args;
+
+pub type TestWebSocketTransport = WebSocketTransport<TungsteniteWebSocket, ()>;
 
 #[derive(Debug)]
 pub enum ClientCreationError {
@@ -21,7 +25,7 @@ pub enum ClientCreationError {
 
 pub async fn handle_client(
     args: Args,
-) -> Result<(RpcClient<WebSocketTransport>, u128, u128), ClientCreationError> {
+) -> Result<(RpcClient<TestWebSocketTransport>, u128, u128), ClientCreationError> {
     let Args {
         rpc_host,
         authenticate,

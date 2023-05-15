@@ -1,9 +1,7 @@
 use std::{fmt::Display, time::Duration};
 
 use async_trait::async_trait;
-use dcl_rpc::{
-    client::RpcClient, stream_protocol::Generator, transports::web_socket::WebSocketTransport,
-};
+use dcl_rpc::{client::RpcClient, stream_protocol::Generator};
 use log::{debug, error, info};
 use quests_protocol::definitions::*;
 use rand::{seq::SliceRandom, thread_rng};
@@ -12,6 +10,7 @@ use tokio::time::timeout;
 
 use crate::{
     args::Args,
+    client::TestWebSocketTransport,
     quests::{create_random_string, random_quest},
     simulation::{Client, Context},
 };
@@ -54,8 +53,8 @@ impl TestContext {
 }
 
 pub struct TestClient {
-    pub client: RpcClient<WebSocketTransport>,
-    pub quests_service: QuestsServiceClient<WebSocketTransport>,
+    pub client: RpcClient<TestWebSocketTransport>,
+    pub quests_service: QuestsServiceClient<TestWebSocketTransport>,
     pub address: String,
     pub state: ClientState,
 }
@@ -120,7 +119,7 @@ impl ClientState {
     pub async fn next(
         self,
         user_address: &str,
-        quests_service: &QuestsServiceClient<WebSocketTransport>,
+        quests_service: &QuestsServiceClient<TestWebSocketTransport>,
         context: &TestContext,
     ) -> Self {
         let current_state_discriminant = std::mem::discriminant(&self);
@@ -310,7 +309,7 @@ impl Context for TestContext {
 
 #[async_trait]
 impl Client<TestContext> for TestClient {
-    async fn from_rpc_client(mut client: RpcClient<WebSocketTransport>) -> Self {
+    async fn from_rpc_client(mut client: RpcClient<TestWebSocketTransport>) -> Self {
         let port = client
             .create_port("test-port")
             .await

@@ -1,11 +1,14 @@
 mod auth;
 mod service;
-mod warp_ws_transport;
 
 use crate::configuration::Config;
 use auth::authenticate_dcl_user;
 use dcl_crypto::Address;
-use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
+use dcl_rpc::{
+    server::RpcServer,
+    stream_protocol::GeneratorYielder,
+    transports::web_sockets::{warp::WarpWebSocket, WebSocketTransport},
+};
 use futures_util::lock::Mutex;
 use log::{debug, error};
 use quests_db::Database;
@@ -19,7 +22,6 @@ use warp::{
     reject::{MissingHeader, Reject},
     reply, Filter, Rejection, Reply,
 };
-use warp_ws_transport::WarpWebSocketTransport;
 
 pub struct QuestsRpcServerContext {
     pub config: Arc<Config>,
@@ -68,21 +70,18 @@ pub async fn run_rpc_server(
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
             ws.on_upgrade(|mut websocket| async move {
-                match authenticate_dcl_user(&mut websocket).await {
-                    Ok(address) => {
-                        if server_events_sender
-                            .send_attach_transport(Arc::new(WarpWebSocketTransport::new(
-                                websocket, address,
-                            )))
-                            .is_err()
-                        {
-                            error!("Couldn't attach web socket transport");
-                        }
-                    }
-                    Err(err) => {
-                        error!("Couldn't authenticate a user {err:?}");
-                        let _ = websocket.close().await;
-                    }
+                let Ok(address) = authenticate_dcl_user(&mut websocket).await else {
+                    debug!("Couldn't authenticate a user, closing connection...");
+                    let _ = websocket.close().await;
+                    return;
+                };
+                let websocket = Arc::new(WarpWebSocket::new(websocket));
+                let transport = Arc::new(WebSocketTransport::with_context(websocket, address));
+                if server_events_sender
+                    .send_attach_transport(transport)
+                    .is_err()
+                {
+                    error!("Couldn't attach web socket transport");
                 }
             })
         });
@@ -112,14 +111,14 @@ pub async fn run_rpc_server(
     rpc_server.set_on_transport_connected_handler(move |transport, transport_id| {
         let transport_contexts = transport_contexts.clone();
         tokio::spawn(async move {
-            debug!("> OnConnected > Address: {:?}", transport.user_address);
+            debug!("> OnConnected > Address: {:?}", transport.context);
             transport_contexts.write().await.insert(
                 transport_id,
                 TransportContext {
                     subscription: None,
                     subscription_handle: None,
                     quest_instance_ids: Arc::new(Mutex::new(vec![])),
-                    user_address: transport.user_address,
+                    user_address: transport.context,
                 },
             );
         });

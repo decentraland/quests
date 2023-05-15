@@ -41,9 +41,8 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
         } = request;
         match start_quest(context.server_context.db.clone(), &user_address, &quest_id).await {
             Ok(new_quest_instance_id) => {
-                let user_subscriptions_lock =
-                    context.server_context.transport_contexts.read().await;
-                let transport_context = user_subscriptions_lock.get(&context.transport_id);
+                let transport_contexts = context.server_context.transport_contexts.read().await;
+                let transport_context = transport_contexts.get(&context.transport_id);
                 if let Some(transport_context) = transport_context {
                     match get_instance_state(
                         context.server_context.db.clone(),
@@ -53,6 +52,12 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
                     .await
                     {
                         Ok((quest, quest_state)) => {
+                            transport_context
+                                .quest_instance_ids
+                                .lock()
+                                .await
+                                .push(new_quest_instance_id.clone());
+
                             let user_update = UserUpdate {
                                 message: Some(user_update::Message::QuestState(QuestStateUpdate {
                                     quest_instance_id: new_quest_instance_id.clone(),
@@ -68,8 +73,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
                             }
                         }
                         Err(err) => {
-                            log::error!("QuestServiceImplementation > StartQuest Error > Calculating state >{err:?}");
-                            // TODO: Returns an error instead of false?
+                            log::error!("QuestServiceImplementation > StartQuest Error > Calculating state > {err:?}");
                         }
                     }
                 }
@@ -147,9 +151,16 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
         {
             Ok(states) => {
                 let (generator, generator_yielder) = Generator::create();
-                let mut quest_instance_ids = vec![];
+                let transport_contexts = context.server_context.transport_contexts.read().await;
+                let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
+                    return Err(UnableToOpenStream{});
+                };
+
+                let quest_instance_ids = transport_context.quest_instance_ids.clone();
+                drop(transport_contexts);
+
                 for (id, (quest, state)) in states {
-                    quest_instance_ids.push(id.clone());
+                    quest_instance_ids.lock().await.push(id.clone());
                     if (generator_yielder
                         .r#yield(UserUpdate {
                             message: Some(user_update::Message::QuestState(QuestStateUpdate {
@@ -176,7 +187,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
                         let ids = quest_instance_ids.clone();
                         async move {
                             if let Some(user_update::Message::QuestState(state)) = &user_update.message {
-                                if ids.contains(&state.quest_instance_id) {
+                                if ids.lock().await.contains(&state.quest_instance_id) {
                                     if generator_yielder.r#yield(user_update).await.is_err() {
                                         error!(
                                             "User Update received > Couldn't send update to subscriptors"

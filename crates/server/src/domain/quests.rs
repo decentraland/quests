@@ -35,10 +35,8 @@ pub async fn abandon_quest(
         return Err(QuestError::NotInstanceOwner);
     }
 
-    db.abandon_quest(quest_instance_id)
-        .await
-        .map_err(|error| error.into())
-        .map(|_| ())
+    _ = db.abandon_quest(quest_instance_id).await?;
+    Ok(())
 }
 
 pub async fn start_quest(
@@ -46,17 +44,11 @@ pub async fn start_quest(
     user_address: &str,
     quest_id: &str,
 ) -> Result<String, QuestError> {
-    let is_active = db
-        .is_active_quest(quest_id)
-        .await
-        .map_err(|err| -> QuestError { err.into() })?;
-    if !is_active {
+    if !db.is_active_quest(quest_id).await? {
         return Err(QuestError::NotFoundOrInactive);
     }
 
-    db.start_quest(quest_id, user_address)
-        .await
-        .map_err(|error| error.into())
+    Ok(db.start_quest(quest_id, user_address).await?)
 }
 
 pub async fn get_all_quest_states_by_user_address(
@@ -95,11 +87,7 @@ pub async fn get_instance_state(
     quest_id: &str,
     quest_instance: &str,
 ) -> Result<(Quest, QuestState), QuestError> {
-    let quest = db.get_quest(quest_id).await.map_err(|_| {
-        QuestError::CommonError(CommonError::BadRequest(
-            "the quest instance ID given doesn't correspond to a valid quest".to_string(),
-        ))
-    })?;
+    let quest = db.get_quest(quest_id).await?;
     let quest = quest.to_quest()?;
     let stored_events = db.get_events(quest_instance).await?;
 
@@ -114,7 +102,6 @@ pub async fn get_instance_state(
 }
 
 pub async fn get_quest<DB: QuestsDatabase>(db: Arc<DB>, id: String) -> Result<Quest, QuestError> {
-    db.get_quest(&id)
-        .await
-        .map(|stored_quest| stored_quest.to_quest())?
+    let stored_quest = db.get_quest(&id).await?;
+    stored_quest.to_quest()
 }

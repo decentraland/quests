@@ -915,8 +915,9 @@ dependencies = [
 
 [[package]]
 name = "dcl-rpc"
-version = "2.3.2"
-source = "git+https://github.com/decentraland/rpc-rust.git?rev=16ffaa11f59dddabc8c826f9ae1c283103884fb8#16ffaa11f59dddabc8c826f9ae1c283103884fb8"
+version = "2.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "958d28a304a6e8a6246cb2dd566cb80c4b4364659ca8dcb862ba0975fb7745db"
 dependencies = [
  "async-channel",
  "async-trait",

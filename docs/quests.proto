@@ -134,7 +134,6 @@ message UserUpdate {
   oneof message {
     QuestStateUpdate quest_state_update = 1;
     QuestStateWithData new_quest_started = 2;
-    QuestStateWithData current_quest_state = 3;
     fixed32 event_ignored = 4;
   }
 }

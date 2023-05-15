@@ -152,28 +152,10 @@ impl QuestsServiceServer<QuestsRpcServerContext, UnableToOpenStream>
         {
             Ok(states) => {
                 let (generator, generator_yielder) = Generator::create();
-                let mut quest_instance_ids = vec![];
-                for (id, (quest, state)) in states {
-                    quest_instance_ids.push(id.clone());
-                    if (generator_yielder
-                        .r#yield(UserUpdate {
-                            message: Some(user_update::Message::CurrentQuestState(
-                                QuestStateWithData {
-                                    name: quest.name,
-                                    description: quest.description,
-                                    quest_instance_id: id,
-                                    quest_state: Some(state),
-                                },
-                            )),
-                        })
-                        .await)
-                        .is_err()
-                    {
-                        log::error!(
-                            "QuestsServiceImplementation > Failed to push state to response stream"
-                        );
-                    }
-                }
+                let quest_instance_ids = states
+                    .iter()
+                    .map(|state| state.0.clone())
+                    .collect::<Vec<_>>();
 
                 let yielder = generator_yielder.clone();
                 let subscription_join_handle = context.server_context.redis_channel_subscriber.subscribe(

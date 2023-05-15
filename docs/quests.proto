@@ -149,7 +149,7 @@ message GetAllQuestsResponse {
   }
 }
 
-message ProtoQuest {
+message Quest {
   string name = 1;
   string description = 2;
   QuestDefinition definition = 3;
@@ -161,14 +161,14 @@ message GetQuestDefinitionRequest {
 
 message GetQuestDefinitionResponse {
   oneof response {
-    ProtoQuest quest = 1;
+    Quest quest = 1;
     InternalServerError internal_server_error = 2;
   }
 }
 
 message QuestInstance {
   string instance_id = 1;
-  ProtoQuest quest = 2;
+  Quest quest = 2;
   QuestState state = 3;
 }
 

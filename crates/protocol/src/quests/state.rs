@@ -1,6 +1,9 @@
 use crate::{
-    quest_graph::{matches_action, QuestGraph},
-    quests::{Event, Quest, QuestState, StepContent, END_STEP_ID, START_STEP_ID},
+    definitions::*,
+    quests::{
+        graph::{matches_action, QuestGraph},
+        END_STEP_ID, START_STEP_ID,
+    },
 };
 use std::collections::HashMap;
 
@@ -111,7 +114,7 @@ pub fn get_state(quest: &Quest, events: Vec<Event>) -> QuestState {
 
 #[cfg(test)]
 mod tests {
-    use crate::quests::{Action, Connection, Coordinates, QuestDefinition, Step, Task};
+    use crate::quests::builders::Coordinates;
 
     use super::*;
 
@@ -120,7 +123,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
                     Connection::new("B", "C"),
@@ -176,7 +179,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
         let quest_graph = QuestGraph::from(&quest);
         let mut events = vec![
@@ -298,7 +301,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
@@ -355,7 +358,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
 
         let quest_graph = QuestGraph::from(&quest);

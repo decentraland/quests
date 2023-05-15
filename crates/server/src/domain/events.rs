@@ -1,5 +1,5 @@
 use quests_message_broker::messages_queue::MessagesQueue;
-use quests_protocol::quests::{Event, EventRequest};
+use quests_protocol::definitions::*;
 use std::sync::Arc;
 use thiserror::Error;
 use uuid::Uuid;

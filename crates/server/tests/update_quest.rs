@@ -3,10 +3,8 @@ use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_protocol::quests::{
-    Action, Connection, Coordinates, Quest, QuestDefinition, Step, Task,
-};
-use quests_protocol::ProtocolMessage;
+use quests_protocol::definitions::*;
+use quests_protocol::quests::Coordinates;
 use quests_server::api::routes::quests::UpdateQuestResponse;
 use quests_server::api::routes::ErrorResponse;
 
@@ -23,7 +21,7 @@ async fn update_quest_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest.name,
         description: &quest.description,
-        definition: quest.definition.encode_to_vec(),
+        definition: quest.definition.as_ref().unwrap().encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();
@@ -31,7 +29,7 @@ async fn update_quest_should_be_200() {
     let quest_update = Quest {
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
-        definition: QuestDefinition {
+        definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A-Updated", "B"),
                 Connection::new("B", "C"),
@@ -75,7 +73,7 @@ async fn update_quest_should_be_200() {
                     description: "".to_string(),
                 },
             ],
-        },
+        }),
     };
 
     let req = TestRequest::put()
@@ -95,11 +93,17 @@ async fn update_quest_should_be_200() {
     assert_eq!(quest_updated.name, "QUEST-1_UPDATE");
     assert_eq!(quest_updated.description, "Grab some apples - Updated");
     let definition = QuestDefinition::decode(quest_updated.definition.as_slice()).unwrap();
-    assert_eq!(quest_update.definition.steps.len(), definition.steps.len());
-    for step in &quest_update.definition.steps {
+    assert_eq!(
+        quest_update.definition.as_ref().unwrap().steps.len(),
+        definition.steps.len()
+    );
+    for step in &quest_update.definition.as_ref().unwrap().steps {
         assert!(definition.steps.iter().any(|s| s.id == step.id));
     }
-    assert_eq!(quest_update.definition.connections, definition.connections);
+    assert_eq!(
+        quest_update.definition.as_ref().unwrap().connections,
+        definition.connections
+    );
 }
 
 #[actix_web::test]
@@ -109,7 +113,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: QuestDefinition {
+        definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
                 Connection::new("B", "C"),
@@ -153,7 +157,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
                     description: "".to_string(),
                 },
             ],
-        },
+        }),
     };
 
     let quest_update = Quest {
@@ -181,10 +185,10 @@ async fn update_quest_should_be_400_quest_validation_error() {
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: QuestDefinition {
+        definition: Some(QuestDefinition {
             connections: vec![], // not needed for test
             steps: vec![],       // not needed for this test
-        },
+        }),
     };
 
     let quest_update = Quest {

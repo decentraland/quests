@@ -1,4 +1,4 @@
-use quests_protocol::{quest_graph::QuestGraph, quests::*};
+use quests_protocol::{definitions::*, quests::builders::*, quests::*};
 
 fn main() {
     println!("Quests definitions:");
@@ -6,7 +6,7 @@ fn main() {
     let branched_quest = Quest {
         name: "CUSTOM_QUEST".to_string(),
         description: "".to_string(),
-        definition: QuestDefinition {
+        definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A1", "B"),
                 Connection::new("B", "C"),
@@ -62,7 +62,7 @@ fn main() {
                     }],
                 },
             ],
-        },
+        }),
     };
 
     print_quest(&branched_quest);

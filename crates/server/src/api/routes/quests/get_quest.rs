@@ -1,6 +1,6 @@
 use actix_web::{get, web, HttpResponse};
 use quests_db::Database;
-use quests_protocol::quests::Quest;
+use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

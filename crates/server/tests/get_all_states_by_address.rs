@@ -5,7 +5,7 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     create_quests_db_component,
 };
-use quests_protocol::ProtocolMessage;
+use quests_protocol::definitions::*;
 use quests_server::api::routes::quests::{GetQuestStateByUserAddressResponse, StartQuestRequest};
 
 #[actix_web::test]
@@ -22,7 +22,11 @@ async fn get_all_states_by_user_address_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: quest_definition.definition.encode_to_vec(),
+        definition: quest_definition
+            .definition
+            .as_ref()
+            .unwrap()
+            .encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();

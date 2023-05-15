@@ -1,10 +1,11 @@
+use quests_protocol::definitions::*;
 use quests_protocol::quests::*;
 
 pub fn grab_some_apples() -> Quest {
     Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: QuestDefinition {
+        definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
                 Connection::new("B", "C"),
@@ -48,7 +49,7 @@ pub fn grab_some_apples() -> Quest {
                     description: "".to_string(),
                 },
             ],
-        },
+        }),
     }
 }
 
@@ -57,7 +58,7 @@ pub fn grab_some_pies() -> Quest {
     Quest {
         name: "QUEST-2".to_string(),
         description: "Grab some pies".to_string(),
-        definition: QuestDefinition {
+        definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
                 Connection::new("B", "C"),
@@ -101,6 +102,6 @@ pub fn grab_some_pies() -> Quest {
                     description: "".to_string(),
                 },
             ],
-        },
+        }),
     }
 }

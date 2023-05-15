@@ -3,8 +3,8 @@ use std::sync::Arc;
 use quests_db::{core::definitions::*, create_quests_db_component};
 use quests_message_broker::messages_queue::MessagesQueue;
 use quests_protocol::{
-    quests::{Event, *},
-    ProtocolMessage,
+    definitions::{Event as ProtoEvent, *},
+    quests::Coordinates,
 };
 use quests_system::{configuration::Config, event_processing::EventProcessor};
 
@@ -23,7 +23,7 @@ async fn can_process_events() {
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: QuestDefinition {
+        definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
                 Connection::new("B", "C"),
@@ -67,13 +67,17 @@ async fn can_process_events() {
                     description: "".to_string(),
                 },
             ],
-        },
+        }),
     };
 
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: quest_definition.definition.encode_to_vec(),
+        definition: quest_definition
+            .definition
+            .as_ref()
+            .unwrap()
+            .encode_to_vec(),
     };
 
     let result = db.create_quest(&create_quest).await;
@@ -93,7 +97,7 @@ async fn can_process_events() {
 
     let action = Action::location(Coordinates::new(10, 20));
 
-    let event = Event {
+    let event = ProtoEvent {
         id: uuid::Uuid::new_v4().to_string(),
         address: user_address.to_string(),
         action: Some(action),

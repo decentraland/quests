@@ -3,11 +3,12 @@ use std::sync::Arc;
 use actix_web::{put, web, HttpResponse};
 use derive_more::Deref;
 use quests_db::{core::definitions::QuestsDatabase, Database};
-use quests_protocol::quests::Quest;
+use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::domain::{quests::QuestError, types::ToCreateQuest};
+use crate::domain::quests::QuestError;
+use crate::domain::types::ToCreateQuest;
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Deref)]
 pub struct UpdateQuestRequest(Quest);

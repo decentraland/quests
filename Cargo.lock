@@ -2608,7 +2608,6 @@ dependencies = [
  "futures-util",
  "log",
  "prost",
- "prost-build",
  "quests_protocol",
  "rand 0.8.5",
  "reqwest",

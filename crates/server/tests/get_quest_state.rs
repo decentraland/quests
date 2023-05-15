@@ -8,7 +8,8 @@ use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
     create_quests_db_component,
 };
-use quests_protocol::{quest_graph::QuestGraph, quests::QuestState, ProtocolMessage};
+use quests_protocol::definitions::*;
+use quests_protocol::quests::*;
 use quests_server::api::routes::quests::{
     GetQuestStateResponse, StartQuestRequest, StartQuestResponse,
 };
@@ -28,7 +29,11 @@ async fn get_quest_state_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: quest_definition.definition.encode_to_vec(),
+        definition: quest_definition
+            .definition
+            .as_ref()
+            .unwrap()
+            .encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();

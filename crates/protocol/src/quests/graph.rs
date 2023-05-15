@@ -1,7 +1,7 @@
-use crate::quests::{Action, Connection, Step, Task};
+use crate::definitions::*;
 use std::{collections::HashMap, hash::Hash};
 
-use super::quests::*;
+use super::*;
 use daggy::{
     self,
     petgraph::{
@@ -103,10 +103,13 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     let end_node = dag.add_node(ending_step.id);
     let mut nodes: HashMap<String, NodeIndex> = HashMap::new();
 
+    let Some(definition) = &quest.definition else {
+        return dag;
+    };
     for Connection {
         ref step_from,
         ref step_to,
-    } in &quest.definition.connections
+    } in &definition.connections
     {
         // Validate if steps are in defined in the quest
         if quest.contanins_step(step_from) && quest.contanins_step(step_to) {
@@ -143,7 +146,10 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
 
 fn build_tasks_by_step_from_quest_definition(quest: &Quest) -> HashMap<StepID, Vec<Task>> {
     let mut content_map = HashMap::new();
-    for step in &quest.definition.steps {
+    let Some(definition) = &quest.definition else {
+        return content_map;
+    };
+    for step in &definition.steps {
         let content = step.tasks.clone();
         content_map.insert(step.id.clone(), content);
     }
@@ -180,6 +186,7 @@ pub fn matches_action(action: &Action, other_action: &Action) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::builders::{Coordinates, EMOTE};
     use super::*;
 
     #[test]
@@ -187,7 +194,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A", "B"),
                     Connection::new("B", "C"),
@@ -231,7 +238,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
 
         let graph: QuestGraph = (&quest).into();
@@ -255,7 +262,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
                     Connection::new("B", "C"),
@@ -308,7 +315,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
 
         let graph = QuestGraph::from(&quest);
@@ -342,7 +349,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A", "B1"),
                     Connection::new("A", "B2"),
@@ -406,7 +413,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
 
         let graph = QuestGraph::from(&quest);
@@ -438,7 +445,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
                     Connection::new("B", "C"),
@@ -491,7 +498,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
 
         let graph = QuestGraph::from(&quest);
@@ -509,7 +516,7 @@ mod tests {
         let quest = Quest {
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
-            definition: QuestDefinition {
+            definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
                     Connection::new("B", "C"),
@@ -562,7 +569,7 @@ mod tests {
                         }],
                     },
                 ],
-            },
+            }),
         };
 
         assert!(quest.is_valid().is_ok());

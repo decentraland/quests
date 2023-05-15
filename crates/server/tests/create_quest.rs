@@ -1,7 +1,7 @@
 mod common;
 use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 use common::*;
-use quests_protocol::quests::{Quest, QuestDefinition};
+use quests_protocol::definitions::*;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
@@ -27,10 +27,10 @@ async fn create_quest_should_be_400_quest_validation_error() {
     let quest_definition = Quest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: QuestDefinition {
+        definition: Some(QuestDefinition {
             connections: vec![],
             steps: vec![],
-        },
+        }),
     };
 
     let req = TestRequest::post()

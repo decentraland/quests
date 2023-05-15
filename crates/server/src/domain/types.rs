@@ -1,8 +1,5 @@
 use quests_db::core::definitions::{CreateQuest, StoredQuest};
-use quests_protocol::{
-    quests::{Quest, QuestDefinition},
-    ProtocolMessage,
-};
+use quests_protocol::definitions::*;
 
 use crate::domain::quests::QuestError;
 
@@ -20,17 +17,27 @@ impl ToQuest for StoredQuest {
         Ok(Quest {
             name: self.name.to_string(),
             description: self.description.to_string(),
-            definition,
+            definition: Some(definition),
         })
     }
 }
 
 impl ToCreateQuest for Quest {
     fn to_create_quest(&self) -> Result<CreateQuest, QuestError> {
+        let Quest {
+            name,
+            description,
+            definition,
+        } = self;
+
+        let Some(definition) = definition else {
+            return Err(QuestError::QuestValidation("Quest definition not present".to_string()));
+        };
+
         Ok(CreateQuest {
-            name: &self.name,
-            description: &self.description,
-            definition: self.definition.encode_to_vec(),
+            name,
+            description,
+            definition: definition.encode_to_vec(),
         })
     }
 }

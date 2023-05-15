@@ -3,14 +3,14 @@ use std::sync::Arc;
 use actix_web::{post, web, HttpResponse};
 use derive_more::Deref;
 use quests_db::{
-    core::definitions::{CreateQuest, QuestsDatabase},
+    core::definitions::QuestsDatabase,
     Database,
 };
-use quests_protocol::{quests::Quest, ProtocolMessage};
+use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{api::routes::errors::CommonError, domain::quests::QuestError};
+use crate::{api::routes::errors::CommonError, domain::{quests::QuestError, types::ToCreateQuest}};
 
 #[derive(Serialize, ToSchema)]
 pub struct CreateQuestResponse {
@@ -48,16 +48,9 @@ async fn create_quest_controller<DB: QuestsDatabase>(
         .is_valid()
         .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
 
-    let quest_creation = to_create_quest(quest)?;
+    let quest_creation = quest.to_create_quest()?;
     db.create_quest(&quest_creation)
         .await
         .map_err(|_| QuestError::CommonError(CommonError::Unknown))
 }
 
-fn to_create_quest(quest: &Quest) -> Result<CreateQuest, QuestError> {
-    Ok(CreateQuest {
-        name: &quest.name,
-        description: &quest.description,
-        definition: quest.definition.encode_to_vec()
-    })
-}

@@ -3,7 +3,7 @@ use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
-use quests_protocol::ProtocolMessage;
+use quests_protocol::definitions::*;
 use quests_server::api::routes::quests::GetQuestResponse;
 use quests_server::api::routes::ErrorResponse;
 
@@ -20,7 +20,11 @@ async fn get_quest_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
-        definition: quest_definition.definition.encode_to_vec(),
+        definition: quest_definition
+            .definition
+            .as_ref()
+            .unwrap()
+            .encode_to_vec(),
     };
 
     let id = db.create_quest(&create_quest).await.unwrap();
@@ -36,15 +40,21 @@ async fn get_quest_should_be_200() {
     assert_eq!(quest.name, "QUEST-1");
     assert_eq!(quest.description, "Grab some apples");
     assert_eq!(
-        quest.definition.steps.len(),
-        quest_definition.definition.steps.len()
+        quest.definition.as_ref().unwrap().steps.len(),
+        quest_definition.definition.as_ref().unwrap().steps.len()
     );
-    for step in quest_definition.definition.steps {
-        assert!(quest.definition.steps.iter().any(|s| s.id == step.id));
+    for step in &quest_definition.definition.as_ref().unwrap().steps {
+        assert!(quest
+            .definition
+            .as_ref()
+            .unwrap()
+            .steps
+            .iter()
+            .any(|s| s.id == step.id));
     }
     assert_eq!(
-        quest.definition.connections,
-        quest_definition.definition.connections
+        quest.definition.unwrap().connections,
+        quest_definition.definition.unwrap().connections
     );
 }
 

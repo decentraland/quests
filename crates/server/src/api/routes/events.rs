@@ -6,7 +6,7 @@ use actix_web::{
     HttpResponse,
 };
 use quests_message_broker::messages_queue::RedisMessagesQueue;
-use quests_protocol::quests::EventRequest;
+use quests_protocol::definitions::*;
 use serde::Serialize;
 use utoipa::ToSchema;
 

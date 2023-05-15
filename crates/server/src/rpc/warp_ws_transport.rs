@@ -46,19 +46,19 @@ impl Transport for WarpWebSocketTransport {
                             return Err(TransportError::Closed);
                         }
                         // Ignore messages that are not binary
-                        error!("> WebSocketTransport > Received message is not binary");
+                        debug!("> WebSocketTransport > Received message is not binary");
                         return Err(TransportError::NotBinaryMessage);
                     }
                 }
                 Some(Err(err)) => {
-                    error!(
+                    debug!(
                         "> WebSocketTransport > Failed to receive message {}",
                         err.to_string()
                     );
                     return Err(return_ws_error(err));
                 }
                 None => {
-                    error!("> WebSocketTransport > None received > Closing...");
+                    debug!("> WebSocketTransport > None received > Closing...");
                     return Err(TransportError::Closed);
                 }
             }
@@ -69,7 +69,7 @@ impl Transport for WarpWebSocketTransport {
         let message = WarpWSMessage::binary(message);
         match self.write.lock().await.send(message).await {
             Err(err) => {
-                error!(
+                debug!(
                     "> WebSocketTransport > Error on sending in a ws connection {}",
                     err.to_string()
                 );

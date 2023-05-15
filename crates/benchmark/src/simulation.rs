@@ -1,342 +1,113 @@
-use std::fmt::Display;
+use std::{
+    collections::HashSet,
+    sync::Arc,
+    thread::sleep,
+    time::{Duration, Instant},
+};
 
 use async_trait::async_trait;
 use dcl_rpc::{client::RpcClient, transports::web_socket::WebSocketTransport};
-use log::{error, info};
-use rand::seq::SliceRandom;
-use serde::Deserialize;
+use futures_util::{stream::FuturesUnordered, StreamExt};
+use log::{debug, info};
+use rand::{seq::IteratorRandom, thread_rng};
+use tokio::sync::Mutex;
 
-use crate::{
-    quests::{create_random_string, random_quest},
-    user_update::Message,
-    *,
-};
+use crate::args::Args;
 
-#[derive(Deserialize)]
-struct CreateQuestResponse {
-    id: String,
+#[async_trait]
+pub trait Context {
+    async fn init(args: &Args) -> Self;
 }
 
-pub struct TestContext {
-    pub quest_ids: Vec<String>,
+#[async_trait]
+pub trait Client<C: Context> {
+    async fn from_rpc_client(client: RpcClient<WebSocketTransport>) -> Self;
+    async fn act(self, context: &C) -> Self;
 }
 
-impl TestContext {
-    pub async fn create_random_quest(api_host: &str) -> Result<String, String> {
-        let quest = random_quest();
+pub struct Simulation;
 
-        let client = reqwest::Client::new();
-        let res = client
-            .post(format!("{api_host}/quests"))
-            .json(&quest)
-            .send()
-            .await
-            .map_err(|e| format!("Request failed: {e:?}"))?;
+impl Simulation {
+    pub async fn run<SC, C>(args: &Args, rpc_clients: Vec<RpcClient<WebSocketTransport>>)
+    where
+        SC: Context + Send + Sync + 'static,
+        C: Client<SC> + Send + Sync + 'static,
+    {
+        let context = SC::init(args).await;
+        let mut clients = vec![];
+        for rpc_client in rpc_clients {
+            clients.push(C::from_rpc_client(rpc_client).await);
+        }
 
-        let CreateQuestResponse { id } = res
-            .json::<CreateQuestResponse>()
-            .await
-            .map_err(|e| format!("Response deserialize error: {e:?}"))?;
+        let clients = Arc::new(Mutex::new(clients));
+        let context = Arc::new(context);
 
-        Ok(id)
-    }
+        debug!("Simulation > Wait for 10s before start...");
+        sleep(Duration::from_secs(10));
+        let mut futures = FuturesUnordered::new();
+        for worker_id in 0..args.parallel {
+            futures.push(tokio::spawn(worker(
+                worker_id,
+                args.clone(),
+                clients.clone(),
+                context.clone(),
+            )));
+        }
 
-    pub fn pick_quest_id(&self) -> Option<String> {
-        self.quest_ids
-            .choose(&mut thread_rng())
-            .map(|id| id.to_string())
-    }
-}
+        let mut worker_ids = (0..args.parallel).collect::<HashSet<_>>();
 
-pub struct TestClient {
-    pub client: RpcClient<WebSocketTransport>,
-    pub quests_service: QuestsServiceClient<WebSocketTransport>,
-    pub address: String,
-    pub state: ClientState,
-}
-
-pub enum ClientState {
-    Start,
-    Subscribed {
-        updates: Generator<UserUpdate>,
-    },
-    QuestFinished {
-        updates: Generator<UserUpdate>,
-    },
-    StartQuestRequested {
-        updates: Generator<UserUpdate>,
-        quest_id: String,
-    },
-    MakeQuestProgress {
-        updates: Generator<UserUpdate>,
-        quest_instance_id: String,
-        quest_state: QuestState,
-    },
-    FetchQuestUpdate {
-        updates: Generator<UserUpdate>,
-        quest_instance_id: String,
-        quest_state: QuestState,
-    },
-}
-
-impl Display for ClientState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!(
-            "State > {}",
-            match self {
-                ClientState::Start => "Start".to_string(),
-                ClientState::Subscribed { .. } => "Subscribed".to_string(),
-                ClientState::QuestFinished { .. } => "Quest finished".to_string(),
-                ClientState::StartQuestRequested { quest_id, .. } => {
-                    format!("Started Quest {quest_id}")
+        while let Some(worker_result) = futures.next().await {
+            match worker_result {
+                Ok(worker_id) => {
+                    worker_ids.remove(&worker_id);
+                    debug!("Remaining active workers {}", worker_ids.len());
                 }
-                ClientState::MakeQuestProgress {
-                    quest_instance_id,
-                    quest_state,
-                    ..
-                } => format!(
-                    "Make Quest Progress > Instance: {} - Steps left {}",
-                    quest_instance_id, quest_state.steps_left
-                ),
-                ClientState::FetchQuestUpdate {
-                    quest_instance_id,
-                    quest_state,
-                    ..
-                } => format!(
-                    "Fetch Quest Updates > Instance: {} - Steps left {}",
-                    quest_instance_id, quest_state.steps_left
-                ),
-            },
-        ))
+                _ => {
+                    debug!("Worker failed to join");
+                }
+            }
+        }
     }
 }
 
-impl ClientState {
-    pub async fn next(
-        self,
-        user_address: &str,
-        quests_service: &QuestsServiceClient<WebSocketTransport>,
-        context: &TestContext,
-    ) -> Self {
-        let current_state_discriminant = std::mem::discriminant(&self);
-        let state = match self {
-            ClientState::Start => {
-                let result = quests_service
-                    .subscribe(UserAddress {
-                        user_address: user_address.to_string(),
-                    })
-                    .await;
-                match result {
-                    Ok(response) => ClientState::Subscribed { updates: response },
-                    Err(_) => ClientState::Start,
-                }
+async fn worker<SC, C>(
+    worker_id: u8,
+    args: Args,
+    clients: Arc<Mutex<Vec<C>>>,
+    context: Arc<SC>,
+) -> u8
+where
+    SC: Context + Send + Sync,
+    C: Client<SC> + Send + Sync,
+{
+    let duration = Duration::from_secs(60 * args.duration as u64);
+    let start = Instant::now();
+    loop {
+        debug!("Worker {worker_id} > Locking clients");
+        let mut clients_guard = clients.lock().await;
+        let i = (0..clients_guard.len()).choose(&mut thread_rng());
+        if let Some(i) = i {
+            let client = clients_guard.remove(i);
+
+            if start.elapsed() > duration {
+                debug!("Worker {worker_id} > No more time to act, dropping client!");
+                info!("Worker {worker_id} > Clients left: {}", clients_guard.len());
+                continue;
             }
-            ClientState::Subscribed { updates } | ClientState::QuestFinished { updates } => {
-                let Some(quest_id) = context.pick_quest_id() else {
-                    return ClientState::Subscribed { updates };
-                };
-
-                let response = quests_service
-                    .start_quest(StartQuestRequest {
-                        user_address: user_address.to_string(),
-                        quest_id: quest_id.clone(),
-                    })
-                    .await;
-                debug!(
-                    "User {} > StartQuestRequest > Response: {:?}",
-                    &user_address[..4],
-                    response
-                );
-                match response {
-                    Ok(response)
-                        if matches!(
-                            response.response,
-                            Some(start_quest_response::Response::Accepted(_))
-                        ) =>
-                    {
-                        ClientState::StartQuestRequested { updates, quest_id }
-                    }
-                    _ => ClientState::Subscribed { updates },
-                }
-            }
-            ClientState::StartQuestRequested {
-                mut updates,
-                quest_id,
-            } => {
-                debug!("User {} > Start Quest > Next.", &user_address[..4]);
-                let quest_updates = updates.next().await;
-                debug!("User {} > Start Quest > Done.", &user_address[..4]);
-
-                match quest_updates {
-                    Some(UserUpdate {
-                        message: Some(Message::QuestStateUpdate(ref state)),
-                        ..
-                    }) if state.quest_data.as_ref().unwrap().quest_state.is_some() => {
-                        ClientState::MakeQuestProgress {
-                            updates,
-                            quest_instance_id: state
-                                .quest_data
-                                .as_ref()
-                                .unwrap()
-                                .quest_instance_id
-                                .clone(),
-                            quest_state: state
-                                .quest_data
-                                .as_ref()
-                                .unwrap()
-                                .quest_state
-                                .as_ref()
-                                .unwrap()
-                                .clone(),
-                        }
-                    }
-                    _ => {
-                        error!(
-                            "User {} > Start Quest > Received update is not the quest state",
-                            &user_address[..4]
-                        );
-                        ClientState::StartQuestRequested { updates, quest_id }
-                    }
-                }
-            }
-            ClientState::MakeQuestProgress {
-                updates,
-                quest_instance_id,
-                quest_state,
-            } => {
-                // find action to do
-                let action = quest_state
-                    .current_steps
-                    .values()
-                    .find(|step| !step.to_dos.is_empty())
-                    .and_then(|step| step.to_dos.first())
-                    .and_then(|to_do| to_do.action_items.first());
-
-                let event = quests_service
-                    .send_event(EventRequest {
-                        address: user_address.to_string(),
-                        action: action.cloned(),
-                    })
-                    .await;
-                match event {
-                    Ok(_) => ClientState::FetchQuestUpdate {
-                        updates,
-                        quest_instance_id,
-                        quest_state,
-                    },
-                    _ => ClientState::MakeQuestProgress {
-                        updates,
-                        quest_instance_id,
-                        quest_state,
-                    },
-                }
-            }
-            ClientState::FetchQuestUpdate {
-                mut updates,
-                quest_instance_id,
-                quest_state,
-            } => {
-                debug!("User {} > Fetch next event > Next.", &user_address[..4]);
-                let quest_update = updates.next().await;
-                debug!("User {} > Fetch next event > Done.", &user_address[..4]);
-
-                debug!("User {user_address} > quest_update received > {quest_update:?}");
-
-                match quest_update {
-                    Some(update) => match update.message {
-                        Some(Message::QuestStateUpdate(state))
-                            if state.quest_data.as_ref().unwrap().quest_instance_id
-                                == quest_instance_id
-                                && state.quest_data.as_ref().unwrap().quest_state.is_some() =>
-                        {
-                            let new_quest_state = state.quest_data.unwrap().quest_state.unwrap();
-                            if new_quest_state.steps_left == 0 {
-                                ClientState::QuestFinished { updates }
-                            } else {
-                                ClientState::MakeQuestProgress {
-                                    updates,
-                                    quest_instance_id,
-                                    quest_state: new_quest_state,
-                                }
-                            }
-                        }
-                        Some(Message::EventIgnored(_)) => {
-                            error!("User {user_address} > Event ignored");
-                            ClientState::MakeQuestProgress {
-                                updates,
-                                quest_instance_id,
-                                quest_state,
-                            }
-                        }
-                        _ => ClientState::FetchQuestUpdate {
-                            updates,
-                            quest_instance_id,
-                            quest_state,
-                        },
-                    },
-                    None => ClientState::Subscribed { updates },
-                }
-            }
-        };
-
-        if std::mem::discriminant(&state) == current_state_discriminant {
-            info!("User {} > State didn't change", &user_address[..4]);
+            drop(clients_guard);
+            debug!("Worker {worker_id} > Clients guard manually dropped");
+            let client = client.act(&context).await;
+            debug!("Worker {worker_id} > client {i} acted");
+            clients.lock().await.push(client);
         } else {
-            info!("User {} > {state}", &user_address[..4]);
-        }
-        state
-    }
-}
-
-#[async_trait]
-impl Context for TestContext {
-    async fn init(args: &Args) -> Self {
-        let mut quest_ids = vec![];
-
-        for _ in 0..50 {
-            match Self::create_random_quest(&args.api_host).await {
-                Ok(quest_id) => quest_ids.push(quest_id),
-                Err(reason) => debug!("Quest Creation > Couldn't POST quest: {reason}"),
-            }
+            debug!("Worker {worker_id} > No more clients!");
+            break;
         }
 
-        Self { quest_ids }
+        let millis = 100;
+        debug!("Worker {worker_id} > Waiting {millis} ms before next iteration");
+        sleep(Duration::from_millis(millis));
     }
-}
-
-#[async_trait]
-impl Client<TestContext> for TestClient {
-    async fn from_rpc_client(mut client: RpcClient<WebSocketTransport>) -> Self {
-        let port = client
-            .create_port("test-port")
-            .await
-            .expect("Can create port");
-
-        let quests_service = port
-            .load_module::<QuestsServiceClient<_>>("QuestsService")
-            .await
-            .expect("Can create quests service");
-
-        Self {
-            client,
-            quests_service,
-            address: Self::create_random_address(),
-            state: ClientState::Start,
-        }
-    }
-
-    async fn act(mut self, context: &TestContext) -> Self {
-        self.state = self
-            .state
-            .next(&self.address, &self.quests_service, context)
-            .await;
-
-        self
-    }
-}
-
-impl TestClient {
-    fn create_random_address() -> String {
-        create_random_string(40)
-    }
+    info!("Worker {worker_id} > Returning");
+    worker_id
 }

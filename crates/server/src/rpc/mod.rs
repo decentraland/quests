@@ -6,6 +6,7 @@ use crate::configuration::Config;
 use auth::authenticate_dcl_user;
 use dcl_crypto::Address;
 use dcl_rpc::{server::RpcServer, stream_protocol::GeneratorYielder};
+use futures_util::lock::Mutex;
 use log::{debug, error};
 use quests_db::Database;
 use quests_message_broker::{channel::RedisChannelSubscriber, messages_queue::RedisMessagesQueue};
@@ -31,6 +32,7 @@ pub struct QuestsRpcServerContext {
 pub struct TransportContext {
     pub subscription: Option<GeneratorYielder<UserUpdate>>,
     pub subscription_handle: Option<JoinHandle<()>>,
+    pub quest_instance_ids: Arc<Mutex<Vec<String>>>,
     pub user_address: Address,
 }
 
@@ -116,7 +118,8 @@ pub async fn run_rpc_server(
                 TransportContext {
                     subscription: None,
                     subscription_handle: None,
-                    user_address: transport.user_address.clone(),
+                    quest_instance_ids: Arc::new(Mutex::new(vec![])),
+                    user_address: transport.user_address,
                 },
             );
         });

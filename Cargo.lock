@@ -436,17 +436,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atty"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8"
-dependencies = [
- "hermit-abi 0.1.19",
- "libc",
- "winapi",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -905,9 +894,8 @@ checksum = "23d8666cb01533c39dde32bcbab8e227b4ed6679b2c925eba05feabea39508fb"
 
 [[package]]
 name = "dcl-crypto"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f54ac4f9179915ce5b7c44974629229ac9035bcaf26735c874250fe3259d1c8d"
+version = "0.0.0-development"
+source = "git+https://github.com/decentraland/decentraland-crypto-rust.git?rev=db4e107307012ad8bd7bf7f56974163be9aec0d4#db4e107307012ad8bd7bf7f56974163be9aec0d4"
 dependencies = [
  "chrono",
  "ethabi 18.0.0",
@@ -915,8 +903,10 @@ dependencies = [
  "hex",
  "jsonrpc-core",
  "lazy_static",
+ "rand 0.8.5",
  "regex",
  "rust-crypto",
+ "secp256k1 0.27.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -925,9 +915,9 @@ dependencies = [
 
 [[package]]
 name = "dcl-rpc"
-version = "2.3.0"
+version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4351f969db3f1a73c8e4a1717b5c2b7c183641816df4a7982ee9207e36c65823"
+checksum = "bfaaab52c0dcedb6ccb4283bd4a0678092c46b80a24e74bff24eaa58a1b08a3f"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -1059,12 +1049,12 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.9.3"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a12e6657c4c97ebab115a42dcee77225f7f482cdd841cf7088c657a42e9e00e7"
+checksum = "85cdab6a89accf66733ad5a1693a4dcced6aeff64602b634530dd73c1f3ee9f0"
 dependencies = [
- "atty",
  "humantime",
+ "is-terminal",
  "log",
  "regex",
  "termcolor",
@@ -1498,15 +1488,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 dependencies = [
  "unicode-segmentation",
-]
-
-[[package]]
-name = "hermit-abi"
-version = "0.1.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
-dependencies = [
- "libc",
 ]
 
 [[package]]
@@ -2621,6 +2602,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "clap",
+ "dcl-crypto",
  "dcl-rpc",
  "env_logger",
  "futures-util",
@@ -2631,7 +2613,9 @@ dependencies = [
  "rand 0.8.5",
  "reqwest",
  "serde",
+ "serde_json",
  "tokio",
+ "tungstenite 0.18.0",
 ]
 
 [[package]]
@@ -3124,7 +3108,17 @@ version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c42e6f1735c5f00f51e43e28d6634141f2bcad10931b2609ddd74a86d751260"
 dependencies = [
- "secp256k1-sys",
+ "secp256k1-sys 0.4.2",
+]
+
+[[package]]
+name = "secp256k1"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25996b82292a7a57ed3508f052cfff8640d38d32018784acd714758b43da9c8f"
+dependencies = [
+ "rand 0.8.5",
+ "secp256k1-sys 0.8.1",
 ]
 
 [[package]]
@@ -3132,6 +3126,15 @@ name = "secp256k1-sys"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "957da2573cde917463ece3570eab4a0b3f19de6f1646cde62e6fd3868f566036"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70a129b9e9efbfb223753b9163c4ab3b13cff7fd9c7f010fbac25ab4099fa07e"
 dependencies = [
  "cc",
 ]
@@ -4263,7 +4266,7 @@ dependencies = [
  "pin-project",
  "reqwest",
  "rlp",
- "secp256k1",
+ "secp256k1 0.21.3",
  "serde",
  "serde_json",
  "soketto",

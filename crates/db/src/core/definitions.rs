@@ -28,6 +28,7 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
 pub struct AddEvent<'a> {
+    pub id: String,
     pub user_address: &'a str,
     pub event: Vec<u8>,
 }

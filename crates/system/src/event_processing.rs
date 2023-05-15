@@ -17,7 +17,8 @@ use quests_protocol::{
     quest_graph::QuestGraph,
     quest_state::get_state,
     quests::{
-        user_update, Event, Quest, QuestDefinition, QuestState, QuestStateUpdate, UserUpdate,
+        user_update, Event, Quest, QuestDefinition, QuestState, QuestStateUpdate,
+        QuestStateWithData, UserUpdate,
     },
     ProtocolDecodeError, ProtocolMessage,
 };
@@ -141,6 +142,7 @@ impl EventProcessor {
     ) -> Result<(), ProcessEventError> {
         debug!("Processing event > event applied with new state: {quest_state:?}");
         let add_event = AddEvent {
+            id: event.id.clone(),
             user_address: &event.address,
             event: event.encode_to_vec(),
         };
@@ -159,11 +161,14 @@ impl EventProcessor {
         );
         self.quests_channel
             .publish(UserUpdate {
-                message: Some(user_update::Message::QuestState(QuestStateUpdate {
-                    name: quest.name,
-                    description: quest.description,
-                    quest_instance_id: quest_instance.id.clone(),
-                    quest_state: Some(quest_state),
+                message: Some(user_update::Message::QuestStateUpdate(QuestStateUpdate {
+                    quest_data: Some(QuestStateWithData {
+                        name: quest.name,
+                        description: quest.description,
+                        quest_instance_id: quest_instance.id.clone(),
+                        quest_state: Some(quest_state),
+                    }),
+                    event_id: event.id.clone(),
                 })),
             })
             .await;

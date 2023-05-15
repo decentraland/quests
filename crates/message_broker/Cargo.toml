@@ -11,3 +11,6 @@ log = { workspace = true }
 serde = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3.26"
+
+[dev-dependencies]
+uuid = { workspace = true }

@@ -182,27 +182,33 @@ mod tests {
         let mut events = vec![
             Event {
                 // A1_1
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::location(Coordinates::new(10, 10))),
             },
             Event {
                 // A2_1
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::jump(Coordinates::new(10, 11))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::jump(Coordinates::new(20, 10))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::jump(Coordinates::new(20, 20))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::npc_interaction("NPC_IDEN")),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::npc_interaction("OTHER_NPC")),
             },
@@ -355,38 +361,47 @@ mod tests {
         let quest_graph = QuestGraph::from(&quest);
         let mut events = vec![
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::jump(Coordinates::new(10, 10))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::location(Coordinates::new(15, 10))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::npc_interaction("NPC_ID")),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::location(Coordinates::new(15, 14))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::jump(Coordinates::new(10, 20))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::location(Coordinates::new(23, 14))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::custom("a")),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::location(Coordinates::new(40, 10))),
             },
             Event {
+                id: uuid::Uuid::new_v4().to_string(),
                 address: "0xA".to_string(),
                 action: Some(Action::jump(Coordinates::new(20, 20))),
             },

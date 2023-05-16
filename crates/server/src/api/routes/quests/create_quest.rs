@@ -1,16 +1,14 @@
 use std::sync::Arc;
-
 use actix_web::{post, web, HttpResponse};
 use derive_more::Deref;
-use quests_db::{
-    core::definitions::QuestsDatabase,
-    Database,
-};
+use quests_db::{core::definitions::QuestsDatabase, Database};
 use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-
-use crate::{api::routes::errors::CommonError, domain::{quests::QuestError, types::ToCreateQuest}};
+use crate::{
+    api::routes::errors::CommonError,
+    domain::{quests::QuestError, types::ToCreateQuest},
+};
 
 #[derive(Serialize, ToSchema)]
 pub struct CreateQuestResponse {
@@ -53,4 +51,3 @@ async fn create_quest_controller<DB: QuestsDatabase>(
         .await
         .map_err(|_| QuestError::CommonError(CommonError::Unknown))
 }
-

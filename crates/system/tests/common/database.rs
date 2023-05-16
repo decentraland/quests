@@ -1,7 +1,10 @@
-use quests_db::{DatabaseOptions, core::ops::{Connect, GetConnection, Migrate}, Executor};
+use quests_db::{
+    core::ops::{Connect, GetConnection, Migrate},
+    DatabaseOptions, Executor,
+};
 use quests_system::configuration::Config;
 
-pub async fn create_test_db() -> String { 
+pub async fn create_test_db() -> String {
     let config = Config::new().expect("can read config");
     let split = config.database_url.split('/');
     let vec = split.collect::<Vec<&str>>();

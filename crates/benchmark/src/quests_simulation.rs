@@ -125,11 +125,7 @@ impl ClientState {
         let current_state_discriminant = std::mem::discriminant(&self);
         let state = match self {
             ClientState::Start => {
-                let result = quests_service
-                    .subscribe(UserAddress {
-                        user_address: user_address.to_string(),
-                    })
-                    .await;
+                let result = quests_service.subscribe().await;
                 match result {
                     Ok(response) => ClientState::Subscribed { updates: response },
                     Err(_) => ClientState::Start,
@@ -142,7 +138,6 @@ impl ClientState {
 
                 let response = quests_service
                     .start_quest(StartQuestRequest {
-                        user_address: user_address.to_string(),
                         quest_id: quest_id.clone(),
                     })
                     .await;
@@ -206,7 +201,6 @@ impl ClientState {
 
                 let event = quests_service
                     .send_event(EventRequest {
-                        address: user_address.to_string(),
                         action: action.cloned(),
                     })
                     .await;

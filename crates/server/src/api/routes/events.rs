@@ -1,6 +1,5 @@
-use crate::domain::events::{add_event_controller, AddEventError};
 use actix_web::{
-    error::{ErrorBadRequest, ErrorInternalServerError},
+    error::ErrorMethodNotAllowed,
     put,
     web::{self, ServiceConfig},
     HttpResponse,
@@ -25,19 +24,21 @@ pub struct AddEventResponse {
 )]
 #[put("/events")]
 async fn add_event(
-    data: web::Data<RedisMessagesQueue>,
-    event: web::Json<EventRequest>,
+    _data: web::Data<RedisMessagesQueue>,
+    _event: web::Json<EventRequest>,
 ) -> HttpResponse {
-    let events_queue = data.into_inner();
-    match add_event_controller(events_queue, event.into_inner()).await {
-        Ok(_) => HttpResponse::Accepted().json(AddEventResponse {
-            message: "Event Accepted".to_string(),
-        }),
-        Err(err) => match err {
-            AddEventError::NoAction => HttpResponse::from_error(ErrorBadRequest(err)),
-            AddEventError::PushFailed => HttpResponse::from_error(ErrorInternalServerError(err)),
-        },
-    }
+    // Not allowed until we implement auth
+    HttpResponse::from_error(ErrorMethodNotAllowed(""))
+    // let events_queue = data.into_inner();
+    // match add_event_controller(events_queue, event.into_inner()).await {
+    //     Ok(_) => HttpResponse::Accepted().json(AddEventResponse {
+    //         message: "Event Accepted".to_string(),
+    //     }),
+    //     Err(err) => match err {
+    //         AddEventError::NoAction => HttpResponse::from_error(ErrorBadRequest(err)),
+    //         AddEventError::PushFailed => HttpResponse::from_error(ErrorInternalServerError(err)),
+    //     },
+    // }
 }
 
 pub fn services(config: &mut ServiceConfig) {

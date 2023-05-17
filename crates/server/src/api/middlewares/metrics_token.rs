@@ -1,5 +1,3 @@
-use std::{collections::HashMap};
-
 use actix_web::{
     body::MessageBody,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
@@ -7,6 +5,7 @@ use actix_web::{
     web, Error,
 };
 use actix_web_lab::middleware::{from_fn, Next};
+use std::collections::HashMap;
 
 fn validate_token(
     bearer_token: String,

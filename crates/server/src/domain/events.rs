@@ -14,13 +14,14 @@ pub enum AddEventError {
 
 pub async fn add_event_controller(
     events_queue: Arc<impl MessagesQueue<Event>>,
+    user_address: &str,
     event: EventRequest,
 ) -> Result<Uuid, AddEventError> {
     if let Some(action) = event.action {
         let id = Uuid::new_v4();
         let event = Event {
             id: id.to_string(),
-            address: event.address,
+            address: user_address.to_string(),
             action: Some(action),
         };
         if events_queue.push(&event).await.is_ok() {

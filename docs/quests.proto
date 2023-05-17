@@ -2,6 +2,8 @@
 syntax = "proto3";
 package decentraland.quests;
 
+import "google/protobuf/empty.proto";
+
 // Errors 
 message InvalidQuest {}
 
@@ -15,13 +17,8 @@ message NotOwner {}
 
 message IgnoredEvent {}
 
-message UserAddress {
-  string user_address = 1;
-}
-
 message StartQuestRequest {
-  string user_address = 1;
-  string quest_id = 2;
+  string quest_id = 1;
 }
 
 message StartQuestResponse {
@@ -40,8 +37,7 @@ message StartQuestResponse {
 }
 
 message AbortQuestRequest {
-  string user_address = 1;
-  string quest_instance_id = 2;
+  string quest_instance_id = 1;
 }
 
 message AbortQuestResponse {
@@ -67,8 +63,7 @@ message Event {
 }
 
 message EventRequest {
-  string address = 1;
-  Action action = 2;
+  Action action = 1;
 }
 
 message EventResponse {
@@ -179,9 +174,9 @@ service QuestsService {
   rpc SendEvent(EventRequest) returns (EventResponse) {}
 
   // Listen to changes in quest states and event processing updates
-  rpc Subscribe(UserAddress) returns (stream UserUpdate) {}
+  rpc Subscribe(google.protobuf.Empty) returns (stream UserUpdate) {}
 
   // Query quest information
-  rpc GetAllQuests(UserAddress) returns (GetAllQuestsResponse) {}
+  rpc GetAllQuests(google.protobuf.Empty) returns (GetAllQuestsResponse) {}
   rpc GetQuestDefinition(GetQuestDefinitionRequest) returns (GetQuestDefinitionResponse) {}
 }

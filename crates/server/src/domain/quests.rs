@@ -22,6 +22,8 @@ pub enum QuestError {
     NotFoundOrInactive,
     #[error("Quest already started and active")]
     QuestAlreadyStarted,
+    #[error("Quest already completed")]
+    QuestAlreadyCompleted,
 }
 
 pub async fn abandon_quest(
@@ -32,6 +34,12 @@ pub async fn abandon_quest(
     let quest_instance = db.get_quest_instance(quest_instance_id).await?;
     if quest_instance.user_address != user_address {
         return Err(QuestError::NotInstanceOwner);
+    }
+
+    let (_, quest_state) =
+        get_instance_state(db.clone(), &quest_instance.quest_id, &quest_instance.id).await?;
+    if quest_state.is_completed() {
+        return Err(QuestError::QuestAlreadyCompleted);
     }
 
     _ = db.abandon_quest(quest_instance_id).await?;

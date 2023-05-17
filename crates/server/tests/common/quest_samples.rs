@@ -105,3 +105,29 @@ pub fn grab_some_pies() -> Quest {
         }),
     }
 }
+
+#[allow(dead_code)]
+pub fn one_step_quest() -> (Quest, Action) {
+    use std::collections::HashMap;
+    let action = Action {
+        r#type: "Jump".to_string(),
+        parameters: HashMap::new(),
+    };
+    let quest = Quest {
+        name: "One step quest".to_string(),
+        description: "Jump".to_string(),
+        definition: Some(QuestDefinition {
+            connections: vec![],
+            steps: vec![Step {
+                id: "Jump".to_string(),
+                tasks: vec![Task {
+                    id: "Jump once".to_string(),
+                    description: "".to_string(),
+                    action_items: vec![action.clone()],
+                }],
+                description: "".to_string(),
+            }],
+        }),
+    };
+    (quest, action)
+}

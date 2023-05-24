@@ -13,8 +13,9 @@ use dcl_rpc::{
     stream_protocol::Generator,
 };
 use log::error;
-use quests_message_broker::{channel::ChannelSubscriber, QUEST_UPDATES_CHANNEL_NAME};
+use quests_message_broker::channel::ChannelSubscriber;
 use quests_protocol::definitions::*;
+use quests_system::QUESTS_CHANNEL_NAME;
 
 pub struct QuestsServiceImplementation {}
 
@@ -186,7 +187,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
 
                 let yielder = generator_yielder.clone();
                 let subscription_join_handle = context.server_context.redis_channel_subscriber.subscribe(
-                    QUEST_UPDATES_CHANNEL_NAME,
+                    QUESTS_CHANNEL_NAME,
                     move |user_update: UserUpdate| {
                         let generator_yielder = yielder.clone();
                         let ids = quest_instance_ids.clone();

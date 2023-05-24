@@ -28,7 +28,7 @@ pub struct RedisChannelSubscriber {
 }
 
 impl RedisChannelSubscriber {
-    pub(crate) fn new(redis: Arc<Redis>) -> Self {
+    pub fn new(redis: Arc<Redis>) -> Self {
         Self { redis }
     }
 }

@@ -47,11 +47,8 @@ pub async fn start_quest(
         return Err(QuestError::NotFoundOrInactive);
     }
 
-    let active_quests = db.get_active_user_quest_instances(user_address).await?;
-    for quest in active_quests {
-        if quest.quest_id == quest_id {
-            return Err(QuestError::QuestAlreadyStarted);
-        }
+    if db.has_active_quest_instance(user_address, quest_id).await? {
+        return Err(QuestError::QuestAlreadyStarted);
     }
 
     Ok(db.start_quest(quest_id, user_address).await?)

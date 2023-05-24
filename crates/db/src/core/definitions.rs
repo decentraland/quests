@@ -12,6 +12,8 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn get_quest(&self, id: &str) -> DBResult<StoredQuest>;
     async fn get_active_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>>;
     async fn is_active_quest(&self, quest_id: &str) -> DBResult<bool>;
+    async fn has_active_quest_instance(&self, user_address: &str, quest_id: &str)
+        -> DBResult<bool>;
 
     async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String>;
     async fn abandon_quest(&self, quest_instance_id: &str) -> DBResult<String>;

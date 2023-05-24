@@ -218,6 +218,26 @@ impl QuestsDatabase for Database {
         Ok(quest_instance_exists)
     }
 
+    async fn has_active_quest_instance(
+        &self,
+        user_address: &str,
+        quest_id: &str,
+    ) -> DBResult<bool> {
+        let quest_instance_exists: bool = sqlx::query_scalar(
+            "
+                SELECT EXISTS (SELECT 1 FROM quest_instances
+                WHERE user_address = $1 AND quest_id = $2 AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests))
+            ",
+        )
+        .bind(user_address)
+        .bind(parse_str_to_uuid(quest_id)?)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
+
+        Ok(quest_instance_exists)
+    }
+
     async fn deactivate_quest(&self, quest_id: &str) -> DBResult<String> {
         self.do_deactivate_quest(quest_id, None).await
     }

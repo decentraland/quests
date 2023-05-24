@@ -48,7 +48,7 @@ impl ResponseError for QuestError {
         match self {
             Self::DeserializationError => StatusCode::INTERNAL_SERVER_ERROR,
             Self::CommonError(base) => base.status_code(),
-            Self::QuestValidation(_) => StatusCode::BAD_REQUEST,
+            Self::QuestValidation(_) | Self::QuestAlreadyStarted => StatusCode::BAD_REQUEST,
             Self::NotInstanceOwner => StatusCode::FORBIDDEN,
             Self::NotFoundOrInactive => StatusCode::NOT_FOUND,
         }

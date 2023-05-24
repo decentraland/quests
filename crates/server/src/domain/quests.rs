@@ -20,6 +20,8 @@ pub enum QuestError {
     NotInstanceOwner,
     #[error("Quest doesn't exist or is inactive")]
     NotFoundOrInactive,
+    #[error("Quest already started and active")]
+    QuestAlreadyStarted,
 }
 
 pub async fn abandon_quest(
@@ -43,6 +45,10 @@ pub async fn start_quest(
 ) -> Result<String, QuestError> {
     if !db.is_active_quest(quest_id).await? {
         return Err(QuestError::NotFoundOrInactive);
+    }
+
+    if db.has_active_quest_instance(user_address, quest_id).await? {
+        return Err(QuestError::QuestAlreadyStarted);
     }
 
     Ok(db.start_quest(quest_id, user_address).await?)

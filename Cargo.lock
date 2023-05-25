@@ -442,15 +442,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
-name = "autotools"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aef8da1805e028a172334c3b680f93e71126f2327622faef2ec3d893c0a4ad77"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "base64"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -894,27 +885,6 @@ checksum = "23d8666cb01533c39dde32bcbab8e227b4ed6679b2c925eba05feabea39508fb"
 
 [[package]]
 name = "dcl-crypto"
-version = "0.0.0-development"
-source = "git+https://github.com/decentraland/decentraland-crypto-rust.git?rev=db4e107307012ad8bd7bf7f56974163be9aec0d4#db4e107307012ad8bd7bf7f56974163be9aec0d4"
-dependencies = [
- "chrono",
- "ethabi 18.0.0",
- "futures",
- "hex",
- "jsonrpc-core",
- "lazy_static",
- "rand 0.8.5",
- "regex",
- "rust-crypto",
- "secp256k1 0.27.0",
- "serde",
- "serde_json",
- "thiserror",
- "web3",
-]
-
-[[package]]
-name = "dcl-crypto"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "473417cecd80e85a3772ad05d765404650ac2d256ad6c51dbdaf025f189434e3"
@@ -937,12 +907,12 @@ dependencies = [
 
 [[package]]
 name = "dcl-crypto-middleware-rs"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3398c97b61b256a26b77ffe6ad89745a496c9e02b6da9197aef035efb84c0e1"
+checksum = "cd6a3c4008fead6e52be270ee60f79e4c544f2b4122f3c81db00b8cb18c381e7"
 dependencies = [
  "async-trait",
- "dcl-crypto 0.2.1",
+ "dcl-crypto",
  "fastrand",
  "log",
  "tokio",
@@ -950,9 +920,9 @@ dependencies = [
 
 [[package]]
 name = "dcl-rpc"
-version = "2.3.4"
+version = "2.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "087efa1537988e7afbdb5f5449983681acb8e19883a90e3a08da79a347cde3b8"
+checksum = "f9dcef99269dbf4186fc0936f03cf7496f0401ffeacf3784211c065710321d8d"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -963,7 +933,6 @@ dependencies = [
  "proc-macro2",
  "prost",
  "prost-build",
- "protobuf-src",
  "quote",
  "tokio",
  "tokio-tungstenite",
@@ -2624,21 +2593,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "protobuf-src"
-version = "1.1.0+21.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7ac8852baeb3cc6fb83b93646fb93c0ffe5d14bf138c945ceb4b9948ee0e3c1"
-dependencies = [
- "autotools",
-]
-
-[[package]]
 name = "quests_benchmark"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "clap",
- "dcl-crypto 0.0.0-development",
+ "dcl-crypto",
  "dcl-rpc",
  "env_logger",
  "futures-util",
@@ -2704,7 +2664,7 @@ dependencies = [
  "actix-web-prom",
  "async-trait",
  "config",
- "dcl-crypto 0.0.0-development",
+ "dcl-crypto",
  "dcl-crypto-middleware-rs",
  "dcl-rpc",
  "derive_more",

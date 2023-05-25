@@ -914,6 +914,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "dcl-crypto"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "473417cecd80e85a3772ad05d765404650ac2d256ad6c51dbdaf025f189434e3"
+dependencies = [
+ "chrono",
+ "ethabi 18.0.0",
+ "futures",
+ "hex",
+ "jsonrpc-core",
+ "lazy_static",
+ "rand 0.8.5",
+ "regex",
+ "rust-crypto",
+ "secp256k1 0.27.0",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "web3",
+]
+
+[[package]]
+name = "dcl-crypto-middleware-rs"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3398c97b61b256a26b77ffe6ad89745a496c9e02b6da9197aef035efb84c0e1"
+dependencies = [
+ "async-trait",
+ "dcl-crypto 0.2.1",
+ "fastrand",
+ "log",
+ "tokio",
+]
+
+[[package]]
 name = "dcl-rpc"
 version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2603,7 +2638,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "clap",
- "dcl-crypto",
+ "dcl-crypto 0.0.0-development",
  "dcl-rpc",
  "env_logger",
  "futures-util",
@@ -2669,7 +2704,8 @@ dependencies = [
  "actix-web-prom",
  "async-trait",
  "config",
- "dcl-crypto",
+ "dcl-crypto 0.0.0-development",
+ "dcl-crypto-middleware-rs",
  "dcl-rpc",
  "derive_more",
  "env_logger",

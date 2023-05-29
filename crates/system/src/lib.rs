@@ -5,9 +5,16 @@ pub mod api;
 pub mod configuration;
 pub mod event_processing;
 
+pub const QUESTS_EVENTS_QUEUE_NAME: &str = "events:queue";
+pub const QUESTS_CHANNEL_NAME: &str = "QUEST_UPDATES";
+
 pub async fn run_app(config: &Config) {
     let server = api::start_server(&config.http_server_port).await;
-    let event_processing = event_processing::start_event_processing(config).await;
+    let Ok(event_processor) = event_processing::EventProcessor::from_config(config).await else {
+        return;
+    };
+
+    let event_processing = event_processing::start_event_processing(event_processor);
 
     select! {
         _ = server => {},

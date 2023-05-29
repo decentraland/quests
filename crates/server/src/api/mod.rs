@@ -14,11 +14,13 @@ use quests_message_broker::messages_queue::RedisMessagesQueue;
 use tracing_actix_web::TracingLogger;
 
 pub async fn run_server(
-    (config, db, redis_events_queue): (Data<Config>, Data<Database>, Data<RedisMessagesQueue>),
+    config: Data<Config>,
+    database: Data<Database>,
+    events_queue: Data<RedisMessagesQueue>,
 ) -> Server {
     let server_address = format!("0.0.0.0:{}", config.http_server_port);
 
-    let server = HttpServer::new(move || get_app_router(&config, &db, &redis_events_queue))
+    let server = HttpServer::new(move || get_app_router(&config, &database, &events_queue))
         .bind(&server_address)
         .unwrap() // Unwrap because if it's not able to bind, it doens't matter the panic
         .run();

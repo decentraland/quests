@@ -32,11 +32,3 @@ jobs:
           serviceName: "quests-poc-server"
           env: ${{ inputs.deployment-environment }}
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Trigger Quests System deployment
-        id: deploy-system
-        uses: decentraland/dcl-deploy-action@main
-        with:
-          dockerImage: "quay.io/decentraland/quests-system:${{ inputs.tag }}"
-          serviceName: "quests-system"
-          env: ${{ inputs.deployment-environment }}
-          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,7 +1,7 @@
 use crate::redis::Redis;
 use async_trait::async_trait;
 use deadpool_redis::redis::AsyncCommands;
-use quests_protocol::definitions::*;
+use quests_protocol::definitions::ProtocolMessage;
 use std::sync::Arc;
 
 pub type MessagesQueueResult<T> = Result<T, String>;
@@ -18,10 +18,10 @@ pub struct RedisMessagesQueue {
 }
 
 impl RedisMessagesQueue {
-    pub fn new(redis: Arc<Redis>, queue_name: &str) -> Self {
+    pub fn new(redis: Arc<Redis>, channel_name: &str) -> Self {
         Self {
             redis,
-            queue_name: queue_name.to_string(),
+            queue_name: channel_name.to_string(),
         }
     }
 }

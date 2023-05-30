@@ -10,7 +10,7 @@ env_logger = "0.10.0"
 config = "0.13"
 serde = "1"
 serde_json = "1"
-dcl-rpc = "2.3.4"
+dcl-rpc = "2.3.5"
 dcl-crypto = "0.2.1"
 uuid = {version = "1.2.2", features = ["v4"]}
 

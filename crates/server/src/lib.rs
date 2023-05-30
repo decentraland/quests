@@ -1,5 +1,4 @@
 pub mod api;
-pub mod components;
 pub mod configuration;
 pub mod domain;
 pub mod rpc;
@@ -7,30 +6,62 @@ pub mod rpc;
 use std::sync::Arc;
 
 use api::middlewares::initialize_telemetry;
-use components::init_components;
 use env_logger::init as initialize_logger;
-use tokio::{select, signal};
+use quests_db::create_quests_db_component;
+use quests_message_broker::{
+    channel::{RedisChannelPublisher, RedisChannelSubscriber},
+    messages_queue::RedisMessagesQueue,
+    redis::Redis,
+};
+use quests_system::{event_processing, QUESTS_CHANNEL_NAME, QUESTS_EVENTS_QUEUE_NAME};
+use tokio::select;
+
+use crate::configuration::Config;
 
 pub async fn run_app() {
     initialize_logger();
     initialize_telemetry();
 
-    let (config, db, redis_events_queue, redis_quests_channel) = init_components().await;
-    let (config, db, redis_events_queue) =
-        (Arc::new(config), Arc::new(db), Arc::new(redis_events_queue));
+    let config = Config::new().expect("> run_app > invalid config");
+    let config = Arc::new(config);
+
+    let database = create_quests_db_component(&config.database_url, true)
+        .await
+        .expect("> run_app > unable to run the migrations");
+    let database = Arc::new(database);
+
+    let redis = Redis::new(&config.redis_url)
+        .await
+        .expect("> run_app > Couldn't initialize redis connection");
+    let redis = Arc::new(redis);
+
+    let events_queue = RedisMessagesQueue::new(redis.clone(), QUESTS_EVENTS_QUEUE_NAME);
+    let events_queue = Arc::new(events_queue);
+
+    let quests_channel_publisher = RedisChannelPublisher::new(redis.clone(), QUESTS_CHANNEL_NAME);
+    let quests_channel_subscriber = RedisChannelSubscriber::new(redis.clone());
 
     let (warp_websocket_server, rpc_server) = rpc::run_rpc_server((
         config.clone(),
-        db.clone(),
-        redis_events_queue.clone(),
-        redis_quests_channel,
+        database.clone(),
+        events_queue.clone(),
+        quests_channel_subscriber,
     ))
     .await;
 
+    let event_processing = event_processing::run_event_processor(
+        database.clone(),
+        events_queue.clone(),
+        quests_channel_publisher.into(),
+    );
+
     let actix_rest_api_server =
-        api::run_server((config.into(), db.into(), redis_events_queue.into())).await;
+        api::run_server(config.into(), database.into(), events_queue.into()).await;
 
     select! {
+        _ = tokio::signal::ctrl_c() => {
+            log::info!("> run_app > SIGINT catched. Exiting...");
+        },
         _ = actix_rest_api_server => {
             log::info!("> run_app > REST API finished. Exiting...");
         },
@@ -40,8 +71,8 @@ pub async fn run_app() {
         _ = rpc_server => {
             log::info!("> run_app > RPC Server finished. Exiting...");
         },
-        _ = signal::ctrl_c() => {
-            log::info!("> run_app > SIGINT catched. Exiting...");
+        _ = event_processing => {
+            log::info!("> run_app > Event processing finished. Exiting...");
         }
     }
 }

@@ -10,13 +10,13 @@ use quests_db::{
 };
 use quests_message_broker::{
     channel::{ChannelPublisher, RedisChannelPublisher},
-    init_message_broker_components_with_publisher,
     messages_queue::{MessagesQueue, RedisMessagesQueue},
+    redis::Redis,
 };
 use quests_protocol::{definitions::*, quests::*};
 use tokio::task::JoinHandle;
 
-use crate::configuration::Config;
+use crate::{configuration::Config, QUESTS_CHANNEL_NAME, QUESTS_EVENTS_QUEUE_NAME};
 
 pub type Error = String;
 pub type EventProcessingResult<T> = Result<T, Error>;
@@ -28,16 +28,33 @@ pub struct EventProcessor {
 }
 
 impl EventProcessor {
+    pub fn from(
+        events_queue: Arc<RedisMessagesQueue>,
+        quests_channel: Arc<RedisChannelPublisher>,
+        database: Arc<Database>,
+    ) -> Self {
+        Self {
+            events_queue,
+            quests_channel,
+            database,
+        }
+    }
+
     pub async fn from_config(config: &Config) -> EventProcessingResult<Self> {
-        let (events_queue, quests_channel) =
-            init_message_broker_components_with_publisher(&config.redis_url).await;
+        let redis = Redis::new(&config.redis_url)
+            .await
+            .map_err(|_| "Couldn't initialize redis connection".to_string())?;
+        let redis = Arc::new(redis);
+
+        let events_queue = RedisMessagesQueue::new(redis.clone(), QUESTS_EVENTS_QUEUE_NAME);
+        let events_queue = Arc::new(events_queue);
+
+        let quests_channel = RedisChannelPublisher::new(redis.clone(), QUESTS_CHANNEL_NAME);
+        let quests_channel = Arc::new(quests_channel);
 
         let database = create_quests_db_component(&config.database_url, false)
             .await
             .map_err(|_| "Couldn't connect to the database".to_string())?;
-
-        let events_queue = Arc::new(events_queue);
-        let quests_channel = Arc::new(quests_channel);
         let database = Arc::new(database);
 
         Ok(Self {
@@ -210,16 +227,23 @@ impl EventProcessor {
     }
 }
 
+pub fn run_event_processor(
+    database: Arc<Database>,
+    events_queue: Arc<RedisMessagesQueue>,
+    quests_channel_publisher: Arc<RedisChannelPublisher>,
+) -> JoinHandle<EventProcessingResult<()>> {
+    let event_processor = EventProcessor::from(events_queue, quests_channel_publisher, database);
+
+    start_event_processing(event_processor)
+}
+
 /// Starts the main processing task which reads events from the queue, updates the quest states and
 /// publishes the changes.
-///
-/// Panics if can't parse the config
-pub async fn start_event_processing(config: &Config) -> JoinHandle<EventProcessingResult<()>> {
-    let config = config.clone();
+pub(crate) fn start_event_processing(
+    event_processor: EventProcessor,
+) -> JoinHandle<EventProcessingResult<()>> {
+    let event_processor = Arc::new(event_processor);
     tokio::spawn(async move {
-        let event_processor = EventProcessor::from_config(&config).await?;
-        let event_processor = Arc::new(event_processor);
-
         info!("Listening for events to process...");
         loop {
             if let Err(err) = event_processor.clone().process().await {

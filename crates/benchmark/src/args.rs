@@ -38,4 +38,7 @@ pub struct Args {
 
     #[arg(short, long, default_value_t = true, help = "Authenticate WebSocket")]
     pub authenticate: bool,
+
+    #[arg(short, long, default_value_t = 10, help = "Amount of quests to create")]
+    pub quests: u8,
 }

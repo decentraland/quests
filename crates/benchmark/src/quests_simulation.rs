@@ -287,13 +287,12 @@ impl Context for TestContext {
     async fn init(args: &Args) -> Self {
         let mut quest_ids = vec![];
 
-        for _ in 0..50 {
+        for _ in 0..args.quests {
             match Self::create_random_quest(&args.api_host).await {
                 Ok(quest_id) => quest_ids.push(quest_id),
                 Err(reason) => debug!("Quest Creation > Couldn't POST quest: {reason}"),
             }
         }
-
         Self {
             quest_ids,
             timeout: Duration::from_secs(args.timeout as u64),

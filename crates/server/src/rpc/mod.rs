@@ -1,13 +1,15 @@
-mod auth;
 mod service;
 
 use crate::configuration::Config;
-use auth::authenticate_dcl_user;
-use dcl_crypto::Address;
+use async_trait::async_trait;
+use dcl_crypto::{Address, Authenticator};
+use dcl_crypto_middleware_rs::ws_signed_headers::{
+    authenticate_dcl_user_with_signed_headers, AuthenticatedWSWithSignedHeaders,
+};
 use dcl_rpc::{
     server::RpcServer,
     stream_protocol::GeneratorYielder,
-    transports::web_sockets::{warp::WarpWebSocket, WebSocketTransport},
+    transports::web_sockets::{warp::WarpWebSocket, Message, WebSocket, WebSocketTransport},
 };
 use futures_util::lock::Mutex;
 use log::{debug, error};
@@ -69,14 +71,28 @@ pub async fn run_rpc_server(
         .and(warp::ws())
         .map(move |ws: warp::ws::Ws| {
             let server_events_sender = rpc_server_events_sender.clone();
-            ws.on_upgrade(|mut websocket| async move {
-                let Ok(address) = authenticate_dcl_user(&mut websocket).await else {
+            ws.on_upgrade(|websocket| async move {
+                let websocket = WarpWebSocket::new(websocket);
+                let Ok(address) = authenticate_dcl_user_with_signed_headers(
+                    "get",
+                    "/",
+                    &mut AuthWs(&websocket),
+                    30,
+                    Authenticator::new(),
+                )
+                .await else {
                     debug!("Couldn't authenticate a user, closing connection...");
                     let _ = websocket.close().await;
                     return;
                 };
-                let websocket = Arc::new(WarpWebSocket::new(websocket));
-                let transport = Arc::new(WebSocketTransport::with_context(websocket, address));
+
+                debug!("> User connected: {address:?}");
+
+                let transport = Arc::new(WebSocketTransport::with_context(
+                    Arc::new(websocket),
+                    address,
+                ));
+
                 if server_events_sender
                     .send_attach_transport(transport)
                     .is_err()
@@ -151,5 +167,19 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, std::convert::In
             "INTERNAL_SERVER_ERROR",
             StatusCode::INTERNAL_SERVER_ERROR,
         ))
+    }
+}
+
+struct AuthWs<'a>(&'a WarpWebSocket);
+#[async_trait]
+impl<'a> AuthenticatedWSWithSignedHeaders for AuthWs<'a> {
+    type Error = ();
+
+    async fn receive_signed_headers(&mut self) -> Result<String, Self::Error> {
+        match self.0.receive().await {
+            Some(Ok(Message::Text(text_reply))) => Ok(text_reply),
+            Some(_) => Err(()),
+            None => Err(()),
+        }
     }
 }

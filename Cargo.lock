@@ -907,14 +907,15 @@ dependencies = [
 
 [[package]]
 name = "dcl-crypto-middleware-rs"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd6a3c4008fead6e52be270ee60f79e4c544f2b4122f3c81db00b8cb18c381e7"
+checksum = "6b80ad648f94a6fd4790e2e5e280cd56e98f5e01700ed40d0d5fd987db9b37e6"
 dependencies = [
  "async-trait",
  "dcl-crypto",
  "fastrand",
  "log",
+ "serde_json",
  "tokio",
 ]
 

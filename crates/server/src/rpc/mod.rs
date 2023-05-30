@@ -2,8 +2,10 @@ mod service;
 
 use crate::configuration::Config;
 use async_trait::async_trait;
-use dcl_crypto::Address;
-use dcl_crypto_middleware_rs::ws::{authenticate_dcl_user, AuthenticatedWebSocket};
+use dcl_crypto::{Address, Authenticator};
+use dcl_crypto_middleware_rs::ws_signed_headers::{
+    authenticate_dcl_user_with_signed_headers, AuthenticatedWSWithSignedHeaders,
+};
 use dcl_rpc::{
     server::RpcServer,
     stream_protocol::GeneratorYielder,
@@ -71,11 +73,20 @@ pub async fn run_rpc_server(
             let server_events_sender = rpc_server_events_sender.clone();
             ws.on_upgrade(|websocket| async move {
                 let websocket = WarpWebSocket::new(websocket);
-                let Ok(address) = authenticate_dcl_user(&mut AuthWs(&websocket), 30).await else {
+                let Ok(address) = authenticate_dcl_user_with_signed_headers(
+                    "get",
+                    "/",
+                    &mut AuthWs(&websocket),
+                    30,
+                    Authenticator::new(),
+                )
+                .await else {
                     debug!("Couldn't authenticate a user, closing connection...");
                     let _ = websocket.close().await;
                     return;
                 };
+
+                debug!("> User connected: {address:?}");
 
                 let transport = Arc::new(WebSocketTransport::with_context(
                     Arc::new(websocket),
@@ -161,18 +172,10 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, std::convert::In
 
 struct AuthWs<'a>(&'a WarpWebSocket);
 #[async_trait]
-impl<'a> AuthenticatedWebSocket for AuthWs<'a> {
+impl<'a> AuthenticatedWSWithSignedHeaders for AuthWs<'a> {
     type Error = ();
-    /// Sends the signature challenge to the client
-    async fn send_signature_challenge(&self, challenge: &str) -> Result<(), Self::Error> {
-        self.0
-            .send(Message::Text(challenge.to_string()))
-            .await
-            .map_err(|_| ())
-    }
 
-    /// Receives the authchain with signed challenge
-    async fn receive_signed_challenge(&mut self) -> Result<String, Self::Error> {
+    async fn receive_signed_headers(&mut self) -> Result<String, Self::Error> {
         match self.0.receive().await {
             Some(Ok(Message::Text(text_reply))) => Ok(text_reply),
             Some(_) => Err(()),

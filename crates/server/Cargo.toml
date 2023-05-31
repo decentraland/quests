@@ -9,12 +9,14 @@ quests_protocol = { path = "../protocol/" }
 quests_db = { path = "../db" }
 quests_message_broker = { path = "../message_broker/" }
 dcl-rpc = { workspace = true, features = ["warp"] }
-actix-web = { workspace = true } 
+actix-web = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 config = { workspace = true }
 log = { workspace = true }
 dcl-crypto = { workspace = true }
+uuid = { workspace = true }
+
 actix-web-prom = "0.6.0"
 async-trait = "0.1.57"
 tracing = "0.1"
@@ -32,8 +34,10 @@ derive_more = "0.99.17"
 warp = "0.3.3"
 tungstenite = "0.19.0"
 fastrand = "1.9.0"
-uuid = { workspace = true }
-dcl-crypto-middleware-rs = { version = "0.2.0", features = ["ws_signed_headers", "signed_fetch"]}
+dcl-crypto-middleware-rs = { version = "0.2.1", features = [
+  "ws_signed_headers",
+  "signed_fetch",
+] }
 
 [dev-dependencies]
 uuid = { workspace = true }

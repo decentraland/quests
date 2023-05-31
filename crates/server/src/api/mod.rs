@@ -51,5 +51,14 @@ pub fn get_app_router(
         .wrap(middlewares::metrics())
         .wrap(TracingLogger::default())
         .wrap(middlewares::metrics_token(&config.wkc_metrics_bearer_token))
+        .wrap(middlewares::dcl_auth_middleware([
+            "POST:/quests",
+            "DELETE:/quests/{quest_id}",
+            "PUT:/quests/{quest_id}",
+            "GET:/quests/{quest_id}/stats",
+        ]))
+        .wrap(middlewares::dcl_optional_auth_middleware([
+            "GET:/quests/{quest_id}",
+        ]))
         .configure(routes::services)
 }

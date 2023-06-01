@@ -12,67 +12,45 @@ The Quests System is an important feature that facilitates users to explore the 
 # Setup
 
 Before start, make sure you have these installed:
-- Rust
-  - [Development Setup](https://www.notion.so/decentraland/Development-Setup-3ea6715744944d1cbab0bf569f329f06)
-- docker-compose
+- **Rust** | you can use this [Development setup guide](https://www.notion.so/decentraland/Development-Setup-3ea6715744944d1cbab0bf569f329f06) 
+- **docker-compose** | used for DB and Redis
 
-## Use the project
+# Run
 
-This project makes use of Postgres and Redis, you can start both by running:
-```shell
-make runservices
+Before running the Quests server you need Postgres and Redis instances, you can start both by running:
+```console
+$ make runservices
 ```
 
-## Quests Server
-In order to run the Quests Server API:
-```shell
-cargo run -p quests_server
+In order to run the Quests Server:
+```console
+$ cargo run -p quests_server
 ```
 
-In order to run the Quests Server API in dev mode (adds the watch mode), you should use the below command:
-```shell
-cargo install cargo-watch 'if cargo-watch is not installed
-cargo watch -x 'run -p quests_server'
+Also, you can run it in watch mode by installing `cargo-watch` and using the command to run the server:
+```console
+$ cargo install cargo-watch
+$ cargo watch -x 'run -p quests_server'
 ```
 
-## Quests System
-In order tu run the Quests System, you should use the next `make` commanad from the project's root:
-```shell
-cargo run -p quests_server
-```
+## Logging
+The `RUST_LOG` environment variable can be used to specify the log level, for example:
 
-In order to run the Quests System in dev mode (adds the watch mode), you should use the below command:
-```shell
-cargo install cargo-watch 'if cargo-watch is not installed
-cargo watch -x 'run -p quests_system'
+```console
+$ RUST_LOG=debug cargo run -p quests_server
 ```
+_See [these docs](https://docs.rs/env_logger/latest/env_logger/) to understand the possible values._
 
-## Logs
-The `RUST_LOG` environment variable can be used to specify the log level, see [these docs](https://docs.rs/env_logger/latest/env_logger/) to understand the possible values, for example:
+## Testing
 
-```shell
-RUST_LOG=debug cargo run -p quests_server
-```
+You can use `cargo test` or leverage on the _Makefile_ to guarantee services tear up and down (DB and Redis):
 
-### Testing
-In order to run all project's tests, you should run the next command:
-```shell
-make tests
-```
-
-To run specfic test, there are some useful commands:
-- Quests Server:
-```shell
-make test-server
-```
-- Quests Database:
-```shell
-make test-db
-```
-- Quests Protocol:
-```shell
-make test-protocol
-```
+- `make tests`: run all tests
+- `make test-server`: run server specific tests
+- `make test-db`: run database specific tests
+- `make test-protocol`: run protocol specific tests
+- `make message-broker`: run message broker specific tests
+- `make test-system`: run system specific tests
 
 # Architecture
 Here is a highlevel architecture overview that can help to understand the project strucuture and components:

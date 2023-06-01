@@ -268,8 +268,8 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
         request: GetQuestDefinitionRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<GetQuestDefinitionResponse> {
-        match quests::get_quest(context.server_context.db.clone(), request.quest_id).await {
-            Ok(quest) => Ok(GetQuestDefinitionResponse::ok(quest)),
+        match quests::get_quest(context.server_context.db.clone(), &request.quest_id).await {
+            Ok((quest, _)) => Ok(GetQuestDefinitionResponse::ok(quest)),
             Err(_) => Ok(GetQuestDefinitionResponse::internal_server_error()),
         }
     }

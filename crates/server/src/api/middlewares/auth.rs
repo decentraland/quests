@@ -32,7 +32,7 @@ where
                     VerificationResult::VerificationPassed(address) => {
                         {
                             let mut extensions = req.extensions_mut();
-                            extensions.insert(Some(address));
+                            extensions.insert(address);
                         }
                         next.call(req).await
                     }

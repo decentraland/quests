@@ -14,9 +14,9 @@ pub struct GetQuestsQuery {
     limit: Option<i64>,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct GetQuestsResponse {
-    quests: Vec<ProtectedQuest>,
+    pub quests: Vec<ProtectedQuest>,
 }
 
 #[utoipa::path(

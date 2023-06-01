@@ -52,7 +52,7 @@ where
             {
                 {
                     let mut extensions = req.extensions_mut();
-                    extensions.insert(address);
+                    extensions.insert(Some(address));
                 }
                 next.call(req).await
             } else {

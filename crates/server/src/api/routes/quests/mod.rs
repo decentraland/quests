@@ -1,5 +1,3 @@
-use actix_web::web::ServiceConfig;
-
 pub mod create_quest;
 pub mod delete_quest;
 pub mod get_quest;
@@ -7,7 +5,9 @@ pub mod get_quest_stats;
 pub mod get_quests;
 pub mod update_quest;
 
+use actix_web::{web::ServiceConfig, HttpMessage, HttpRequest, HttpResponse};
 pub use create_quest::*;
+use dcl_crypto::Address;
 pub use delete_quest::*;
 pub use get_quest::*;
 pub use get_quest_stats::*;
@@ -56,5 +56,14 @@ impl From<&StoredQuest> for ProtectedQuest {
             description: value.description.clone(),
             definition: None,
         }
+    }
+}
+
+pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpResponse> {
+    let extensions = req.extensions();
+    if let Some(address) = extensions.get::<Address>() {
+        Ok(address.to_string())
+    } else {
+        Err(HttpResponse::BadRequest().body("Bad Request"))
     }
 }

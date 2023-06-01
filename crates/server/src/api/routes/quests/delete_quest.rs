@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
-use crate::domain::quests::QuestError;
-use actix_web::{delete, web, HttpMessage, HttpRequest, HttpResponse};
-use dcl_crypto::Address;
+use crate::{api::routes::quests::get_user_address_from_request, domain::quests::QuestError};
+use actix_web::{delete, web, HttpRequest, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
 
 #[utoipa::path(
@@ -25,14 +24,9 @@ pub async fn delete_quest(
 ) -> HttpResponse {
     let db = data.into_inner();
 
-    let user = {
-        let extensions = req.extensions();
-        if let Some(address) = extensions.get::<Address>() {
-            address.to_string()
-        } else {
-            // almost impossible branch
-            return HttpResponse::BadRequest().body("Bad Request");
-        }
+    let user = match get_user_address_from_request(&req) {
+        Ok(address) => address,
+        Err(bad_request_response) => return bad_request_response,
     };
 
     match delete_quest_controller(db, quest_id.into_inner(), &user).await {

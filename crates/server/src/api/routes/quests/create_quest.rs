@@ -1,13 +1,12 @@
 use std::sync::Arc;
-use actix_web::{post, web, HttpResponse, HttpRequest, HttpMessage};
-use dcl_crypto::Address;
+use actix_web::{post, web, HttpResponse, HttpRequest};
 use derive_more::Deref;
 use quests_db::{core::definitions::QuestsDatabase, Database};
 use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use crate::{
-    api::routes::errors::CommonError,
+    api::routes::{errors::CommonError, quests::get_user_address_from_request},
     domain::{quests::QuestError, types::ToCreateQuest},
 };
 
@@ -36,13 +35,9 @@ pub async fn create_quest(
 ) -> HttpResponse {
     let db = data.into_inner();
 
-    let user = {
-        let extensions = req.extensions();
-        if let Some(address) = extensions.get::<Address>() {
-            address.to_string()
-        } else {
-            return HttpResponse::BadRequest().into()
-        }
+    let user = match get_user_address_from_request(&req) {
+        Ok(address) => address,
+        Err(bad_request_response) => return bad_request_response,
     };
 
     match create_quest_controller(db, &quest, &user).await {

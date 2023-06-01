@@ -111,24 +111,34 @@ impl QuestsDatabase for Database {
                 definition: row
                     .try_get("definition")
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                creator_address: row
+                    .try_get("creator_address")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
             })
         }
 
         Ok(quests)
     }
 
-    async fn create_quest(&self, quest: &CreateQuest) -> DBResult<String> {
-        self.do_create_quest(quest, None).await
+    async fn create_quest(&self, quest: &CreateQuest, creator_address: &str) -> DBResult<String> {
+        self.do_create_quest(quest, creator_address, None).await
     }
 
-    async fn update_quest(&self, previous_quest_id: &str, quest: &CreateQuest) -> DBResult<String> {
+    async fn update_quest(
+        &self,
+        previous_quest_id: &str,
+        quest: &CreateQuest,
+        creator_address: &str,
+    ) -> DBResult<String> {
         let mut transaction = self
             .pool
             .begin()
             .await
             .map_err(|err| DBError::TransactionBeginFailed(Box::new(err)))?;
 
-        let quest_id = self.do_create_quest(quest, Some(&mut transaction)).await?;
+        let quest_id = self
+            .do_create_quest(quest, creator_address, Some(&mut transaction))
+            .await?;
         self.do_deactivate_quest(previous_quest_id, Some(&mut transaction))
             .await?;
 
@@ -171,6 +181,9 @@ impl QuestsDatabase for Database {
                 .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
             definition: query_result
                 .try_get("definition")
+                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
+            creator_address: query_result
+                .try_get("creator_address")
                 .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
         })
     }
@@ -384,16 +397,19 @@ impl Database {
     async fn do_create_quest(
         &self,
         quest: &CreateQuest<'_>,
+        creator_address: &str,
         tx: Option<&mut Transaction<'_, Postgres>>,
     ) -> DBResult<String> {
         let quest_id = Uuid::new_v4().to_string();
         let query = sqlx::query(
-            "INSERT INTO quests (id, name, description, definition) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO quests (id, name, description, definition, creator_address) VALUES ($1, $2, $3, $4, $5)",
         )
         .bind(parse_str_to_uuid(&quest_id)?)
         .bind(quest.name)
         .bind(quest.description)
-        .bind(&quest.definition);
+        .bind(&quest.definition)
+        .bind(creator_address);
+
         let result = if let Some(tx) = tx {
             query.execute(tx).await
         } else {

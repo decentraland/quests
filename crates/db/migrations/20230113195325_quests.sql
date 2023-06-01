@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS quests (
   name TEXT NOT NULL,
   description TEXT NOT NULL,
   definition bytea NOT NULL,
+  creator_address TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   updated_at TIMESTAMP NOT NULL DEFAULT now()
 );

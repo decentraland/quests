@@ -1,26 +1,22 @@
-use actix_web::web::ServiceConfig;
-
-pub mod abandon_quest;
 pub mod create_quest;
 pub mod delete_quest;
-pub mod get_all_states_by_address;
 pub mod get_quest;
-pub mod get_quest_state;
 pub mod get_quest_stats;
 pub mod get_quests;
-pub mod start_quest;
 pub mod update_quest;
 
-pub use abandon_quest::*;
+use actix_web::{web::ServiceConfig, HttpMessage, HttpRequest, HttpResponse};
 pub use create_quest::*;
+use dcl_crypto::Address;
 pub use delete_quest::*;
-pub use get_all_states_by_address::*;
 pub use get_quest::*;
-pub use get_quest_state::*;
 pub use get_quest_stats::*;
 pub use get_quests::*;
-pub use start_quest::*;
+use quests_db::core::definitions::StoredQuest;
+use quests_protocol::definitions::QuestDefinition;
+use serde::{Deserialize, Serialize};
 pub use update_quest::*;
+use utoipa::ToSchema;
 
 pub fn services(config: &mut ServiceConfig) {
     config
@@ -28,10 +24,46 @@ pub fn services(config: &mut ServiceConfig) {
         .service(create_quest)
         .service(update_quest)
         .service(delete_quest)
-        .service(start_quest)
-        .service(abandon_quest)
         .service(get_quest)
-        .service(get_quest_instance_state)
-        .service(get_all_quest_states_by_user_address)
         .service(get_quest_stats);
+}
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct ProtectedQuest {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub definition: Option<QuestDefinition>,
+}
+
+impl From<StoredQuest> for ProtectedQuest {
+    fn from(value: StoredQuest) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            description: value.description,
+            definition: None,
+        }
+    }
+}
+
+impl From<&StoredQuest> for ProtectedQuest {
+    fn from(value: &StoredQuest) -> Self {
+        Self {
+            id: value.id.clone(),
+            name: value.name.clone(),
+            description: value.description.clone(),
+            definition: None,
+        }
+    }
+}
+
+pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpResponse> {
+    let extensions = req.extensions();
+    if let Some(address) = extensions.get::<Address>() {
+        Ok(address.to_string())
+    } else {
+        Err(HttpResponse::BadRequest().body("Bad Request"))
+    }
 }

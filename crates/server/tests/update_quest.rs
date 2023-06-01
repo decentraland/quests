@@ -1,5 +1,6 @@
 mod common;
-use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
+use actix_web::test::{call_service, init_service, read_body_json, try_call_service, TestRequest};
+use actix_web_lab::__reexports::serde_json;
 pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
@@ -24,7 +25,10 @@ async fn update_quest_should_be_200() {
         definition: quest.definition.as_ref().unwrap().encode_to_vec(),
     };
 
-    let id = db.create_quest(&create_quest).await.unwrap();
+    let id = db
+        .create_quest(&create_quest, "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1bf5")
+        .await
+        .unwrap();
 
     let quest_update = Quest {
         name: "QUEST-1_UPDATE".to_string(),
@@ -76,8 +80,22 @@ async fn update_quest_should_be_200() {
         }),
     };
 
+    let path = format!("/quests/{}", id);
+
+    let headers = get_signed_headers(
+        create_test_identity(),
+        "put",
+        &path,
+        &serde_json::to_string(&quest_update).unwrap(),
+    );
+
     let req = TestRequest::put()
-        .uri(format!("/quests/{}", id).as_str())
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
         .set_json(&quest_update)
         .to_request();
 
@@ -165,8 +183,20 @@ async fn update_quest_should_be_400_uuid_bad_format() {
         ..quest_definition
     };
 
+    let headers = get_signed_headers(
+        create_test_identity(),
+        "put",
+        "/quests/1aa",
+        &serde_json::to_string(&quest_update).unwrap(),
+    );
+
     let req = TestRequest::put()
         .uri("/quests/1aa")
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
         .set_json(quest_update)
         .to_request();
 
@@ -196,8 +226,24 @@ async fn update_quest_should_be_400_quest_validation_error() {
         ..quest_definition
     };
 
+    let uuid = uuid::Uuid::new_v4();
+
+    let path = format!("/quests/{}", uuid);
+
+    let headers = get_signed_headers(
+        create_test_identity(),
+        "put",
+        &path,
+        &serde_json::to_string(&quest_update).unwrap(),
+    );
+
     let req = TestRequest::put()
-        .uri("/quests/whatever-uuid-because-it-fails-due-to-validation")
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
         .set_json(quest_update)
         .to_request();
 
@@ -209,4 +255,170 @@ async fn update_quest_should_be_400_quest_validation_error() {
     assert!(body
         .message
         .contains("Quest Validation Error: Missing the definition for the quest"));
+}
+
+#[actix_web::test]
+async fn update_quest_should_be_401() {
+    let config = get_configuration().await;
+    let app = init_service(build_app(&config).await).await;
+
+    let quest_update = Quest {
+        name: "QUEST-1_UPDATE".to_string(),
+        description: "Grab some apples - Updated".to_string(),
+        definition: Some(QuestDefinition {
+            connections: vec![
+                Connection::new("A-Updated", "B"),
+                Connection::new("B", "C"),
+                Connection::new("C", "D"),
+            ],
+            steps: vec![
+                Step {
+                    id: "A-Updated".to_string(),
+                    tasks: vec![Task {
+                        id: "A_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
+                    }],
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "B".to_string(),
+                    tasks: vec![Task {
+                        id: "B_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
+                    }],
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "C".to_string(),
+                    tasks: vec![Task {
+                        id: "C_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
+                    }],
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "D".to_string(),
+                    tasks: vec![Task {
+                        id: "D_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
+                    }],
+                    description: "".to_string(),
+                },
+            ],
+        }),
+    };
+
+    let path = format!("/quests/{}", uuid::Uuid::new_v4());
+
+    let req = TestRequest::put()
+        .uri(&path)
+        .set_json(&quest_update)
+        .to_request();
+
+    match try_call_service(&app, req).await {
+        Ok(_) => panic!("should fail"),
+        Err(err) => {
+            let response = err.error_response();
+            assert_eq!(response.status(), 401);
+        }
+    }
+}
+
+#[actix_web::test]
+async fn update_quest_should_be_403() {
+    let config = get_configuration().await;
+    let db = create_quests_db_component(&config.database_url, true)
+        .await
+        .unwrap();
+
+    let app = init_service(build_app(&config).await).await;
+    let quest = quest_samples::grab_some_apples();
+
+    let create_quest = CreateQuest {
+        name: &quest.name,
+        description: &quest.description,
+        definition: quest.definition.as_ref().unwrap().encode_to_vec(),
+    };
+
+    let id = db.create_quest(&create_quest, "0xA").await.unwrap();
+
+    let quest_update = Quest {
+        name: "QUEST-1_UPDATE".to_string(),
+        description: "Grab some apples - Updated".to_string(),
+        definition: Some(QuestDefinition {
+            connections: vec![
+                Connection::new("A-Updated", "B"),
+                Connection::new("B", "C"),
+                Connection::new("C", "D"),
+            ],
+            steps: vec![
+                Step {
+                    id: "A-Updated".to_string(),
+                    tasks: vec![Task {
+                        id: "A_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
+                    }],
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "B".to_string(),
+                    tasks: vec![Task {
+                        id: "B_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
+                    }],
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "C".to_string(),
+                    tasks: vec![Task {
+                        id: "C_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
+                    }],
+                    description: "".to_string(),
+                },
+                Step {
+                    id: "D".to_string(),
+                    tasks: vec![Task {
+                        id: "D_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::location(Coordinates::new(10, 20))],
+                    }],
+                    description: "".to_string(),
+                },
+            ],
+        }),
+    };
+
+    let path = format!("/quests/{}", id);
+
+    let headers = get_signed_headers(
+        create_test_identity(),
+        "put",
+        &path,
+        &serde_json::to_string(&quest_update).unwrap(),
+    );
+
+    let req = TestRequest::put()
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
+        .set_json(&quest_update)
+        .to_request();
+
+    let response = call_service(&app, req).await;
+
+    assert_eq!(response.status(), 403);
+    let body: ErrorResponse = read_body_json(response).await;
+    assert_eq!(body.code, 403);
+    assert!(body.message.contains("Cannot modify a quest"));
 }

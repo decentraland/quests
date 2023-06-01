@@ -80,10 +80,10 @@ async fn can_process_events() {
             .encode_to_vec(),
     };
 
-    let result = db.create_quest(&create_quest).await;
+    let result = db.create_quest(&create_quest, "0xA").await;
     assert!(result.is_ok());
 
-    let user_address = "0xA";
+    let user_address = "0xB";
     let result = db.start_quest(&result.unwrap(), user_address).await;
     assert!(result.is_ok());
 

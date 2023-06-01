@@ -16,7 +16,9 @@ pub enum QuestError {
     DeserializationError,
     #[error("Quest Validation Error: {0}")]
     QuestValidation(String),
-    #[error("Cannot modify a quest if you are not the user playing the quest")]
+    #[error("Cannot modify a quest if you are not the quest creator")]
+    NotQuestCreator,
+    #[error("Cannot modify a quest instance if you are not the user playing the quest")]
     NotInstanceOwner,
     #[error("Quest doesn't exist or is inactive")]
     NotFoundOrInactive,
@@ -116,7 +118,11 @@ pub async fn get_instance_state(
     Ok((quest, state))
 }
 
-pub async fn get_quest<DB: QuestsDatabase>(db: Arc<DB>, id: String) -> Result<Quest, QuestError> {
-    let stored_quest = db.get_quest(&id).await?;
-    stored_quest.to_quest()
+pub async fn get_quest<DB: QuestsDatabase>(
+    db: Arc<DB>,
+    id: &str,
+) -> Result<(Quest, String), QuestError> {
+    let stored_quest = db.get_quest(id).await?;
+    let creator_address = stored_quest.creator_address.clone();
+    Ok((stored_quest.to_quest()?, creator_address))
 }

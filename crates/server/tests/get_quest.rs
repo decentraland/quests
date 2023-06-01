@@ -1,5 +1,6 @@
 mod common;
 use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
+use actix_web_lab::__reexports::serde_json;
 use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
@@ -8,7 +9,7 @@ use quests_server::api::routes::quests::GetQuestResponse;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
-async fn get_quest_should_be_200() {
+async fn get_quest_with_defintiions_should_be_200() {
     let config = get_configuration().await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
@@ -27,10 +28,27 @@ async fn get_quest_should_be_200() {
             .encode_to_vec(),
     };
 
-    let id = db.create_quest(&create_quest).await.unwrap();
+    let id = db
+        .create_quest(&create_quest, "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1bf5")
+        .await
+        .unwrap();
+
+    let path = format!("/quests/{}", id);
+
+    let headers = get_signed_headers(
+        create_test_identity(),
+        "get",
+        &path,
+        serde_json::to_string(&quest_definition).unwrap().as_str(),
+    );
 
     let req = TestRequest::get()
-        .uri(format!("/quests/{}", id).as_str())
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
         .to_request();
 
     let response = call_service(&app, req).await;
@@ -56,6 +74,44 @@ async fn get_quest_should_be_200() {
         quest.definition.unwrap().connections,
         quest_definition.definition.unwrap().connections
     );
+}
+
+#[actix_web::test]
+async fn get_quest_without_defintiions_should_be_200() {
+    let config = get_configuration().await;
+    let db = create_quests_db_component(&config.database_url, true)
+        .await
+        .unwrap();
+
+    let app = init_service(build_app(&config).await).await;
+    let quest_definition = quest_samples::grab_some_apples();
+
+    let create_quest = CreateQuest {
+        name: &quest_definition.name,
+        description: &quest_definition.description,
+        definition: quest_definition
+            .definition
+            .as_ref()
+            .unwrap()
+            .encode_to_vec(),
+    };
+
+    let id = db
+        .create_quest(&create_quest, "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1bf5")
+        .await
+        .unwrap();
+
+    let path = format!("/quests/{}", id);
+
+    let req = TestRequest::get().uri(&path).to_request();
+
+    let response = call_service(&app, req).await;
+
+    assert!(response.status().is_success());
+    let GetQuestResponse { quest } = read_body_json(response).await;
+    assert_eq!(quest.name, "QUEST-1");
+    assert_eq!(quest.description, "Grab some apples");
+    assert!(quest.definition.is_none());
 }
 
 #[actix_web::test]

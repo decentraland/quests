@@ -1,4 +1,3 @@
-use super::events;
 use super::health;
 use super::quests;
 use actix_web::web::ServiceConfig;
@@ -12,28 +11,19 @@ use utoipa_swagger_ui::SwaggerUi;
                 health::live,
                 quests::get_quest,
                 quests::get_quests,
-                quests::get_quest_instance_state,
                 quests::get_quest_stats,
-                quests::start_quest,
-                quests::abandon_quest,
                 quests::update_quest,
                 quests::create_quest,
                 quests::delete_quest,
-                events::add_event,
         ),
         components(
                 schemas(
                         quests::create_quest::CreateQuestRequest,
                         quests::create_quest::CreateQuestResponse,
                         quests::get_quest::GetQuestResponse,
-                        quests::get_quest_state::GetQuestStateResponse,
                         quests::get_quests::GetQuestsResponse,
-                        quests::start_quest::StartQuestRequest,
-                        quests::start_quest::StartQuestResponse,
-                        quests::abandon_quest::AbandonQuestRequest,
                         quests::update_quest::UpdateQuestRequest,
                         quests::update_quest::UpdateQuestResponse,
-                        events::AddEventResponse,
                 )
         ),
         tags(

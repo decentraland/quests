@@ -2,7 +2,7 @@ use super::definitions::{AddEvent, CreateQuest, QuestsDatabase};
 
 pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQuest<'_>) {
     assert!(db.ping().await);
-    let quest_id = db.create_quest(&quest).await.unwrap();
+    let quest_id = db.create_quest(&quest, "0xA").await.unwrap();
 
     let is_active = db.is_active_quest(&quest_id).await.unwrap();
     assert!(is_active);
@@ -13,7 +13,10 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         definition: quest.definition.clone(),
     };
 
-    let new_quest_id = db.update_quest(&quest_id, &updated_quest).await.unwrap();
+    let new_quest_id = db
+        .update_quest(&quest_id, &updated_quest, "0xA")
+        .await
+        .unwrap();
 
     let is_active = db.is_active_quest(&quest_id).await.unwrap();
     assert!(!is_active);

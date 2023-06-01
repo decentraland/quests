@@ -6,8 +6,13 @@ use serde::{Deserialize, Serialize};
 pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn ping(&self) -> bool;
 
-    async fn create_quest(&self, quest: &CreateQuest) -> DBResult<String>;
-    async fn update_quest(&self, previous_quest_id: &str, quest: &CreateQuest) -> DBResult<String>;
+    async fn create_quest(&self, quest: &CreateQuest, creator_address: &str) -> DBResult<String>;
+    async fn update_quest(
+        &self,
+        previous_quest_id: &str,
+        quest: &CreateQuest,
+        creator_address: &str,
+    ) -> DBResult<String>;
     async fn deactivate_quest(&self, id: &str) -> DBResult<String>;
     async fn get_quest(&self, id: &str) -> DBResult<StoredQuest>;
     async fn get_active_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>>;
@@ -65,6 +70,7 @@ pub struct StoredQuest {
     pub name: String,
     pub description: String,
     pub definition: Vec<u8>,
+    pub creator_address: String,
 }
 
 pub trait CloneDatabase {

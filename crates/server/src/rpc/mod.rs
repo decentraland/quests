@@ -88,10 +88,9 @@ pub async fn run_rpc_server(
 
                 debug!("> User connected: {address:?}");
 
-                let transport = Arc::new(WebSocketTransport::with_context(
-                    Arc::new(websocket),
-                    address,
-                ));
+                let websocket = Arc::new(websocket);
+                ping_every_30s(websocket.clone());
+                let transport = Arc::new(WebSocketTransport::with_context(websocket, address));
 
                 if server_events_sender
                     .send_attach_transport(transport)
@@ -149,6 +148,17 @@ pub async fn run_rpc_server(
     });
 
     (http_server_handle, rpc_server_handle)
+}
+
+fn ping_every_30s(websocket: Arc<WarpWebSocket>) {
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            if websocket.send(Message::Ping).await.is_err() {
+                break;
+            }
+        }
+    });
 }
 
 #[derive(Debug)]

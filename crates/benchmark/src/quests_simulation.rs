@@ -166,15 +166,15 @@ impl ClientState {
                 match quest_updates {
                     Some(UserUpdate {
                         message:
-                            Some(user_update::Message::NewQuestStarted(QuestStateWithData {
-                                quest_instance_id,
-                                quest_state: Some(state),
+                            Some(user_update::Message::NewQuestStarted(QuestInstance {
+                                id,
+                                state: Some(state),
                                 ..
                             })),
                         ..
                     }) => ClientState::MakeQuestProgress {
                         updates,
-                        quest_instance_id,
+                        quest_instance_id: id,
                         quest_state: state,
                     },
                     _ => {
@@ -238,12 +238,11 @@ impl ClientState {
                 match quest_update {
                     Some(update) => match update.message {
                         Some(user_update::Message::QuestStateUpdate(QuestStateUpdate {
-                            quest_data: Some(state),
+                            quest_state: Some(state),
+                            instance_id,
                             ..
-                        })) if state.quest_instance_id == quest_instance_id
-                            && state.quest_state.is_some() =>
-                        {
-                            let new_quest_state = state.quest_state.unwrap();
+                        })) if instance_id == quest_instance_id => {
+                            let new_quest_state = state;
                             if new_quest_state.steps_left == 0 {
                                 ClientState::QuestFinished { updates }
                             } else {

@@ -15,6 +15,7 @@ async fn deactivate_quest_should_be_200() {
         .unwrap();
 
     let quest_definition = Quest {
+        id: "5e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {
@@ -102,6 +103,7 @@ async fn deactivate_quest_should_be_403() {
         .unwrap();
 
     let quest_definition = Quest {
+        id: "6e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {

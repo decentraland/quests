@@ -15,6 +15,7 @@ impl ToQuest for StoredQuest {
     fn to_quest(&self) -> Result<Quest, QuestError> {
         let definition = QuestDefinition::decode(self.definition.as_slice())?;
         Ok(Quest {
+            id: self.id.clone(),
             name: self.name.to_string(),
             description: self.description.to_string(),
             definition: Some(definition),
@@ -28,6 +29,7 @@ impl ToCreateQuest for Quest {
             name,
             description,
             definition,
+            ..
         } = self;
 
         let Some(definition) = definition else {

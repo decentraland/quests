@@ -21,6 +21,7 @@ async fn can_process_events() {
         .expect("can create db");
 
     let quest_definition = Quest {
+        id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {

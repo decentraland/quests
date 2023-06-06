@@ -3,6 +3,7 @@ use quests_protocol::quests::*;
 
 pub fn grab_some_apples() -> Quest {
     Quest {
+        id: "3e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {
@@ -56,6 +57,7 @@ pub fn grab_some_apples() -> Quest {
 #[allow(dead_code)]
 pub fn grab_some_pies() -> Quest {
     Quest {
+        id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-2".to_string(),
         description: "Grab some pies".to_string(),
         definition: Some(QuestDefinition {
@@ -114,6 +116,7 @@ pub fn one_step_quest() -> (Quest, Action) {
         parameters: HashMap::new(),
     };
     let quest = Quest {
+        id: "2e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "One step quest".to_string(),
         description: "Jump".to_string(),
         definition: Some(QuestDefinition {

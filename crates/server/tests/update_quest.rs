@@ -31,6 +31,7 @@ async fn update_quest_should_be_200() {
         .unwrap();
 
     let quest_update = Quest {
+        id: "5f9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
         definition: Some(QuestDefinition {
@@ -129,6 +130,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
+        id: "7e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {
@@ -213,6 +215,7 @@ async fn update_quest_should_be_400_quest_validation_error() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
+        id: "8e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {
@@ -263,6 +266,7 @@ async fn update_quest_should_be_401() {
     let app = init_service(build_app(&config).await).await;
 
     let quest_update = Quest {
+        id: "9e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
         definition: Some(QuestDefinition {
@@ -347,6 +351,7 @@ async fn update_quest_should_be_403() {
     let id = db.create_quest(&create_quest, "0xA").await.unwrap();
 
     let quest_update = Quest {
+        id: "0e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
         definition: Some(QuestDefinition {

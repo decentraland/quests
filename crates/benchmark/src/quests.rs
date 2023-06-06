@@ -53,6 +53,7 @@ pub fn random_quest() -> Quest {
     }
 
     Quest {
+        id: "8e9b8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: create_random_string(10),
         description: create_random_string(100),
         definition: Some(QuestDefinition { connections, steps }),
@@ -61,6 +62,7 @@ pub fn random_quest() -> Quest {
 
 pub fn grab_some_apples() -> Quest {
     Quest {
+        id: "8e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {
@@ -113,6 +115,7 @@ pub fn grab_some_apples() -> Quest {
 
 pub fn grab_some_pies() -> Quest {
     Quest {
+        id: "8e9a8bbf-2223-4f51-b7e5-000d35cedef4".to_string(),
         name: "QUEST-2".to_string(),
         description: "Grab some pies".to_string(),
         definition: Some(QuestDefinition {

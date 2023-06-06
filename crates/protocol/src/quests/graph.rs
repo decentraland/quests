@@ -192,6 +192,7 @@ mod tests {
     #[test]
     fn build_quest_graph_properly() {
         let quest = Quest {
+            id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -260,6 +261,7 @@ mod tests {
     #[test]
     fn build_quest_graph_with_multiple_starting_points_properly() {
         let quest = Quest {
+            id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -347,6 +349,7 @@ mod tests {
     #[test]
     fn build_quest_graph_with_multiple_pivot_points() {
         let quest = Quest {
+            id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -443,6 +446,7 @@ mod tests {
     #[test]
     fn quest_graph_prev_works_properly() {
         let quest = Quest {
+            id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -514,6 +518,7 @@ mod tests {
     #[test]
     fn quest_graph_steps_required_for_end() {
         let quest = Quest {
+            id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {

@@ -61,11 +61,10 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
 
                             let user_update = UserUpdate {
                                 message: Some(user_update::Message::NewQuestStarted(
-                                    QuestStateWithData {
-                                        quest_instance_id: new_quest_instance_id.clone(),
-                                        name: quest.name,
-                                        description: quest.description,
-                                        quest_state: Some(quest_state),
+                                    QuestInstance {
+                                        id: quest_id,
+                                        quest: Some(quest),
+                                        state: Some(quest_state),
                                     },
                                 )),
                             };
@@ -193,11 +192,11 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                         let ids = quest_instance_ids.clone();
                         async move {
                             if let Some(user_update::Message::QuestStateUpdate(QuestStateUpdate {
-                                quest_data: Some(quest_data),
+                                instance_id,
                                 ..
                             })) = &user_update.message
                             {
-                                if ids.lock().await.contains(&quest_data.quest_instance_id) {
+                                if ids.lock().await.contains(instance_id) {
                                     if generator_yielder.r#yield(user_update).await.is_err() {
                                         error!(
                                             "User Update received > Couldn't send update to subscriptors"
@@ -251,7 +250,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                 let mut quests = Vec::new();
                 for (instance_id, (quest, state)) in quest_states {
                     let quest_definition_and_state = QuestInstance {
-                        instance_id,
+                        id: instance_id,
                         quest: Some(quest),
                         state: Some(state),
                     };

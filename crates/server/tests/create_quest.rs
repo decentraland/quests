@@ -39,6 +39,7 @@ async fn create_quest_should_be_400_quest_validation_error() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
+        id: "3e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {
@@ -79,6 +80,7 @@ async fn create_quest_should_be_401() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
     let quest_definition = Quest {
+        id: "4e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
         definition: Some(QuestDefinition {

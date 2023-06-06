@@ -226,6 +226,7 @@ mod tests {
     #[test]
     fn get_starting_steps_properly() {
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -249,6 +250,7 @@ mod tests {
     #[test]
     fn get_steps_pointing_to_end_properly() {
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -272,6 +274,7 @@ mod tests {
     #[test]
     fn quest_should_be_valid() {
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -315,6 +318,7 @@ mod tests {
     fn quest_should_not_be_valid() {
         // Should not be valid because of missing connections and steps
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -330,6 +334,7 @@ mod tests {
 
         // Should not be valid because of missing step for starting ndoe
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -350,6 +355,7 @@ mod tests {
 
         // Should not be valid because of missing step for end ndoe
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -370,6 +376,8 @@ mod tests {
 
         // Should not be valid because of missing connection for a defined step
         let quest = Quest {
+            id: "".to_string(),
+
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -410,6 +418,7 @@ mod tests {
 
         // Should not be valid because of missing step for a defined connection
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -441,6 +450,7 @@ mod tests {
 
         // Should not be valid because of repeated ID for step
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -490,6 +500,7 @@ mod tests {
 
         // Should not be valid because of repeated ID on subtasks
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -537,6 +548,7 @@ mod tests {
 
         // Should not be valid because of Tasks::None
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {

@@ -23,7 +23,6 @@ type QuestRpcResult<T> = Result<T, ServiceErrors>;
 
 #[async_trait::async_trait]
 impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServiceImplementation {
-    // TODO: Add tracing instrument
     async fn start_quest(
         &self,
         request: StartQuestRequest,
@@ -62,7 +61,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                             let user_update = UserUpdate {
                                 message: Some(user_update::Message::NewQuestStarted(
                                     QuestInstance {
-                                        id: quest_id,
+                                        id: new_quest_instance_id,
                                         quest: Some(quest),
                                         state: Some(quest_state),
                                     },
@@ -93,7 +92,6 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
         }
     }
 
-    // TODO: Add tracing instrument
     async fn abort_quest(
         &self,
         request: AbortQuestRequest,
@@ -128,7 +126,6 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
         }
     }
 
-    // TODO: Add tracing instrument
     async fn send_event(
         &self,
         request: EventRequest,
@@ -160,7 +157,6 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
         }
     }
 
-    // TODO: Add tracing instrument
     async fn subscribe(
         &self,
         context: ProcedureContext<QuestsRpcServerContext>,

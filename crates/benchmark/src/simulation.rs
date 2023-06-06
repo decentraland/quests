@@ -42,8 +42,8 @@ impl Simulation {
         let clients = Arc::new(Mutex::new(clients));
         let context = Arc::new(context);
 
-        debug!("Simulation > Wait for 10s before start...");
-        sleep(Duration::from_secs(10));
+        debug!("Simulation > Wait for 1s before start...");
+        sleep(Duration::from_secs(1));
         let mut futures = FuturesUnordered::new();
         for worker_id in 0..args.parallel {
             futures.push(tokio::spawn(worker(

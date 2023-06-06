@@ -10,7 +10,7 @@ use tokio::time::timeout;
 
 use crate::{
     args::Args,
-    client::TestWebSocketTransport,
+    client::{create_test_identity, get_signed_headers, TestWebSocketTransport},
     quests::{create_random_string, random_quest},
     simulation::{Client, Context},
 };
@@ -28,10 +28,22 @@ pub struct TestContext {
 impl TestContext {
     pub async fn create_random_quest(api_host: &str) -> Result<String, String> {
         let quest = random_quest();
+        let headers = get_signed_headers(
+            create_test_identity(),
+            "post",
+            "/quests",
+            serde_json::to_string(&quest).unwrap().as_str(),
+        );
 
         let client = reqwest::Client::new();
+
         let res = client
             .post(format!("{api_host}/quests"))
+            .header(headers[0].0.clone(), headers[0].1.clone())
+            .header(headers[1].0.clone(), headers[1].1.clone())
+            .header(headers[2].0.clone(), headers[2].1.clone())
+            .header(headers[3].0.clone(), headers[3].1.clone())
+            .header(headers[4].0.clone(), headers[4].1.clone())
             .json(&quest)
             .send()
             .await
@@ -142,7 +154,8 @@ impl ClientState {
                     })
                     .await;
                 debug!(
-                    "User {} > StartQuestRequest > Response: {:?}",
+                    "User {} > StartQuestRequest: id {} > Response: {:?}",
+                    quest_id,
                     &user_address[..4],
                     response
                 );
@@ -233,7 +246,10 @@ impl ClientState {
                 };
                 debug!("User {} > Fetch next event > Done.", &user_address[..4]);
 
-                debug!("User {user_address} > quest_update received > {quest_update:?}");
+                debug!(
+                    "User {} > quest_update received > {quest_update:?}",
+                    &user_address[..4]
+                );
 
                 match quest_update {
                     Some(update) => match update.message {
@@ -254,8 +270,24 @@ impl ClientState {
                             }
                         }
                         Some(user_update::Message::EventIgnored(_)) => {
-                            error!("User {user_address} > Event ignored");
+                            error!("User {} > Event ignored", &user_address[..4]);
                             ClientState::MakeQuestProgress {
+                                updates,
+                                quest_instance_id,
+                                quest_state,
+                            }
+                        }
+                        Some(user_update::Message::QuestStateUpdate(QuestStateUpdate {
+                            instance_id,
+                            ..
+                        })) => {
+                            debug!(
+                                "User {} > QuestStateUpdate received for wrong quest instance {}, expected instance was {}",
+                                &user_address[..4],
+                                instance_id,
+                                quest_instance_id
+                            );
+                            ClientState::FetchQuestUpdate {
                                 updates,
                                 quest_instance_id,
                                 quest_state,

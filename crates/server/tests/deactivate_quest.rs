@@ -5,6 +5,7 @@ pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
 use quests_protocol::definitions::*;
+use quests_server::api::routes::quests::CreateQuestRequest;
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
@@ -14,13 +15,13 @@ async fn deactivate_quest_should_be_200() {
         .await
         .unwrap();
 
-    let quest_definition = Quest {
+    let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![], // not needed for this test
             steps: vec![],       // not needed for this test
-        }),
+        },
     };
 
     let create_quest = CreateQuest {
@@ -101,13 +102,13 @@ async fn deactivate_quest_should_be_403() {
         .await
         .unwrap();
 
-    let quest_definition = Quest {
+    let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![], // not needed for this test
             steps: vec![],       // not needed for this test
-        }),
+        },
     };
 
     let create_quest = CreateQuest {

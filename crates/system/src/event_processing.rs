@@ -114,7 +114,7 @@ impl EventProcessor {
             {
                 Ok(ApplyEventResult::NewState(quest_state)) => {
                     match self
-                        .add_event_and_notify(event, &quest_instance, quest, quest_state)
+                        .add_event_and_notify(event, &quest_instance, quest_state)
                         .await
                     {
                         Ok(_) => event_applied_to_instances += 1,
@@ -146,7 +146,6 @@ impl EventProcessor {
         self: &Arc<Self>,
         event: &Event,
         quest_instance: &QuestInstance,
-        quest: Quest,
         quest_state: QuestState,
     ) -> Result<(), ProcessEventError> {
         debug!("Processing event > event applied with new state: {quest_state:?}");
@@ -171,12 +170,8 @@ impl EventProcessor {
         self.quests_channel
             .publish(UserUpdate {
                 message: Some(user_update::Message::QuestStateUpdate(QuestStateUpdate {
-                    quest_data: Some(QuestStateWithData {
-                        name: quest.name,
-                        description: quest.description,
-                        quest_instance_id: quest_instance.id.clone(),
-                        quest_state: Some(quest_state),
-                    }),
+                    instance_id: quest_instance.id.clone(),
+                    quest_state: Some(quest_state),
                     event_id: event.id.clone(),
                 })),
             })
@@ -191,6 +186,7 @@ impl EventProcessor {
 
         let quest_definition = QuestDefinition::decode(&*quest.definition)?;
         let quest = Quest {
+            id: quest.id,
             name: quest.name,
             description: quest.description,
             definition: Some(quest_definition),

@@ -3,7 +3,7 @@ use actix_web::test::{call_service, init_service, read_body_json, try_call_servi
 use actix_web_lab::__reexports::serde_json;
 use common::*;
 use quests_protocol::definitions::*;
-use quests_server::api::routes::ErrorResponse;
+use quests_server::api::routes::{quests::CreateQuestRequest, ErrorResponse};
 
 #[actix_web::test]
 async fn create_quest_should_be_200() {
@@ -38,13 +38,13 @@ async fn create_quest_should_be_200() {
 async fn create_quest_should_be_400_quest_validation_error() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
-    let quest_definition = Quest {
+    let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![],
             steps: vec![],
-        }),
+        },
     };
 
     let headers = get_signed_headers(
@@ -78,13 +78,13 @@ async fn create_quest_should_be_400_quest_validation_error() {
 async fn create_quest_should_be_401() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
-    let quest_definition = Quest {
+    let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![],
             steps: vec![],
-        }),
+        },
     };
 
     let req = TestRequest::post()

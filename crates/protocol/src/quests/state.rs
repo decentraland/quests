@@ -121,6 +121,7 @@ mod tests {
     #[test]
     fn quest_graph_apply_event_task_simple_works() {
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -299,6 +300,7 @@ mod tests {
     #[test]
     fn quest_graph_apply_event_task_multiple_works() {
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {

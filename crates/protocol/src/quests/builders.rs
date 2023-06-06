@@ -173,9 +173,11 @@ impl EventResponse {
 }
 
 impl GetAllQuestsResponse {
-    pub fn ok(quests: Vec<QuestInstance>) -> Self {
+    pub fn ok(instances: Vec<QuestInstance>) -> Self {
         Self {
-            response: Some(get_all_quests_response::Response::Quests(Quests { quests })),
+            response: Some(get_all_quests_response::Response::Quests(Quests {
+                instances,
+            })),
         }
     }
 
@@ -192,6 +194,7 @@ impl GetQuestDefinitionResponse {
     pub fn ok(quest: Quest) -> Self {
         Self {
             response: Some(get_quest_definition_response::Response::Quest(Quest {
+                id: quest.id,
                 name: quest.name,
                 description: quest.description,
                 definition: quest.definition,

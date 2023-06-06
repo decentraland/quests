@@ -17,11 +17,11 @@ pub type StepID = String;
 
 impl Quest {
     /// Check if the quest has a step defined by its id
-    pub fn contanins_step(&self, step_id: &StepID) -> bool {
+    pub fn contains_step(&self, step_id: &StepID) -> bool {
         let Some(definition) = &self.definition else {
             return false;
         };
-        definition.steps.iter().any(|step| step.id == *step_id)
+        definition.contains_step(step_id)
     }
 
     /// Get step defined in the quest by its id
@@ -29,7 +29,7 @@ impl Quest {
         let Some(definition) = &self.definition else {
             return None;
         };
-        definition.steps.iter().find(|step| step.id == *step_id)
+        definition.get_step(step_id)
     }
 
     /// Get all steps in `connections` that don't have a connection defined in which they are the `from` pointing to other node.
@@ -37,21 +37,10 @@ impl Quest {
     /// We use this in order to know which steps point to the end node
     ///
     pub(crate) fn get_steps_without_to(&self) -> HashSet<StepID> {
-        let mut steps = HashSet::new();
         let Some(definition) = &self.definition else {
-            return steps;
+            return HashSet::new();
         };
-        for connection in &definition.connections {
-            if definition
-                .connections
-                .iter()
-                .all(|conn| conn.step_from != connection.step_to)
-            {
-                steps.insert(connection.step_to.clone());
-            }
-        }
-
-        steps
+        definition.get_steps_without_to()
     }
 
     /// Get all steps in `connections` that don't have a connection defined in which they are the `to`.
@@ -59,21 +48,10 @@ impl Quest {
     /// We use this in order to know which steps are possible starting points
     ///
     pub(crate) fn get_steps_without_from(&self) -> HashSet<StepID> {
-        let mut steps = HashSet::new();
         let Some(definition) = &self.definition else {
-            return steps;
+            return HashSet::new();
         };
-        for connection in &definition.connections {
-            if definition
-                .connections
-                .iter()
-                .all(|conn| conn.step_to != connection.step_from)
-            {
-                steps.insert(connection.step_from.clone());
-            }
-        }
-
-        steps
+        definition.get_steps_without_from()
     }
 
     /// Validates a Quest struct to check if it meets all the requirements to be a valid quests
@@ -82,6 +60,13 @@ impl Quest {
         let Some(definition) = &self.definition else {
             return Err(QuestValidationError::InvalidDefinition);
         };
+        definition.is_valid()
+    }
+}
+
+impl QuestDefinition {
+    pub fn is_valid(&self) -> Result<(), QuestValidationError> {
+        let definition = self;
         if definition.connections.is_empty() || definition.steps.is_empty() {
             return Err(QuestValidationError::InvalidDefinition);
         }
@@ -93,7 +78,7 @@ impl Quest {
         }
         // All starting nodes should be defined as Step
         for step_id in starting_nodes {
-            if !self.contanins_step(&step_id) {
+            if !self.contains_step(&step_id) {
                 return Err(QuestValidationError::MissingStepForStartingNode(step_id));
             }
         }
@@ -105,7 +90,7 @@ impl Quest {
         }
         // All end nodes should be defined as Step
         for step_id in end_nodes {
-            if !self.contanins_step(&step_id) {
+            if !self.contains_step(&step_id) {
                 return Err(QuestValidationError::MissingStepForEndNode(step_id));
             }
         }
@@ -153,20 +138,58 @@ impl Quest {
             ref step_to,
         } in &definition.connections
         {
-            if !self.contanins_step(step_from) {
+            if !self.contains_step(step_from) {
                 return Err(QuestValidationError::NoStepDefinedForConnectionHalf(
                     step_from.clone(),
                 ));
             }
 
-            if !self.contanins_step(step_to) {
+            if !self.contains_step(step_to) {
                 return Err(QuestValidationError::NoStepDefinedForConnectionHalf(
                     step_to.clone(),
                 ));
             }
         }
-
         Ok(())
+    }
+
+    fn contains_step(&self, step_id: &StepID) -> bool {
+        self.steps.iter().any(|step| step.id == *step_id)
+    }
+
+    /// Get step defined in the quest by its id
+    fn get_step(&self, step_id: &StepID) -> Option<&Step> {
+        self.steps.iter().find(|step| step.id == *step_id)
+    }
+
+    fn get_steps_without_to(&self) -> HashSet<StepID> {
+        let mut steps = HashSet::new();
+        for connection in &self.connections {
+            if self
+                .connections
+                .iter()
+                .all(|conn| conn.step_from != connection.step_to)
+            {
+                steps.insert(connection.step_to.clone());
+            }
+        }
+
+        steps
+    }
+
+    fn get_steps_without_from(&self) -> HashSet<StepID> {
+        let mut steps = HashSet::new();
+        for connection in &self.connections {
+            if self
+                .connections
+                .iter()
+                .all(|conn| conn.step_to != connection.step_from)
+            {
+                steps.insert(connection.step_from.clone());
+            }
+        }
+
+        steps
     }
 }
 
@@ -226,6 +249,7 @@ mod tests {
     #[test]
     fn get_starting_steps_properly() {
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -249,6 +273,7 @@ mod tests {
     #[test]
     fn get_steps_pointing_to_end_properly() {
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -272,6 +297,7 @@ mod tests {
     #[test]
     fn quest_should_be_valid() {
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -315,6 +341,7 @@ mod tests {
     fn quest_should_not_be_valid() {
         // Should not be valid because of missing connections and steps
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -330,6 +357,7 @@ mod tests {
 
         // Should not be valid because of missing step for starting ndoe
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -350,6 +378,7 @@ mod tests {
 
         // Should not be valid because of missing step for end ndoe
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -370,6 +399,8 @@ mod tests {
 
         // Should not be valid because of missing connection for a defined step
         let quest = Quest {
+            id: "".to_string(),
+
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -410,6 +441,7 @@ mod tests {
 
         // Should not be valid because of missing step for a defined connection
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -441,6 +473,7 @@ mod tests {
 
         // Should not be valid because of repeated ID for step
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -490,6 +523,7 @@ mod tests {
 
         // Should not be valid because of repeated ID on subtasks
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {
@@ -537,6 +571,7 @@ mod tests {
 
         // Should not be valid because of Tasks::None
         let quest = Quest {
+            id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
             definition: Some(QuestDefinition {

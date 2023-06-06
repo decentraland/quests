@@ -6,7 +6,7 @@ use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
 use quests_protocol::definitions::*;
 use quests_protocol::quests::Coordinates;
-use quests_server::api::routes::quests::UpdateQuestResponse;
+use quests_server::api::routes::quests::{CreateQuestRequest, UpdateQuestResponse};
 use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
@@ -30,10 +30,10 @@ async fn update_quest_should_be_200() {
         .await
         .unwrap();
 
-    let quest_update = Quest {
+    let quest_update = CreateQuestRequest {
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![
                 Connection::new("A-Updated", "B"),
                 Connection::new("B", "C"),
@@ -77,7 +77,7 @@ async fn update_quest_should_be_200() {
                     description: "".to_string(),
                 },
             ],
-        }),
+        },
     };
 
     let path = format!("/quests/{}", id);
@@ -111,27 +111,21 @@ async fn update_quest_should_be_200() {
     assert_eq!(quest_updated.name, "QUEST-1_UPDATE");
     assert_eq!(quest_updated.description, "Grab some apples - Updated");
     let definition = QuestDefinition::decode(quest_updated.definition.as_slice()).unwrap();
-    assert_eq!(
-        quest_update.definition.as_ref().unwrap().steps.len(),
-        definition.steps.len()
-    );
-    for step in &quest_update.definition.as_ref().unwrap().steps {
+    assert_eq!(quest_update.definition.steps.len(), definition.steps.len());
+    for step in &quest_update.definition.steps {
         assert!(definition.steps.iter().any(|s| s.id == step.id));
     }
-    assert_eq!(
-        quest_update.definition.as_ref().unwrap().connections,
-        definition.connections
-    );
+    assert_eq!(quest_update.definition.connections, definition.connections);
 }
 
 #[actix_web::test]
 async fn update_quest_should_be_400_uuid_bad_format() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
-    let quest_definition = Quest {
+    let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
                 Connection::new("B", "C"),
@@ -175,10 +169,10 @@ async fn update_quest_should_be_400_uuid_bad_format() {
                     description: "".to_string(),
                 },
             ],
-        }),
+        },
     };
 
-    let quest_update = Quest {
+    let quest_update = CreateQuestRequest {
         name: "QUEST-1_UPDATE".to_string(),
         ..quest_definition
     };
@@ -212,16 +206,16 @@ async fn update_quest_should_be_400_uuid_bad_format() {
 async fn update_quest_should_be_400_quest_validation_error() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
-    let quest_definition = Quest {
+    let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![], // not needed for test
             steps: vec![],       // not needed for this test
-        }),
+        },
     };
 
-    let quest_update = Quest {
+    let quest_update = CreateQuestRequest {
         name: "QUEST-1_UPDATE".to_string(),
         ..quest_definition
     };
@@ -262,10 +256,10 @@ async fn update_quest_should_be_401() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
 
-    let quest_update = Quest {
+    let quest_update = CreateQuestRequest {
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![
                 Connection::new("A-Updated", "B"),
                 Connection::new("B", "C"),
@@ -309,7 +303,7 @@ async fn update_quest_should_be_401() {
                     description: "".to_string(),
                 },
             ],
-        }),
+        },
     };
 
     let path = format!("/quests/{}", uuid::Uuid::new_v4());
@@ -346,10 +340,10 @@ async fn update_quest_should_be_403() {
 
     let id = db.create_quest(&create_quest, "0xA").await.unwrap();
 
-    let quest_update = Quest {
+    let quest_update = CreateQuestRequest {
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![
                 Connection::new("A-Updated", "B"),
                 Connection::new("B", "C"),
@@ -393,7 +387,7 @@ async fn update_quest_should_be_403() {
                     description: "".to_string(),
                 },
             ],
-        }),
+        },
     };
 
     let path = format!("/quests/{}", id);

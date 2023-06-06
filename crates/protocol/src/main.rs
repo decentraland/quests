@@ -4,6 +4,7 @@ fn main() {
     println!("Quests definitions:");
 
     let branched_quest = Quest {
+        id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "CUSTOM_QUEST".to_string(),
         description: "".to_string(),
         definition: Some(QuestDefinition {

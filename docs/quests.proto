@@ -113,28 +113,35 @@ message QuestState {
   repeated string required_steps = 5;
 }
 
-message QuestStateWithData {
-  string quest_instance_id = 1;
+message Quest {
+  string id = 1;
   string name = 2;
   string description = 3;
-  QuestState quest_state = 4;
+  QuestDefinition definition = 4;
+}
+
+message QuestInstance {
+  string id = 1;
+  Quest quest = 2;
+  QuestState state = 3;
 }
 
 message QuestStateUpdate {
-  QuestStateWithData quest_data = 1;
-  string event_id = 2;
+  string instance_id = 1;
+  QuestState quest_state = 2;
+  string event_id = 3;
 }
 
 message UserUpdate {
   oneof message {
     QuestStateUpdate quest_state_update = 1;
-    QuestStateWithData new_quest_started = 2;
+    QuestInstance new_quest_started = 2;
     fixed32 event_ignored = 4;
   }
 }
 
 message Quests {
-  repeated QuestInstance quests = 1;
+  repeated QuestInstance instances = 1;
 }
 
 message GetAllQuestsResponse {
@@ -142,12 +149,6 @@ message GetAllQuestsResponse {
     Quests quests = 1;
     InternalServerError internal_server_error = 2;
   }
-}
-
-message Quest {
-  string name = 1;
-  string description = 2;
-  QuestDefinition definition = 3;
 }
 
 message GetQuestDefinitionRequest {
@@ -159,12 +160,6 @@ message GetQuestDefinitionResponse {
     Quest quest = 1;
     InternalServerError internal_server_error = 2;
   }
-}
-
-message QuestInstance {
-  string instance_id = 1;
-  Quest quest = 2;
-  QuestState state = 3;
 }
 
 service QuestsService {

@@ -1,6 +1,7 @@
 use quests_protocol::definitions::*;
 use quests_protocol::quests::*;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use serde::Serialize;
 
 pub fn create_random_string(length: usize) -> String {
     thread_rng()
@@ -14,7 +15,14 @@ fn random_action() -> Action {
     Action::custom(&create_random_string(10))
 }
 
-pub fn random_quest() -> Quest {
+#[derive(Debug, Clone, Serialize)]
+pub struct CreateQuestRequest {
+    name: String,
+    description: String,
+    definition: QuestDefinition,
+}
+
+pub fn random_quest() -> CreateQuestRequest {
     let mut connections = vec![];
     let mut steps = vec![];
     let mut rng = rand::thread_rng();
@@ -52,11 +60,10 @@ pub fn random_quest() -> Quest {
         }
     }
 
-    Quest {
-        id: "8e9b8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
+    CreateQuestRequest {
         name: create_random_string(10),
         description: create_random_string(100),
-        definition: Some(QuestDefinition { connections, steps }),
+        definition: QuestDefinition { connections, steps },
     }
 }
 
@@ -113,12 +120,11 @@ pub fn grab_some_apples() -> Quest {
     }
 }
 
-pub fn grab_some_pies() -> Quest {
-    Quest {
-        id: "8e9a8bbf-2223-4f51-b7e5-000d35cedef4".to_string(),
+pub fn grab_some_pies() -> CreateQuestRequest {
+    CreateQuestRequest {
         name: "QUEST-2".to_string(),
         description: "Grab some pies".to_string(),
-        definition: Some(QuestDefinition {
+        definition: QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
                 Connection::new("B", "C"),
@@ -162,16 +168,24 @@ pub fn grab_some_pies() -> Quest {
                     description: "".to_string(),
                 },
             ],
-        }),
+        },
     }
 }
 
 mod tests {
+
     #[test]
     fn random_quest_is_valid() {
         use super::random_quest;
+        use quests_protocol::definitions::Quest;
         let quest = random_quest();
 
+        let quest = Quest {
+            id: "8e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
+            name: quest.name,
+            description: quest.description,
+            definition: Some(quest.definition),
+        };
         println!("Quest {quest:#?}");
         let valid = quest.is_valid();
 

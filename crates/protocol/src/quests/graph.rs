@@ -112,7 +112,7 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     } in &definition.connections
     {
         // Validate if steps are in defined in the quest
-        if quest.contanins_step(step_from) && quest.contanins_step(step_to) {
+        if quest.contains_step(step_from) && quest.contains_step(step_to) {
             if let Some(node_from) = nodes.get(step_from) {
                 let (_, node_to) =
                     dag.add_child(*node_from, node_from.index() as u32, step_to.clone());

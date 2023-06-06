@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use actix_web::{post, web, HttpResponse, HttpRequest};
 use derive_more::Deref;
-use quests_db::{core::definitions::QuestsDatabase, Database};
+use quests_db::{core::definitions::{QuestsDatabase, CreateQuest}, Database};
 use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -15,8 +15,13 @@ pub struct CreateQuestResponse {
     id: String,
 }
 
-#[derive(Deserialize, Serialize, ToSchema, Deref)]
-pub struct CreateQuestRequest(Quest);
+#[derive(Deserialize, Serialize, ToSchema, Deref, Debug)]
+pub struct CreateQuestRequest {
+    pub name: String,
+    pub description: String,
+    #[deref]
+    pub definition: QuestDefinition,
+}
 
 #[utoipa::path(
     request_body = CreateQuestRequest, 
@@ -48,15 +53,33 @@ pub async fn create_quest(
 
 async fn create_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
-    quest: &Quest,
+    quest: &CreateQuestRequest,
     creator_address: &str
 ) -> Result<String, QuestError> {
     quest
         .is_valid()
         .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
 
-    let quest_creation = quest.to_create_quest()?;
-    db.create_quest(&quest_creation, creator_address)
+    
+    let quest = quest.to_create_quest()?;
+    db.create_quest(&quest, creator_address)
         .await
         .map_err(|_| QuestError::CommonError(CommonError::Unknown))
+}
+
+impl ToCreateQuest for CreateQuestRequest {
+    fn to_create_quest(&self) -> Result<CreateQuest, QuestError> {
+        let CreateQuestRequest {
+            name,
+            description,
+            definition,
+            ..
+        } = self;
+
+        Ok(CreateQuest {
+            name,
+            description,
+            definition: definition.encode_to_vec(),
+        })
+    }
 }

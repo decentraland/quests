@@ -3,7 +3,6 @@ use std::sync::Arc;
 use actix_web::{put, web, HttpRequest, HttpResponse};
 use derive_more::Deref;
 use quests_db::{core::definitions::QuestsDatabase, Database};
-use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -11,12 +10,13 @@ use crate::api::routes::quests::get_user_address_from_request;
 use crate::domain::quests::QuestError;
 use crate::domain::types::ToCreateQuest;
 
+use super::CreateQuestRequest;
+
 #[derive(Serialize, Deserialize, Debug, ToSchema, Deref)]
-pub struct UpdateQuestRequest(Quest);
+pub struct UpdateQuestRequest(CreateQuestRequest);
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct UpdateQuestResponse {
-    pub quest: Quest,
     pub quest_id: String,
 }
 
@@ -51,10 +51,7 @@ pub async fn update_quest(
     };
 
     match update_quest_controller(db, quest_id, &quest, &user).await {
-        Ok(quest_id) => HttpResponse::Ok().json(UpdateQuestResponse {
-            quest_id,
-            quest: quest.0,
-        }),
+        Ok(quest_id) => HttpResponse::Ok().json(UpdateQuestResponse { quest_id }),
         Err(error) => HttpResponse::from_error(error),
     }
 }
@@ -62,7 +59,7 @@ pub async fn update_quest(
 async fn update_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     id: String,
-    quest: &Quest,
+    quest: &CreateQuestRequest,
     creator_address: &str,
 ) -> Result<String, QuestError> {
     if let Err(err) = quest.is_valid() {

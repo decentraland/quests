@@ -814,12 +814,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "data-encoding"
-version = "2.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2e66c9d817f1720209181c316d28635c050fa304f9c79e47a520882661b7308"
-
-[[package]]
 name = "dcl-crypto"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2465,19 +2459,17 @@ dependencies = [
  "async-trait",
  "clap",
  "dcl-crypto",
- "dcl-crypto-middleware-rs",
  "dcl-rpc",
  "env_logger",
  "futures-util",
  "log",
- "prost",
  "quests_protocol",
  "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",
  "tokio",
- "tungstenite 0.18.0",
+ "tungstenite",
 ]
 
 [[package]]
@@ -2502,7 +2494,6 @@ dependencies = [
  "futures-util",
  "log",
  "quests_protocol",
- "serde",
  "tokio",
  "uuid",
 ]
@@ -2511,7 +2502,6 @@ dependencies = [
 name = "quests_protocol"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "daggy",
  "dcl-rpc",
  "prost",
@@ -2536,7 +2526,6 @@ dependencies = [
  "dcl-rpc",
  "derive_more",
  "env_logger",
- "fastrand",
  "futures-util",
  "log",
  "quests_db",
@@ -2549,9 +2538,7 @@ dependencies = [
  "tracing",
  "tracing-actix-web",
  "tracing-bunyan-formatter",
- "tracing-log",
  "tracing-subscriber",
- "tungstenite 0.19.0",
  "utoipa",
  "utoipa-swagger-ui",
  "uuid",
@@ -2571,7 +2558,6 @@ dependencies = [
  "quests_message_broker",
  "quests_protocol",
  "serde",
- "serde_json",
  "tokio",
  "uuid",
 ]
@@ -3555,7 +3541,7 @@ dependencies = [
  "native-tls",
  "tokio",
  "tokio-native-tls",
- "tungstenite 0.18.0",
+ "tungstenite",
 ]
 
 [[package]]
@@ -3731,25 +3717,6 @@ dependencies = [
  "httparse",
  "log",
  "native-tls",
- "rand 0.8.5",
- "sha1",
- "thiserror",
- "url",
- "utf-8",
-]
-
-[[package]]
-name = "tungstenite"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15fba1a6d6bb030745759a9a2a588bfe8490fc8b4751a277db3a0be1c9ebbf67"
-dependencies = [
- "byteorder",
- "bytes",
- "data-encoding",
- "http",
- "httparse",
- "log",
  "rand 0.8.5",
  "sha1",
  "thiserror",

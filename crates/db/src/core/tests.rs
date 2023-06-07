@@ -10,11 +10,27 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
 
     assert!(matches!(quest_reward, DBError::RowNotFound));
 
+    let quest_reward = db
+        .add_reward_to_quest(
+            &quest_id,
+            &QuestReward {
+                auth_key: "token".to_string(),
+                campaign_id: "campaign".to_string(),
+            },
+        )
+        .await
+        .unwrap_err();
+
+    // not uuid
+    assert!(matches!(quest_reward, DBError::CreateQuestRewardFailed(_)));
+
+    let campaign_id = uuid::Uuid::new_v4();
+
     db.add_reward_to_quest(
         &quest_id,
         &QuestReward {
             auth_key: "token".to_string(),
-            campaign_id: "campaign".to_string(),
+            campaign_id: campaign_id.to_string(),
         },
     )
     .await
@@ -23,7 +39,7 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     let quest_reward = db.get_quest_reward(&quest_id).await.unwrap();
 
     assert_eq!(quest_reward.auth_key, "token");
-    assert_eq!(quest_reward.campaign_id, "campaign");
+    assert_eq!(quest_reward.campaign_id, campaign_id.to_string());
 
     let is_active = db.is_active_quest(&quest_id).await.unwrap();
     assert!(is_active);

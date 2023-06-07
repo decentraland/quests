@@ -63,9 +63,7 @@ pub async fn start_quest(
 impl From<QuestStateCalculationError> for QuestError {
     fn from(value: QuestStateCalculationError) -> Self {
         match value {
-            QuestStateCalculationError::DatabaseError => {
-                QuestError::CommonError(CommonError::Unknown)
-            }
+            QuestStateCalculationError::DatabaseError(e) => QuestError::CommonError(e.into()),
             QuestStateCalculationError::DefinitionError => QuestError::DeserializationError,
             QuestStateCalculationError::StateError => {
                 QuestError::QuestValidation("Quest state error".to_string())

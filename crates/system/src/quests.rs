@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use futures_util::future::join_all;
-use quests_db::core::definitions::QuestsDatabase;
+use quests_db::core::{definitions::QuestsDatabase, errors::DBError};
 use quests_protocol::{
     definitions::{Event, ProtocolMessage, Quest, QuestDefinition, QuestState},
     quests::get_state,
@@ -9,7 +9,7 @@ use quests_protocol::{
 
 #[derive(Debug)]
 pub enum QuestStateCalculationError {
-    DatabaseError,
+    DatabaseError(DBError),
     DefinitionError,
     StateError,
 }
@@ -21,7 +21,7 @@ pub async fn get_quest(
     let quest = database
         .get_quest(quest_id)
         .await
-        .map_err(|_| QuestStateCalculationError::DatabaseError)?;
+        .map_err(QuestStateCalculationError::DatabaseError)?;
 
     let quest_definition = QuestDefinition::decode(&*quest.definition)
         .map_err(|_| QuestStateCalculationError::DefinitionError)?;
@@ -43,7 +43,7 @@ pub async fn get_all_quest_states_by_user_address(
     let quest_instances = database
         .get_active_user_quest_instances(user_address)
         .await
-        .map_err(|_| QuestStateCalculationError::DatabaseError)?;
+        .map_err(QuestStateCalculationError::DatabaseError)?;
 
     let mut join_handles = vec![];
     for quest_instance in quest_instances {
@@ -79,7 +79,7 @@ pub async fn get_instance_state(
     let stored_events = database
         .get_events(quest_instance)
         .await
-        .map_err(|_| QuestStateCalculationError::DatabaseError)?;
+        .map_err(QuestStateCalculationError::DatabaseError)?;
 
     let events = stored_events
         .iter()

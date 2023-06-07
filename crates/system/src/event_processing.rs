@@ -203,7 +203,7 @@ pub(crate) fn start_event_processing(
 #[derive(Debug)]
 pub enum ProcessEventError {
     Serialization,
-    DatabaseAccess,
+    DatabaseAccess(DBError),
     Failed,
 }
 
@@ -216,15 +216,15 @@ impl From<ProtocolDecodeError> for ProcessEventError {
 }
 
 impl From<DBError> for ProcessEventError {
-    fn from(_value: DBError) -> Self {
-        ProcessEventError::DatabaseAccess
+    fn from(value: DBError) -> Self {
+        ProcessEventError::DatabaseAccess(value)
     }
 }
 
 impl From<QuestStateCalculationError> for ProcessEventError {
     fn from(value: QuestStateCalculationError) -> Self {
         match value {
-            QuestStateCalculationError::DatabaseError => ProcessEventError::DatabaseAccess,
+            QuestStateCalculationError::DatabaseError(e) => ProcessEventError::DatabaseAccess(e),
             QuestStateCalculationError::DefinitionError => ProcessEventError::Serialization,
             QuestStateCalculationError::StateError => ProcessEventError::Failed,
         }

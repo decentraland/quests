@@ -22,7 +22,7 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         .unwrap_err();
 
     // not uuid
-    assert!(matches!(quest_reward, DBError::CreateQuestRewardFailed(_)));
+    assert!(matches!(quest_reward, DBError::NotUUID));
 
     let campaign_id = uuid::Uuid::new_v4();
 

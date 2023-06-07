@@ -1,5 +1,6 @@
+use crate::domain::quests::QuestError;
+
 use super::ProtectedQuest;
-use crate::domain::quests;
 use actix_web::{get, web, HttpMessage, HttpRequest, HttpResponse};
 use dcl_crypto::Address;
 use quests_db::Database;
@@ -40,14 +41,17 @@ pub async fn get_quest(
 
     let quest_id = quest_id.into_inner();
 
-    match quests::get_quest(db, &quest_id).await {
-        Ok((quest, creator_address)) => HttpResponse::Ok().json(GetQuestResponse {
+    match quests_system::quests::get_quest(db, &quest_id).await {
+        Ok(quest) => HttpResponse::Ok().json(GetQuestResponse {
             quest: ProtectedQuest {
                 id: quest_id,
                 name: quest.name,
                 description: quest.description,
                 definition: if let Some(address) = user {
-                    if address.to_string().eq_ignore_ascii_case(&creator_address) {
+                    if address
+                        .to_string()
+                        .eq_ignore_ascii_case(&quest.creator_address)
+                    {
                         quest.definition
                     } else {
                         None
@@ -57,6 +61,9 @@ pub async fn get_quest(
                 },
             },
         }),
-        Err(err) => HttpResponse::from_error(err),
+        Err(err) => {
+            let err: QuestError = err.into();
+            HttpResponse::from_error(err)
+        }
     }
 }

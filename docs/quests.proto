@@ -134,12 +134,12 @@ message QuestStateUpdate {
 }
 
 message UserUpdate {
-  string instance_id = 1;
   oneof message {
-    QuestStateUpdate quest_state_update = 2;
-    QuestInstance new_quest_started = 3;
-    string event_ignored = 4;
+    QuestStateUpdate quest_state_update = 1;
+    QuestInstance new_quest_started = 2;
+    string event_ignored = 3;
   }
+  string user_address = 4;
 }
 
 message Quests {

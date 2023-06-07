@@ -2566,6 +2566,7 @@ dependencies = [
  "async-trait",
  "config",
  "env_logger",
+ "futures-util",
  "log",
  "quests_db",
  "quests_message_broker",

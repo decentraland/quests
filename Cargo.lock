@@ -2571,6 +2571,7 @@ dependencies = [
  "quests_db",
  "quests_message_broker",
  "quests_protocol",
+ "reqwest",
  "serde",
  "serde_json",
  "tokio",

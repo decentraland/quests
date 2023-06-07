@@ -52,6 +52,20 @@ pub enum DBError {
     #[error("Unable to get quest reward: {0}")]
     GetQuestRewardFailed(BoxDynError),
 
+    #[error("Unable to check if a quest is still active: {0}")]
+    GetActiveQuestFailed(BoxDynError),
+
+    #[error("Unable to check if a quest instance is still active: {0}")]
+    GetActiveQuestInstanceFailed(BoxDynError),
+
+    #[error(
+        "Unable to check if there is an active quest instance for a quest {1} and user {2}: {0}"
+    )]
+    HasActiveQuestInstance(String, String, BoxDynError),
+
+    #[error("Unable to check if there is an active quest instance for a user {1}: {0}")]
+    GetActiveQuestInstancesFailed(String, BoxDynError),
+
     #[error("Row has incorrect data: {0}")]
     RowCorrupted(BoxDynError),
 

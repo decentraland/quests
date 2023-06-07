@@ -197,7 +197,7 @@ impl QuestsDatabase for Database {
         .bind(parse_str_to_uuid(quest_id)?)
         .fetch_one(&self.pool)
         .await
-        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
+        .map_err(|err| DBError::GetActiveQuestFailed(Box::new(err)))?;
 
         Ok(quest_exists)
     }
@@ -225,7 +225,7 @@ impl QuestsDatabase for Database {
         .bind(parse_str_to_uuid(quest_instance_id)?)
         .fetch_one(&self.pool)
         .await
-        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
+        .map_err(|err| DBError::GetActiveQuestInstanceFailed(Box::new(err)))?;
 
         Ok(quest_instance_exists)
     }
@@ -245,7 +245,7 @@ impl QuestsDatabase for Database {
         .bind(parse_str_to_uuid(quest_id)?)
         .fetch_one(&self.pool)
         .await
-        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
+        .map_err(|err| DBError::HasActiveQuestInstance(quest_id.to_string(), user_address.to_string(), Box::new(err)))?;
 
         Ok(quest_instance_exists)
     }
@@ -311,7 +311,9 @@ impl QuestsDatabase for Database {
         .bind(user_address)
         .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
         .await
-        .map_err(|err| DBError::GetQuestInstanceFailed(Box::new(err)))?;
+        .map_err(|err| {
+            DBError::GetActiveQuestInstancesFailed(user_address.to_string(), Box::new(err))
+        })?;
 
         let mut quests = vec![];
 

@@ -13,7 +13,7 @@ use dcl_rpc::{
     stream_protocol::Generator,
 };
 use log::error;
-use quests_message_broker::channel::ChannelSubscriber;
+use quests_message_broker::channel::{ChannelPublisher, ChannelSubscriber};
 use quests_protocol::definitions::*;
 use quests_system::QUESTS_CHANNEL_NAME;
 
@@ -43,41 +43,38 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
         .await
         {
             Ok(new_quest_instance_id) => {
-                if let Some(subscription) = &transport_context.subscription {
-                    match get_instance_state(
-                        context.server_context.db.clone(),
-                        &quest_id,
-                        &new_quest_instance_id,
-                    )
-                    .await
-                    {
-                        Ok((quest, quest_state)) => {
-                            transport_context
-                                .quest_instance_ids
-                                .lock()
-                                .await
-                                .push(new_quest_instance_id.clone());
+                match get_instance_state(
+                    context.server_context.db.clone(),
+                    &quest_id,
+                    &new_quest_instance_id,
+                )
+                .await
+                {
+                    Ok((quest, quest_state)) => {
+                        transport_context
+                            .quest_instance_ids
+                            .lock()
+                            .await
+                            .push(new_quest_instance_id.clone());
 
-                            let user_update = UserUpdate {
-                                instance_id: new_quest_instance_id.clone(),
-                                message: Some(user_update::Message::NewQuestStarted(
-                                    QuestInstance {
-                                        id: new_quest_instance_id,
-                                        quest: Some(quest),
-                                        state: Some(quest_state),
-                                    },
-                                )),
-                            };
-                            if subscription.r#yield(user_update).await.is_err() {
-                                log::error!("QuestServiceImplementation > StartQuest Error > Not able to send update to susbcription")
-                            }
-                        }
-                        Err(err) => {
-                            log::error!("QuestServiceImplementation > StartQuest Error > Calculating state > {err:?}");
-                        }
+                        let user_update = UserUpdate {
+                            instance_id: new_quest_instance_id.clone(),
+                            message: Some(user_update::Message::NewQuestStarted(QuestInstance {
+                                id: new_quest_instance_id,
+                                quest: Some(quest),
+                                state: Some(quest_state),
+                            })),
+                        };
+                        context
+                            .server_context
+                            .redis_channel_publisher
+                            .publish(user_update.clone())
+                            .await;
+                    }
+                    Err(err) => {
+                        log::error!("QuestServiceImplementation > StartQuest Error > Calculating state > {err:?}");
                     }
                 }
-
                 Ok(StartQuestResponse::accepted())
             }
             Err(err) => {

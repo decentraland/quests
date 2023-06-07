@@ -38,7 +38,10 @@ pub async fn run_app() {
     let events_queue = RedisMessagesQueue::new(redis.clone(), QUESTS_EVENTS_QUEUE_NAME);
     let events_queue = Arc::new(events_queue);
 
-    let quests_channel_publisher = RedisChannelPublisher::new(redis.clone(), QUESTS_CHANNEL_NAME);
+    let quests_channel_publisher = Arc::new(RedisChannelPublisher::new(
+        redis.clone(),
+        QUESTS_CHANNEL_NAME,
+    ));
     let quests_channel_subscriber = RedisChannelSubscriber::new(redis.clone());
 
     let (warp_websocket_server, rpc_server) = rpc::run_rpc_server((
@@ -46,13 +49,14 @@ pub async fn run_app() {
         database.clone(),
         events_queue.clone(),
         quests_channel_subscriber,
+        quests_channel_publisher.clone(),
     ))
     .await;
 
     let event_processing = event_processing::run_event_processor(
         database.clone(),
         events_queue.clone(),
-        quests_channel_publisher.into(),
+        quests_channel_publisher.clone(),
     );
 
     let actix_rest_api_server =

@@ -14,7 +14,10 @@ use dcl_rpc::{
 use futures_util::lock::Mutex;
 use log::{debug, error};
 use quests_db::Database;
-use quests_message_broker::{channel::RedisChannelSubscriber, messages_queue::RedisMessagesQueue};
+use quests_message_broker::{
+    channel::{RedisChannelPublisher, RedisChannelSubscriber},
+    messages_queue::RedisMessagesQueue,
+};
 use quests_protocol::definitions::*;
 use service::QuestsServiceImplementation;
 use std::{collections::HashMap, sync::Arc};
@@ -30,6 +33,7 @@ pub struct QuestsRpcServerContext {
     pub db: Arc<Database>,
     pub redis_events_queue: Arc<RedisMessagesQueue>,
     pub redis_channel_subscriber: RedisChannelSubscriber,
+    pub redis_channel_publisher: Arc<RedisChannelPublisher>,
     pub transport_contexts: Arc<RwLock<HashMap<u32, TransportContext>>>,
 }
 
@@ -41,11 +45,12 @@ pub struct TransportContext {
 }
 
 pub async fn run_rpc_server(
-    (config, db, redis_events_queue, redis_channel_subscriber): (
+    (config, db, redis_events_queue, redis_channel_subscriber, redis_channel_publisher): (
         Arc<Config>,
         Arc<Database>,
         Arc<RedisMessagesQueue>,
         RedisChannelSubscriber,
+        Arc<RedisChannelPublisher>,
     ),
 ) -> (JoinHandle<()>, JoinHandle<()>) {
     let ws_server_address = (
@@ -57,6 +62,7 @@ pub async fn run_rpc_server(
         db,
         redis_events_queue,
         redis_channel_subscriber,
+        redis_channel_publisher,
         transport_contexts: Arc::new(RwLock::new(HashMap::new())),
     };
 

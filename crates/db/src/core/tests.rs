@@ -1,8 +1,29 @@
+use crate::core::{definitions::QuestReward, errors::DBError};
+
 use super::definitions::{AddEvent, CreateQuest, QuestsDatabase};
 
 pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQuest<'_>) {
     assert!(db.ping().await);
     let quest_id = db.create_quest(&quest, "0xA").await.unwrap();
+
+    let quest_reward = db.get_quest_reward(&quest_id).await.unwrap_err();
+
+    assert!(matches!(quest_reward, DBError::RowNotFound));
+
+    db.add_reward_to_quest(
+        &quest_id,
+        &QuestReward {
+            auth_key: "token".to_string(),
+            campaign_id: "campaign".to_string(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let quest_reward = db.get_quest_reward(&quest_id).await.unwrap();
+
+    assert_eq!(quest_reward.auth_key, "token");
+    assert_eq!(quest_reward.campaign_id, "campaign");
 
     let is_active = db.is_active_quest(&quest_id).await.unwrap();
     assert!(is_active);

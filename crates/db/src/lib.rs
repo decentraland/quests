@@ -1,21 +1,20 @@
 pub mod core;
 
-use std::str::FromStr;
-
 use crate::core::{
-    definitions::{AddEvent, CreateQuest, Event, QuestInstance, QuestsDatabase, StoredQuest},
+    definitions::{
+        AddEvent, CreateQuest, Event, QuestInstance, QuestReward, QuestsDatabase, StoredQuest,
+    },
     errors::{DBError, DBResult},
     ops::{Connect, GetConnection, Migrate},
 };
+pub use sqlx::Executor;
 use sqlx::{
     pool::PoolConnection,
     postgres::{PgConnectOptions, PgPoolOptions},
     Error, PgPool, Postgres, Row, Transaction,
 };
-
+use std::str::FromStr;
 use uuid::Uuid;
-
-pub use sqlx::Executor;
 
 pub struct DatabaseOptions {
     url: String,
@@ -390,6 +389,40 @@ impl QuestsDatabase for Database {
         }
 
         Ok(events)
+    }
+
+    async fn add_reward_to_quest(&self, quest_id: &str, reward: &QuestReward) -> DBResult<()> {
+        sqlx::query(
+            "INSERT INTO quest_rewards (quest_id, campaign_id, auth_key) VALUES ($1, $2, $3)",
+        )
+        .bind(parse_str_to_uuid(quest_id)?)
+        .bind(&reward.campaign_id)
+        .bind(&reward.auth_key)
+        .execute(&self.pool)
+        .await
+        .map_err(|err| DBError::CreateQuestRewardFailed(Box::new(err)))?;
+
+        Ok(())
+    }
+
+    async fn get_quest_reward(&self, quest_id: &str) -> DBResult<QuestReward> {
+        let quest_reward = sqlx::query("SELECT * FROM quest_rewards WHERE quest_id = $1")
+            .bind(parse_str_to_uuid(quest_id)?)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|err| match err {
+                Error::RowNotFound => DBError::RowNotFound,
+                _ => DBError::GetQuestRewardFailed(Box::new(err)),
+            })?;
+
+        Ok(QuestReward {
+            campaign_id: quest_reward
+                .try_get("campaign_id")
+                .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            auth_key: quest_reward
+                .try_get("auth_key")
+                .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+        })
     }
 }
 

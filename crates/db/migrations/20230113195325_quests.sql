@@ -44,3 +44,10 @@ CREATE TABLE IF NOT EXISTS quest_updates (
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   UNIQUE (quest_id)
 );
+
+CREATE TABLE IF NOT EXISTS quest_rewards (
+  quest_id UUID references quests(ID), 
+  campaign_id UUID NOT NULL,
+  auth_key TEXT NOT NULL,
+  UNIQUE(quest_id)
+);

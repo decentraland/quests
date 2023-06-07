@@ -45,6 +45,7 @@ async fn create_quest_should_be_400_quest_validation_error() {
             connections: vec![],
             steps: vec![],
         },
+        reward: None,
     };
 
     let headers = get_signed_headers(
@@ -85,6 +86,7 @@ async fn create_quest_should_be_401() {
             connections: vec![],
             steps: vec![],
         },
+        reward: None,
     };
 
     let req = TestRequest::post()

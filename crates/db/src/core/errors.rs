@@ -46,6 +46,12 @@ pub enum DBError {
     #[error("Unable to store an event for a quest: {0}")]
     CreateQuestEventFailed(BoxDynError),
 
+    #[error("Unable to add a reward to a quest: {0}")]
+    CreateQuestRewardFailed(BoxDynError),
+
+    #[error("Unable to get quest reward: {0}")]
+    GetQuestRewardFailed(BoxDynError),
+
     #[error("Row has incorrect data: {0}")]
     RowCorrupted(BoxDynError),
 

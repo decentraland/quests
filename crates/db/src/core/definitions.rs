@@ -31,6 +31,9 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
 
     async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()>;
     async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>>;
+
+    async fn add_reward_to_quest(&self, quest_id: &str, reward: &QuestReward) -> DBResult<()>;
+    async fn get_quest_reward(&self, quest_id: &str) -> DBResult<QuestReward>;
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
@@ -71,6 +74,12 @@ pub struct StoredQuest {
     pub description: String,
     pub definition: Vec<u8>,
     pub creator_address: String,
+}
+
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+pub struct QuestReward {
+    pub campaign_id: String,
+    pub auth_key: String,
 }
 
 pub trait CloneDatabase {

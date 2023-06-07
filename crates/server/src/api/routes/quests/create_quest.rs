@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use actix_web::{post, web, HttpResponse, HttpRequest};
 use derive_more::Deref;
-use quests_db::{core::definitions::{QuestsDatabase, CreateQuest}, Database};
+use quests_db::{core::definitions::{QuestsDatabase, CreateQuest, QuestReward}, Database};
 use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -21,6 +21,7 @@ pub struct CreateQuestRequest {
     pub description: String,
     #[deref]
     pub definition: QuestDefinition,
+    pub reward: Option<QuestReward>,
 }
 
 #[utoipa::path(
@@ -53,18 +54,25 @@ pub async fn create_quest(
 
 async fn create_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
-    quest: &CreateQuestRequest,
+    create_quest_req: &CreateQuestRequest,
     creator_address: &str
 ) -> Result<String, QuestError> {
-    quest
+    create_quest_req
         .is_valid()
         .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
 
-    
-    let quest = quest.to_create_quest()?;
-    db.create_quest(&quest, creator_address)
+    let quest = create_quest_req.to_create_quest()?;
+    let id = db.create_quest(&quest, creator_address)
         .await
-        .map_err(|_| QuestError::CommonError(CommonError::Unknown))
+        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
+
+    if let Some(reward) = &create_quest_req.reward {
+        db.add_reward_to_quest(&id, reward)
+            .await
+            .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
+    }
+
+    Ok(id)
 }
 
 impl ToCreateQuest for CreateQuestRequest {

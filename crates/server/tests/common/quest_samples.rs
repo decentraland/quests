@@ -6,6 +6,7 @@ pub fn grab_some_apples() -> Quest {
         id: "3e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
+        creator_address: "0xB".to_string(),
         definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
@@ -60,6 +61,7 @@ pub fn grab_some_pies() -> Quest {
         id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-2".to_string(),
         description: "Grab some pies".to_string(),
+        creator_address: "0xB".to_string(),
         definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
@@ -119,6 +121,7 @@ pub fn one_step_quest() -> (Quest, Action) {
         id: "2e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "One step quest".to_string(),
         description: "Jump".to_string(),
+        creator_address: "0xB".to_string(),
         definition: Some(QuestDefinition {
             connections: vec![],
             steps: vec![Step {

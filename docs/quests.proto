@@ -118,6 +118,7 @@ message Quest {
   string name = 2;
   string description = 3;
   QuestDefinition definition = 4;
+  string creator_address = 5;
 }
 
 message QuestInstance {

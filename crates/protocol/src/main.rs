@@ -7,6 +7,7 @@ fn main() {
         id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "CUSTOM_QUEST".to_string(),
         description: "".to_string(),
+        creator_address: "0xB".to_string(),
         definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A1", "B"),

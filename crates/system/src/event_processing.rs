@@ -189,6 +189,7 @@ impl EventProcessor {
             id: quest.id,
             name: quest.name,
             description: quest.description,
+            creator_address: quest.creator_address,
             definition: Some(quest_definition),
         };
         Ok(quest)

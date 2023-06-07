@@ -5,8 +5,8 @@ pub mod api;
 pub mod configuration;
 pub mod event_processing;
 pub mod quests;
-
 pub use quests::*;
+mod rewards;
 
 pub const QUESTS_EVENTS_QUEUE_NAME: &str = "events:queue";
 pub const QUESTS_CHANNEL_NAME: &str = "QUEST_UPDATES";

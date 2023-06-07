@@ -124,6 +124,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
@@ -303,6 +304,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![

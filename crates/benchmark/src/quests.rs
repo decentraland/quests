@@ -72,6 +72,7 @@ pub fn grab_some_apples() -> Quest {
         id: "8e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
+        creator_address: "0xB".to_string(),
         definition: Some(QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
@@ -177,17 +178,10 @@ mod tests {
     #[test]
     fn random_quest_is_valid() {
         use super::random_quest;
-        use quests_protocol::definitions::Quest;
         let quest = random_quest();
 
-        let quest = Quest {
-            id: "8e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
-            name: quest.name,
-            description: quest.description,
-            definition: Some(quest.definition),
-        };
         println!("Quest {quest:#?}");
-        let valid = quest.is_valid();
+        let valid = quest.definition.is_valid();
 
         assert!(valid.is_ok());
     }

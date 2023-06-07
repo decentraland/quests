@@ -252,6 +252,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
@@ -276,6 +277,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![
                     Connection::new("A1", "B"),
@@ -300,6 +302,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B"), Connection::new("B", "C")],
                 steps: vec![
@@ -344,6 +347,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![],
                 steps: vec![], // not needed for test
@@ -360,6 +364,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B")],
                 steps: vec![Step {
@@ -381,6 +386,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B")],
                 steps: vec![Step {
@@ -400,9 +406,9 @@ mod tests {
         // Should not be valid because of missing connection for a defined step
         let quest = Quest {
             id: "".to_string(),
-
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("B", "C")],
                 steps: vec![
@@ -444,6 +450,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B"), Connection::new("B", "C")],
                 steps: vec![
@@ -476,6 +483,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![
@@ -526,6 +534,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![
@@ -574,6 +583,7 @@ mod tests {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
             description: "".to_string(),
+            creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![

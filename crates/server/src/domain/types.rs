@@ -18,6 +18,7 @@ impl ToQuest for StoredQuest {
             id: self.id.clone(),
             name: self.name.to_string(),
             description: self.description.to_string(),
+            creator_address: self.creator_address.to_string(),
             definition: Some(definition),
         })
     }

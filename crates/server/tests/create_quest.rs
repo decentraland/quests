@@ -82,12 +82,14 @@ async fn create_quest_should_be_200_with_reward() {
         definition,
     } = quest_samples::grab_some_apples();
 
+    let campaign_id = uuid::Uuid::new_v4();
+
     let create_quest_request = CreateQuestRequest {
         name,
         definition: definition.unwrap(),
         description,
         reward: Some(QuestReward {
-            campaign_id: "Campaign".to_string(),
+            campaign_id: campaign_id.to_string(),
             auth_key: "token".to_string(),
         }),
     };
@@ -120,7 +122,7 @@ async fn create_quest_should_be_200_with_reward() {
     let quest_reward = db.get_quest_reward(&response.id).await.unwrap();
 
     assert_eq!(quest_reward.auth_key, "token");
-    assert_eq!(quest_reward.campaign_id, "Campaign");
+    assert_eq!(quest_reward.campaign_id, campaign_id.to_string());
 }
 
 #[actix_web::test]

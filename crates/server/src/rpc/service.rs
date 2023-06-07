@@ -59,6 +59,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                                 .push(new_quest_instance_id.clone());
 
                             let user_update = UserUpdate {
+                                instance_id: new_quest_instance_id.clone(),
                                 message: Some(user_update::Message::NewQuestStarted(
                                     QuestInstance {
                                         id: new_quest_instance_id,
@@ -181,32 +182,29 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                 quest_instance_ids.lock().await.append(&mut ids);
 
                 let yielder = generator_yielder.clone();
-                let subscription_join_handle = context.server_context.redis_channel_subscriber.subscribe(
-                    QUESTS_CHANNEL_NAME,
-                    move |user_update: UserUpdate| {
+                let subscription_join_handle = context
+                    .server_context
+                    .redis_channel_subscriber
+                    .subscribe(QUESTS_CHANNEL_NAME, move |user_update: UserUpdate| {
                         let generator_yielder = yielder.clone();
                         let ids = quest_instance_ids.clone();
+
+                        // Just return false on failure
                         async move {
-                            if let Some(user_update::Message::QuestStateUpdate(QuestStateUpdate {
-                                instance_id,
-                                ..
-                            })) = &user_update.message
-                            {
-                                if ids.lock().await.contains(instance_id) {
+                            let instance_id = &user_update.instance_id;
+                            match ids.lock().await.contains(instance_id) {
+                                true => {
                                     if generator_yielder.r#yield(user_update).await.is_err() {
-                                        error!(
-                                            "User Update received > Couldn't send update to subscriptors"
-                                        );
-                                        return false; // Just return false on failure
+                                        error!("User Update received > Couldn't send update to subscriptors");
+                                        false
                                     } else {
-                                        return true;
+                                        true
                                     }
-                                }
+                                },
+                                false => true,
                             }
-                            true
                         }
-                    },
-                );
+                    });
 
                 context
                     .server_context

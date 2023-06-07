@@ -126,15 +126,23 @@ impl EventProcessor {
                         }
                     };
                 }
-                Ok(ApplyEventResult::Ignored) => info!(
-                    "Processing event > Event for quest instance {} was ignored",
-                    &quest_instance.id
-                ),
-                Err(err) => {
+                Ok(ApplyEventResult::Ignored) => {
+                    self.quests_channel
+                        .publish(UserUpdate {
+                            instance_id: quest_instance.id.clone(),
+                            message: Some(user_update::Message::EventIgnored(event.id.clone())),
+                        })
+                        .await;
                     info!(
-                    "Processing event > Failed to process event for quest instance id: {} with err: {err:?}",
-                    quest_instance.id,
-                );
+                        "Processing event > Event for quest instance {} was ignored",
+                        &quest_instance.id
+                    );
+                }
+                Err(err) => {
+                    error!(
+                        "Processing event > Failed to process event for quest instance id: {} with err: {err:?}",
+                        quest_instance.id,
+                    );
                 }
             }
         }
@@ -174,6 +182,7 @@ impl EventProcessor {
                     quest_state: Some(quest_state),
                     event_id: event.id.clone(),
                 })),
+                instance_id: quest_instance.id.clone(),
             })
             .await;
 

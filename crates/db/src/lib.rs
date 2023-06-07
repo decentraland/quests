@@ -398,7 +398,7 @@ impl QuestsDatabase for Database {
             "INSERT INTO quest_rewards (quest_id, campaign_id, auth_key) VALUES ($1, $2, $3)",
         )
         .bind(parse_str_to_uuid(quest_id)?)
-        .bind(&reward.campaign_id)
+        .bind(parse_str_to_uuid(&reward.campaign_id)?)
         .bind(&reward.auth_key)
         .execute(&self.pool)
         .await

@@ -10,9 +10,9 @@ use crate::{
     domain::{quests::QuestError, types::ToCreateQuest},
 };
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateQuestResponse {
-    id: String,
+    pub id: String,
 }
 
 #[derive(Deserialize, Serialize, ToSchema, Deref, Debug)]

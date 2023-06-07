@@ -418,9 +418,11 @@ impl QuestsDatabase for Database {
             })?;
 
         Ok(QuestReward {
-            campaign_id: quest_reward
-                .try_get("campaign_id")
-                .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            campaign_id: parse_uuid_to_str(
+                quest_reward
+                    .try_get("campaign_id")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            ),
             auth_key: quest_reward
                 .try_get("auth_key")
                 .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,

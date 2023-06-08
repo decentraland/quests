@@ -226,11 +226,17 @@ impl ClientState {
                         quest_instance_id,
                         quest_state,
                     },
-                    _ => ClientState::MakeQuestProgress {
-                        updates,
-                        quest_instance_id,
-                        quest_state,
-                    },
+                    _ => {
+                        error!(
+                            "> User {} > Make Quest Progress > event not accepted, retrying",
+                            &user_address[..4]
+                        );
+                        ClientState::MakeQuestProgress {
+                            updates,
+                            quest_instance_id,
+                            quest_state,
+                        }
+                    }
                 }
             }
             ClientState::FetchQuestUpdate {

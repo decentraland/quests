@@ -1,12 +1,8 @@
 use crate::api::routes::errors::CommonError;
-use futures_util::future::join_all;
 use quests_db::core::definitions::QuestsDatabase;
-use quests_protocol::definitions::*;
-use quests_protocol::quests::get_state;
+use quests_system::{get_instance_state, QuestStateCalculationError};
 use std::sync::Arc;
 use thiserror::Error;
-
-use super::types::ToQuest;
 
 #[derive(Error, Debug)]
 pub enum QuestError {
@@ -64,65 +60,14 @@ pub async fn start_quest(
     Ok(db.start_quest(quest_id, user_address).await?)
 }
 
-pub async fn get_all_quest_states_by_user_address(
-    db: Arc<impl QuestsDatabase + 'static>,
-    user_address: String,
-) -> Result<Vec<(String, (Quest, QuestState))>, QuestError> {
-    let quest_instances = db.get_active_user_quest_instances(&user_address).await?;
-
-    let mut join_handles = vec![];
-    for quest_instance in quest_instances {
-        let db_cloned = db.clone();
-        let handle = tokio::spawn(async move {
-            (
-                quest_instance.id.clone(),
-                get_instance_state(db_cloned, &quest_instance.quest_id, &quest_instance.id).await,
-            )
-        });
-        join_handles.push(handle);
-    }
-    let join_results = join_all(join_handles).await;
-    let mut states = vec![];
-    for join_result in join_results {
-        match join_result {
-            Ok((id, state_result)) => match state_result {
-                Ok(state) => states.push((id, state)),
-                Err(quest_error) => return Err(quest_error),
-            },
-            Err(_) => return Err(QuestError::CommonError(CommonError::Unknown)),
+impl From<QuestStateCalculationError> for QuestError {
+    fn from(value: QuestStateCalculationError) -> Self {
+        match value {
+            QuestStateCalculationError::DatabaseError(e) => QuestError::CommonError(e.into()),
+            QuestStateCalculationError::DefinitionError => QuestError::DeserializationError,
+            QuestStateCalculationError::StateError => {
+                QuestError::QuestValidation("Quest state error".to_string())
+            }
         }
     }
-    Ok(states)
-}
-
-pub async fn get_instance_state(
-    db: Arc<impl QuestsDatabase>,
-    quest_id: &str,
-    quest_instance: &str,
-) -> Result<(Quest, QuestState), QuestError> {
-    let quest = db.get_quest(quest_id).await.map_err(|_| {
-        QuestError::CommonError(CommonError::BadRequest(
-            "the quest instance ID given doesn't correspond to a valid quest".to_string(),
-        ))
-    })?;
-    let stored_events = db.get_events(quest_instance).await?;
-
-    let events = stored_events
-        .iter()
-        .map(|event| Event::decode(event.event.as_slice()))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let quest = quest.to_quest()?;
-    let state = get_state(&quest, events);
-
-    Ok((quest, state))
-}
-
-pub async fn get_quest<DB: QuestsDatabase>(
-    db: Arc<DB>,
-    id: &str,
-) -> Result<(Quest, String), QuestError> {
-    let stored_quest = db.get_quest(id).await?;
-    let creator_address = stored_quest.creator_address.clone();
-    Ok((stored_quest.to_quest()?, creator_address))
 }

@@ -80,6 +80,9 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                 log::error!("QuestsServiceImplementation > StartQuest Error > {err:?}");
                 match err {
                     QuestError::NotFoundOrInactive => Ok(StartQuestResponse::invalid_quest()),
+                    QuestError::QuestAlreadyStarted => {
+                        Ok(StartQuestResponse::quest_already_started())
+                    }
                     QuestError::CommonError(CommonError::NotUUID) => {
                         Ok(StartQuestResponse::not_uuid_error())
                     }

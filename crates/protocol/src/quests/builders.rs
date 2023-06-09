@@ -79,34 +79,37 @@ impl Action {
 }
 
 impl StartQuestResponse {
-    pub fn accepted() -> Self {
+    fn response(response: start_quest_response::Response) -> Self {
         Self {
-            response: Some(start_quest_response::Response::Accepted(
-                start_quest_response::Accepted {},
-            )),
+            response: Some(response),
         }
+    }
+    pub fn accepted() -> Self {
+        Self::response(start_quest_response::Response::Accepted(
+            start_quest_response::Accepted {},
+        ))
     }
 
     pub fn invalid_quest() -> Self {
-        Self {
-            response: Some(start_quest_response::Response::InvalidQuest(
-                InvalidQuest {},
-            )),
-        }
+        Self::response(start_quest_response::Response::InvalidQuest(
+            InvalidQuest {},
+        ))
     }
 
     pub fn not_uuid_error() -> Self {
-        Self {
-            response: Some(start_quest_response::Response::NotUuidError(NotUuid {})),
-        }
+        Self::response(start_quest_response::Response::NotUuidError(NotUuid {}))
+    }
+
+    pub fn quest_already_started() -> Self {
+        Self::response(start_quest_response::Response::QuestAlreadyStarted(
+            QuestAlreadyStarted {},
+        ))
     }
 
     pub fn internal_server_error() -> Self {
-        Self {
-            response: Some(start_quest_response::Response::InternalServerError(
-                InternalServerError {},
-            )),
-        }
+        Self::response(start_quest_response::Response::InternalServerError(
+            InternalServerError {},
+        ))
     }
 }
 

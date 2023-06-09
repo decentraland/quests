@@ -67,7 +67,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                         context
                             .server_context
                             .redis_channel_publisher
-                            .publish(user_update.clone())
+                            .publish(user_update)
                             .await;
                     }
                     Err(err) => {

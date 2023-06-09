@@ -22,6 +22,7 @@ pub enum ClientCreationError {
 
 pub async fn handle_client(
     args: Args,
+    identity: Option<Identity>,
 ) -> Result<(RpcClient<TestWebSocketTransport>, u128, u128), ClientCreationError> {
     let Args {
         rpc_host,
@@ -35,11 +36,16 @@ pub async fn handle_client(
     })?;
 
     let ws = if authenticate {
-        let signer = Account::random();
-        let identity = Identity::from_signer(
-            &signer,
-            Expiration::try_from("3021-10-16T22:32:29.626Z").unwrap(),
-        );
+        let identity = if let Some(identity) = identity {
+            identity
+        } else {
+            let signer = Account::random();
+            Identity::from_signer(
+                &signer,
+                Expiration::try_from("3021-10-16T22:32:29.626Z").unwrap(),
+            )
+        };
+
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()

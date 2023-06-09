@@ -18,10 +18,10 @@ use quests_system::{get_instance_state, QUESTS_CHANNEL_NAME};
 
 pub struct QuestsServiceImplementation {}
 
-type QuestRpcResult<T> = Result<T, ServiceErrors>;
+type QuestRpcResult<T> = Result<T, ServiceError>;
 
 #[async_trait::async_trait]
-impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServiceImplementation {
+impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsServiceImplementation {
     async fn start_quest(
         &self,
         request: StartQuestRequest,
@@ -31,7 +31,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
             // should not be possible
-            return Err(ServiceErrors::NotExistsTransportID)
+            return Err(ServiceError::NotExistsTransportID)
         };
 
         match start_quest(
@@ -67,7 +67,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                         context
                             .server_context
                             .redis_channel_publisher
-                            .publish(user_update.clone())
+                            .publish(user_update)
                             .await;
                     }
                     Err(err) => {
@@ -119,7 +119,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                 },
             }
         } else {
-            Err(ServiceErrors::NotExistsTransportID)
+            Err(ServiceError::NotExistsTransportID)
         }
     }
 
@@ -130,7 +130,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
     ) -> QuestRpcResult<EventResponse> {
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
-            return Err(ServiceErrors::NotExistsTransportID);
+            return Err(ServiceError::NotExistsTransportID);
         };
 
         let user_address = transport_context.user_address.to_string();
@@ -160,23 +160,24 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
     ) -> QuestRpcResult<ServerStreamResponse<UserUpdate>> {
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
-            return Err(ServiceErrors::NotExistsTransportID);
+            return Err(ServiceError::NotExistsTransportID);
         };
 
         let user_address = transport_context.user_address.to_string();
         drop(transport_contexts);
         let (generator, generator_yielder) = Generator::create();
 
+        let moved_user_address = user_address.clone();
         let yielder = generator_yielder.clone();
         let subscription_join_handle = context.server_context.redis_channel_subscriber.subscribe(
             QUESTS_CHANNEL_NAME,
             move |user_update: UserUpdate| {
                 let generator_yielder = yielder.clone();
-                let user_address = user_address.clone();
+                let user_address = moved_user_address.clone();
 
                 // Just return false on failure
                 async move {
-                    match user_address == user_update.user_address {
+                    match user_address.eq_ignore_ascii_case(&user_update.user_address) {
                         true => {
                             if generator_yielder.r#yield(user_update).await.is_err() {
                                 error!(
@@ -192,6 +193,18 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
                 }
             },
         );
+
+        if let Err(err) = generator_yielder
+            .r#yield(UserUpdate {
+                message: Some(user_update::Message::Subscribed(true)),
+                user_address: user_address.clone(),
+            })
+            .await
+        {
+            // Would be impossible to happen, an "unwrap()" should be safe here
+            log::error!("QuestsServiceImplementation > Subscribe Error > Generator Error before returning it > {err:?}");
+            return Err(ServiceError::InternalError);
+        }
 
         context
             .server_context
@@ -212,7 +225,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
     ) -> QuestRpcResult<GetAllQuestsResponse> {
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
-            return Err(ServiceErrors::NotExistsTransportID);
+            return Err(ServiceError::NotExistsTransportID);
         };
 
         let user_address = transport_context.user_address.to_string();
@@ -249,20 +262,23 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceErrors> for QuestsServic
     }
 }
 
-pub enum ServiceErrors {
+pub enum ServiceError {
     NotExistsTransportID,
+    InternalError,
 }
 
-impl RemoteErrorResponse for ServiceErrors {
+impl RemoteErrorResponse for ServiceError {
     fn error_code(&self) -> u32 {
         match self {
-            Self::NotExistsTransportID => 2,
+            Self::NotExistsTransportID => 1,
+            Self::InternalError => 2,
         }
     }
 
     fn error_message(&self) -> String {
         match self {
             Self::NotExistsTransportID => "Not exists transport id".to_string(),
+            Self::InternalError => "Internal error".to_string(),
         }
     }
 }

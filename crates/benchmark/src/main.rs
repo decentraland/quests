@@ -25,7 +25,7 @@ async fn main() {
     let mut rpc_clients = vec![];
 
     for i in 0..args.clients {
-        set.spawn(handle_client(args.clone()));
+        set.spawn(handle_client(args.clone(), None));
         if (i + 1) % args.parallel as usize == 0 {
             while let Some(res) = set.join_next().await {
                 match res.unwrap() {

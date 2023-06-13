@@ -72,7 +72,7 @@ pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpRe
 
 pub fn is_url(url: &str) -> bool {
     let regex = Regex::new(
-        r"^(http|https?:\/\/(?:www\.|(?!www))[^\s\.]+\.[^\s]{2,3}|www\.[^\s]+\.[^\s]{2,3})$",
+        r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)",
     )
     .unwrap();
     regex.is_match(url)

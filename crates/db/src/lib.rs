@@ -2,7 +2,8 @@ pub mod core;
 
 use crate::core::{
     definitions::{
-        AddEvent, CreateQuest, Event, QuestInstance, QuestReward, QuestsDatabase, StoredQuest,
+        AddEvent, CreateQuest, Event, QuestInstance, QuestRewardHook, QuestRewardItem,
+        QuestsDatabase, StoredQuest,
     },
     errors::{DBError, DBResult},
     ops::{Connect, GetConnection, Migrate},
@@ -11,9 +12,10 @@ pub use sqlx::Executor;
 use sqlx::{
     pool::PoolConnection,
     postgres::{PgConnectOptions, PgPoolOptions},
-    Error, PgPool, Postgres, Row, Transaction,
+    types::Json,
+    Error, PgPool, Postgres, QueryBuilder, Row, Transaction,
 };
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 use uuid::Uuid;
 
 pub struct DatabaseOptions {
@@ -393,13 +395,17 @@ impl QuestsDatabase for Database {
         Ok(events)
     }
 
-    async fn add_reward_to_quest(&self, quest_id: &str, reward: &QuestReward) -> DBResult<()> {
+    async fn add_reward_hook_to_quest(
+        &self,
+        quest_id: &str,
+        reward: &QuestRewardHook,
+    ) -> DBResult<()> {
         sqlx::query(
-            "INSERT INTO quest_rewards (quest_id, campaign_id, auth_key) VALUES ($1, $2, $3)",
+            "INSERT INTO quest_reward_hooks (quest_id, webhook_url, request_body) VALUES ($1, $2, $3)",
         )
         .bind(parse_str_to_uuid(quest_id)?)
-        .bind(parse_str_to_uuid(&reward.campaign_id)?)
-        .bind(&reward.auth_key)
+        .bind(&reward.webhook_url)
+        .bind(Json(&reward.request_body))
         .execute(&self.pool)
         .await
         .map_err(|err| DBError::CreateQuestRewardFailed(Box::new(err)))?;
@@ -407,8 +413,8 @@ impl QuestsDatabase for Database {
         Ok(())
     }
 
-    async fn get_quest_reward(&self, quest_id: &str) -> DBResult<QuestReward> {
-        let quest_reward = sqlx::query("SELECT * FROM quest_rewards WHERE quest_id = $1")
+    async fn get_quest_reward_hook(&self, quest_id: &str) -> DBResult<QuestRewardHook> {
+        let quest_reward = sqlx::query("SELECT * FROM quest_reward_hooks WHERE quest_id = $1")
             .bind(parse_str_to_uuid(quest_id)?)
             .fetch_one(&self.pool)
             .await
@@ -417,16 +423,70 @@ impl QuestsDatabase for Database {
                 _ => DBError::GetQuestRewardFailed(Box::new(err)),
             })?;
 
-        Ok(QuestReward {
-            campaign_id: parse_uuid_to_str(
-                quest_reward
-                    .try_get("campaign_id")
-                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-            ),
-            auth_key: quest_reward
-                .try_get("auth_key")
+        let req_body: Option<Json<HashMap<String, String>>> = quest_reward
+            .try_get("request_body")
+            .map_err(|err| DBError::RowCorrupted(Box::new(err)))?;
+
+        Ok(QuestRewardHook {
+            webhook_url: quest_reward
+                .try_get("webhook_url")
                 .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            request_body: if let Some(body) = req_body {
+                Some(body.0)
+            } else {
+                None
+            },
         })
+    }
+
+    async fn add_reward_items_to_quest(
+        &self,
+        quest_id: &str,
+        items: &[QuestRewardItem],
+    ) -> DBResult<()> {
+        let mut builder = QueryBuilder::new(
+            "INSERT INTO quest_reward_items (quest_id, reward_name, reward_image)",
+        );
+
+        let quest_id = parse_str_to_uuid(quest_id)?;
+
+        builder.push_values(items, |mut b, item| {
+            b.push_bind(quest_id)
+                .push_bind(&item.name)
+                .push_bind(&item.image_link);
+        });
+
+        let query = builder.build();
+
+        query
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DBError::CreateQuestRewardFailed(Box::new(err)))?;
+
+        Ok(())
+    }
+
+    async fn get_quest_reward_items(&self, quest_id: &str) -> DBResult<Vec<QuestRewardItem>> {
+        let query_result = sqlx::query("SELECT * FROM quest_reward_items WHERE quest_id = $1")
+            .bind(parse_str_to_uuid(quest_id)?)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|err| DBError::GetQuestRewardFailed(Box::new(err)))?;
+
+        let mut items = vec![];
+
+        for row in query_result {
+            items.push(QuestRewardItem {
+                name: row
+                    .try_get("reward_name")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                image_link: row
+                    .try_get("reward_image")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            })
+        }
+
+        Ok(items)
     }
 }
 

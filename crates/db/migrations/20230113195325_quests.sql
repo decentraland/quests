@@ -45,9 +45,16 @@ CREATE TABLE IF NOT EXISTS quest_updates (
   UNIQUE (quest_id)
 );
 
-CREATE TABLE IF NOT EXISTS quest_rewards (
+CREATE TABLE IF NOT EXISTS quest_reward_hooks (
   quest_id UUID references quests(ID), 
-  campaign_id UUID NOT NULL,
-  auth_key TEXT NOT NULL,
+  webhook_url TEXT NOT NULL,
+  request_body JSON NULL, 
+  UNIQUE(quest_id)
+);
+
+CREATE TABLE IF NOT EXISTS quest_reward_items (
+  quest_id UUID references quests(ID), 
+  reward_name TEXT NOT NULL,
+  reward_image TEXT NOT NULL,
   UNIQUE(quest_id)
 );

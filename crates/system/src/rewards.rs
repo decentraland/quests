@@ -8,7 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 pub async fn give_rewards_to_user(db: Arc<Database>, quest_id: &str, user_address: &str) {
     match db.get_quest_reward_hook(quest_id).await {
         Ok(quest_reward) => {
-            match call_reward_hook(
+            match call_rewards_hook(
                 &quest_reward.webhook_url,
                 quest_reward.request_body,
                 quest_id,
@@ -45,11 +45,11 @@ pub async fn give_rewards_to_user(db: Arc<Database>, quest_id: &str, user_addres
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct RewardsServerResponse {
+struct RewardsHookResponse {
     ok: bool,
 }
 
-async fn call_reward_hook(
+async fn call_rewards_hook(
     url: &str,
     body: Option<HashMap<String, String>>,
     quest_id: &str,
@@ -66,16 +66,16 @@ async fn call_reward_hook(
     }
 
     if let Ok(response) = client.send().await {
-        if let Ok(response) = response.json::<RewardsServerResponse>().await {
+        if let Ok(response) = response.json::<RewardsHookResponse>().await {
             if response.ok {
                 Ok(true)
             } else {
                 Ok(false)
             }
         } else {
-            Err(String::from("Couldn't decode rewards server response"))
+            Err(String::from("Couldn't decode rewards hook response"))
         }
     } else {
-        Err(String::from("Couldn't call rewards server"))
+        Err(String::from("Couldn't call rewards hook"))
     }
 }

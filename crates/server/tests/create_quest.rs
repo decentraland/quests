@@ -27,6 +27,7 @@ async fn create_quest_should_be_200_without_reward() {
 
     let Quest {
         id: _,
+        creator_address: _,
         name,
         description,
         definition,
@@ -79,6 +80,7 @@ async fn create_quest_should_be_200_with_reward() {
 
     let Quest {
         id: _,
+        creator_address: _,
         name,
         description,
         definition,

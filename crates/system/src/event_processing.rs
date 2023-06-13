@@ -111,7 +111,7 @@ impl EventProcessor {
             let new_state = quest_state.apply_event(&quest_graph, event);
             if new_state != quest_state {
                 match self
-                    .add_event_and_notify(event, &instance_id, new_state)
+                    .add_event_and_notify(event, &quest.id, &instance_id, new_state)
                     .await
                 {
                     Ok(_) => event_applied_to_instances += 1,
@@ -141,6 +141,7 @@ impl EventProcessor {
     async fn add_event_and_notify(
         self: &Arc<Self>,
         event: &Event,
+        quest_id: &str,
         quest_instance_id: &str,
         quest_state: QuestState,
     ) -> Result<(), ProcessEventError> {
@@ -158,6 +159,11 @@ impl EventProcessor {
         self.database
             .add_event(&add_event, quest_instance_id)
             .await?;
+
+        if quest_state.is_completed() {
+            debug!("Processing event > Calling rewards hook");
+            give_rewards_to_user(self.database.clone(), quest_id, &event.address).await;
+        }
 
         self.quests_channel
             .publish(UserUpdate {

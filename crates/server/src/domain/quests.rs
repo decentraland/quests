@@ -22,6 +22,8 @@ pub enum QuestError {
     QuestAlreadyStarted,
     #[error("Quest already completed")]
     QuestAlreadyCompleted,
+    #[error("Quest has no reward")]
+    QuestHasNoReward,
 }
 
 pub async fn abandon_quest(

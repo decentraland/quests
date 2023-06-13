@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use actix_web::{post, web, HttpResponse, HttpRequest};
 use derive_more::Deref;
-use quests_db::{core::definitions::{QuestsDatabase, CreateQuest, QuestReward}, Database};
+use quests_db::{core::definitions::{QuestsDatabase, CreateQuest, QuestRewardHook, QuestRewardItem}, Database};
 use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -9,10 +9,17 @@ use crate::{
     api::routes::{errors::CommonError, quests::get_user_address_from_request},
     domain::{quests::QuestError, types::ToCreateQuest},
 };
+use super::is_url;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateQuestResponse {
     pub id: String,
+}
+
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
+pub struct QuestReward {
+    pub hook: QuestRewardHook,
+    pub items: Vec<QuestRewardItem>
 }
 
 #[derive(Deserialize, Serialize, ToSchema, Deref, Debug)]
@@ -66,10 +73,25 @@ async fn create_quest_controller<DB: QuestsDatabase>(
         .await
         .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
 
-    if let Some(reward) = &create_quest_req.reward {
-        db.add_reward_to_quest(&id, reward)
+    if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
+        if is_url(&hook.webhook_url) {
+            return Err(QuestError::QuestValidation("Webhook url is not valid".to_string()));
+        }
+
+        if !items.iter().all(|item| is_url(&item.image_link)) {
+            return Err(QuestError::QuestValidation("Image link is not valid".to_string()));
+        }
+
+        if items.len() > 0 {
+            db.add_reward_hook_to_quest(&id, hook)
             .await
             .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
+
+            db.add_reward_items_to_quest(&id, items).await.map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
+        } else {
+            return Err(QuestError::QuestValidation("Reward items must be at least one".to_string()));
+        }
+        
     }
 
     Ok(id)

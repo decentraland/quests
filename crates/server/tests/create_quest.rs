@@ -1,19 +1,21 @@
 mod common;
+
 use actix_web::test::{call_service, init_service, read_body_json, try_call_service, TestRequest};
 use actix_web_lab::__reexports::serde_json;
 use common::*;
 use quests_db::{
     core::{
-        definitions::{QuestReward, QuestsDatabase},
+        definitions::{QuestRewardHook, QuestRewardItem, QuestsDatabase},
         errors::DBError,
     },
     create_quests_db_component,
 };
 use quests_protocol::definitions::*;
 use quests_server::api::routes::{
-    quests::{CreateQuestRequest, CreateQuestResponse},
+    quests::{CreateQuestRequest, CreateQuestResponse, QuestReward},
     ErrorResponse,
 };
+use std::collections::HashMap;
 
 #[actix_web::test]
 async fn create_quest_should_be_200_without_reward() {
@@ -62,7 +64,7 @@ async fn create_quest_should_be_200_without_reward() {
 
     let response: CreateQuestResponse = read_body_json(response).await;
 
-    let quest_reward = db.get_quest_reward(&response.id).await.unwrap_err();
+    let quest_reward = db.get_quest_reward_hook(&response.id).await.unwrap_err();
 
     assert!(matches!(quest_reward, DBError::RowNotFound));
 }
@@ -82,15 +84,16 @@ async fn create_quest_should_be_200_with_reward() {
         definition,
     } = quest_samples::grab_some_apples();
 
-    let campaign_id = uuid::Uuid::new_v4();
-
     let create_quest_request = CreateQuestRequest {
         name,
         definition: definition.unwrap(),
         description,
         reward: Some(QuestReward {
-            campaign_id: campaign_id.to_string(),
-            auth_key: "token".to_string(),
+            hook: QuestRewardHook {
+                webhook_url: "https://rewards.decentraland.zone/api/campaigns/649c5e38-bef8-4bd6-b13f-bd6a2bdcc096/rewards".to_string(),
+                request_body: Some(HashMap::from([("campaign_key".to_string(), "value-json-webtoken".to_string()), ("beneficiary".to_string(), "{user_address}".to_string())]))
+            },
+            items: vec![QuestRewardItem { name: "SunGlasses".to_string(), image_link: "https://github.com/decentraland".to_string() }]
         }),
     };
 
@@ -119,10 +122,19 @@ async fn create_quest_should_be_200_with_reward() {
 
     let response: CreateQuestResponse = read_body_json(response).await;
 
-    let quest_reward = db.get_quest_reward(&response.id).await.unwrap();
+    let quest_reward = db.get_quest_reward_hook(&response.id).await.unwrap();
 
-    assert_eq!(quest_reward.auth_key, "token");
-    assert_eq!(quest_reward.campaign_id, campaign_id.to_string());
+    assert_eq!(quest_reward.webhook_url, "https://rewards.decentraland.zone/api/campaigns/649c5e38-bef8-4bd6-b13f-bd6a2bdcc096/rewards");
+    assert_eq!(
+        quest_reward.request_body,
+        Some(HashMap::from([
+            (
+                "campaign_key".to_string(),
+                "value-json-webtoken".to_string()
+            ),
+            ("beneficiary".to_string(), "{user_address}".to_string())
+        ]))
+    );
 }
 
 #[actix_web::test]

@@ -1,6 +1,7 @@
 pub mod create_quest;
 pub mod delete_quest;
 pub mod get_quest;
+pub mod get_quest_rewards;
 pub mod get_quest_stats;
 pub mod get_quests;
 pub mod update_quest;
@@ -14,6 +15,7 @@ pub use get_quest_stats::*;
 pub use get_quests::*;
 use quests_db::core::definitions::StoredQuest;
 use quests_protocol::definitions::QuestDefinition;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 pub use update_quest::*;
 use utoipa::ToSchema;
@@ -66,4 +68,12 @@ pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpRe
     } else {
         Err(HttpResponse::BadRequest().body("Bad Request"))
     }
+}
+
+pub fn is_url(url: &str) -> bool {
+    let regex = Regex::new(
+        r"^(http|https?:\/\/(?:www\.|(?!www))[^\s\.]+\.[^\s]{2,3}|www\.[^\s]+\.[^\s]{2,3})$",
+    )
+    .unwrap();
+    regex.is_match(url)
 }

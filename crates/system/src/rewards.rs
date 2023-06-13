@@ -5,18 +5,13 @@ use quests_db::{
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
-pub async fn give_rewards_to_user(
-    db: Arc<Database>,
-    quest_id: &str,
-    url: &str,
-    user_address: &str,
-) {
-    match db.get_quest_reward(quest_id).await {
+pub async fn give_rewards_to_user(db: Arc<Database>, quest_id: &str, user_address: &str) {
+    match db.get_quest_reward_hook(quest_id).await {
         Ok(quest_reward) => {
-            match call_rewards_server(
-                url,
-                &quest_reward.campaign_id,
-                &quest_reward.auth_key,
+            match call_reward_hook(
+                &quest_reward.webhook_url,
+                quest_reward.request_body,
+                quest_id,
                 user_address,
             )
             .await
@@ -54,18 +49,23 @@ struct RewardsServerResponse {
     ok: bool,
 }
 
-async fn call_rewards_server(
+async fn call_reward_hook(
     url: &str,
-    campaign_id: &str,
-    auth_key: &str,
-    beneficary_address: &str,
+    body: Option<HashMap<String, String>>,
+    quest_id: &str,
+    user_address: &str,
 ) -> Result<bool, String> {
-    let url = format!("https://{url}/api/campaigns/{campaign_id}/rewards");
-    let client = reqwest::Client::new();
-    let mut map = HashMap::new();
-    map.insert("beneficiary", beneficary_address);
-    map.insert("campaign_key", auth_key);
-    if let Ok(response) = client.post(&url).json(&map).send().await {
+    let url_parsed = quests_protocol::rewards::rewards_parser(url, quest_id, user_address);
+    let mut client = reqwest::Client::new().post(&url_parsed);
+
+    if let Some(mut body) = body {
+        for (_, v) in body.iter_mut() {
+            *v = quests_protocol::rewards::rewards_parser(v, quest_id, user_address);
+        }
+        client = client.json(&body);
+    }
+
+    if let Ok(response) = client.send().await {
         if let Ok(response) = response.json::<RewardsServerResponse>().await {
             if response.ok {
                 Ok(true)

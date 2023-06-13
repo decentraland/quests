@@ -57,7 +57,6 @@ pub async fn run_app() {
         database.clone(),
         events_queue.clone(),
         quests_channel_publisher.clone(),
-        &config.env,
     );
 
     let actix_rest_api_server =

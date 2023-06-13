@@ -29,7 +29,6 @@ pub struct EventProcessor {
     pub events_queue: Arc<RedisMessagesQueue>,
     quests_channel: Arc<RedisChannelPublisher>,
     database: Arc<Database>,
-    rewards_server_url: String,
 }
 
 impl EventProcessor {
@@ -37,13 +36,11 @@ impl EventProcessor {
         events_queue: Arc<RedisMessagesQueue>,
         quests_channel: Arc<RedisChannelPublisher>,
         database: Arc<Database>,
-        rewards_server_url: String,
     ) -> Self {
         Self {
             events_queue,
             quests_channel,
             database,
-            rewards_server_url,
         }
     }
 
@@ -68,11 +65,6 @@ impl EventProcessor {
             events_queue,
             quests_channel,
             database,
-            rewards_server_url: if config.env == "dev" {
-                String::from("rewards.decentraland.zone")
-            } else {
-                String::from("rewards.decentraland.org")
-            },
         })
     }
 
@@ -186,18 +178,8 @@ pub fn run_event_processor(
     database: Arc<Database>,
     events_queue: Arc<RedisMessagesQueue>,
     quests_channel_publisher: Arc<RedisChannelPublisher>,
-    env: &str,
 ) -> JoinHandle<EventProcessingResult<()>> {
-    let event_processor = EventProcessor::from(
-        events_queue,
-        quests_channel_publisher,
-        database,
-        if env == "dev" {
-            String::from("rewards.decentraland.zone")
-        } else {
-            String::from("rewards.decentraland.org")
-        },
-    );
+    let event_processor = EventProcessor::from(events_queue, quests_channel_publisher, database);
 
     start_event_processing(event_processor)
 }

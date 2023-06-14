@@ -69,11 +69,29 @@ pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpRe
         Err(HttpResponse::BadRequest().body("Bad Request"))
     }
 }
-
+#[allow(clippy::invalid_regex)]
 pub fn is_url(url: &str) -> bool {
     let regex = Regex::new(
         r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)",
     )
     .unwrap();
     regex.is_match(url)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn should_be_valid_url() {
+        let url = "https://www.google.com";
+        assert!(super::is_url(url));
+
+        let url = "http://google.com";
+        assert!(super::is_url(url));
+    }
+
+    #[test]
+    fn should_be_not_valid_url() {
+        let url = "https:/google.com";
+        assert!(super::is_url(url));
+    }
 }

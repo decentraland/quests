@@ -216,6 +216,7 @@ async fn should_call_rewards_hook_when_user_completes_a_quest() {
     assert!(result.is_ok());
 
     let mut config = Config::new().expect("Can parse config");
+    config.redis_url = "127.0.0.1:6379/2".to_string();
     config.database_url = db_url;
     let event_processor = EventProcessor::from_config(&config)
         .await

@@ -22,6 +22,7 @@ async fn get_quests_should_be_200() {
         name: &quest_definition.name,
         definition: quest_definition.definition.unwrap().encode_to_vec(),
         description: &quest_definition.description,
+        image_url: &quest_definition.image_url,
     };
 
     db.create_quest(&quest, "0xA").await.unwrap();

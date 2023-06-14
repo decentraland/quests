@@ -65,6 +65,7 @@ fn main() {
                 },
             ],
         }),
+        ..Default::default()
     };
 
     print_quest(&branched_quest);

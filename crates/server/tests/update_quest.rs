@@ -22,6 +22,7 @@ async fn update_quest_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest.name,
         description: &quest.description,
+        image_url: &quest.image_url,
         definition: quest.definition.as_ref().unwrap().encode_to_vec(),
     };
 
@@ -33,6 +34,7 @@ async fn update_quest_should_be_200() {
     let quest_update = CreateQuestRequest {
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
+        image_url: "".to_string(),
         definition: QuestDefinition {
             connections: vec![
                 Connection::new("A-Updated", "B"),
@@ -126,6 +128,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
     let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
+        image_url: "".to_string(),
         definition: QuestDefinition {
             connections: vec![
                 Connection::new("A", "B"),
@@ -215,6 +218,7 @@ async fn update_quest_should_be_400_quest_validation_error() {
             connections: vec![], // not needed for test
             steps: vec![],       // not needed for this test
         },
+        image_url: "".to_string(),
         reward: None,
     };
 
@@ -262,6 +266,7 @@ async fn update_quest_should_be_401() {
     let quest_update = CreateQuestRequest {
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
+        image_url: "".to_string(),
         definition: QuestDefinition {
             connections: vec![
                 Connection::new("A-Updated", "B"),
@@ -339,6 +344,7 @@ async fn update_quest_should_be_403() {
     let create_quest = CreateQuest {
         name: &quest.name,
         description: &quest.description,
+        image_url: &quest.image_url,
         definition: quest.definition.as_ref().unwrap().encode_to_vec(),
     };
 
@@ -347,6 +353,7 @@ async fn update_quest_should_be_403() {
     let quest_update = CreateQuestRequest {
         name: "QUEST-1_UPDATE".to_string(),
         description: "Grab some apples - Updated".to_string(),
+        image_url: "".to_string(),
         definition: QuestDefinition {
             connections: vec![
                 Connection::new("A-Updated", "B"),

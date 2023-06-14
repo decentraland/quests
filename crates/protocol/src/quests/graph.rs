@@ -241,6 +241,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
 
         let graph: QuestGraph = (&quest).into();
@@ -320,6 +321,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
 
         let graph = QuestGraph::from(&quest);
@@ -420,6 +422,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
 
         let graph = QuestGraph::from(&quest);
@@ -507,6 +510,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
 
         let graph = QuestGraph::from(&quest);
@@ -580,6 +584,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
 
         assert!(quest.is_valid().is_ok());

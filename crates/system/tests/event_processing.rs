@@ -73,11 +73,13 @@ async fn can_process_events() {
                 },
             ],
         }),
+        ..Default::default()
     };
 
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
+        image_url: &quest_definition.image_url,
         definition: quest_definition
             .definition
             .as_ref()
@@ -169,11 +171,13 @@ async fn should_call_rewards_hook_when_user_completes_a_quest() {
                 },
             ],
         }),
+        ..Default::default()
     };
 
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
+        image_url: &quest_definition.image_url,
         definition: quest_definition
             .definition
             .as_ref()

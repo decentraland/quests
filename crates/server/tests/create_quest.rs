@@ -31,12 +31,14 @@ async fn create_quest_should_be_200_without_reward() {
         name,
         description,
         definition,
+        image_url,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
         name,
         definition: definition.unwrap(),
         description,
+        image_url,
         reward: None,
     };
 
@@ -84,12 +86,14 @@ async fn create_quest_should_be_200_with_reward() {
         name,
         description,
         definition,
+        image_url,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
         name,
         definition: definition.unwrap(),
         description,
+        image_url,
         reward: Some(QuestReward {
             hook: QuestRewardHook {
                 webhook_url: "https://rewards.decentraland.zone/api/campaigns/649c5e38-bef8-4bd6-b13f-bd6a2bdcc096/rewards".to_string(),
@@ -151,6 +155,7 @@ async fn create_quest_should_be_400_quest_validation_error_missing_definition() 
             steps: vec![],
         },
         reward: None,
+        image_url: "".to_string(),
     };
 
     let headers = get_signed_headers(
@@ -190,12 +195,14 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_webhook() {
         name,
         description,
         definition,
+        image_url,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
         name,
         definition: definition.unwrap(),
         description,
+        image_url,
         reward: Some(QuestReward {
             hook: QuestRewardHook {
                 webhook_url: "rewards.decentraland.zone/api/campaigns/649c5e38-bef8-4bd6-b13f-bd6a2bdcc096/rewards".to_string(),
@@ -244,12 +251,14 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
         name,
         description,
         definition,
+        image_url,
     } = quest_samples::grab_some_apples();
 
     let mut create_quest_request = CreateQuestRequest {
         name,
         definition: definition.unwrap(),
         description,
+        image_url,
         reward: Some(QuestReward {
             hook: QuestRewardHook {
                 webhook_url: "https://rewards.decentraland.zone/api/campaigns/649c5e38-bef8-4bd6-b13f-bd6a2bdcc096/rewards".to_string(),
@@ -360,6 +369,7 @@ async fn create_quest_should_be_401() {
             connections: vec![],
             steps: vec![],
         },
+        image_url: "".to_string(),
         reward: None,
     };
 

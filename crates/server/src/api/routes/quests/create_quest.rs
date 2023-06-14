@@ -74,15 +74,19 @@ async fn create_quest_controller<DB: QuestsDatabase>(
         .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
 
     if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
-        if is_url(&hook.webhook_url) {
+        if !is_url(&hook.webhook_url) {
             return Err(QuestError::QuestValidation("Webhook url is not valid".to_string()));
         }
 
-        if !items.iter().all(|item| is_url(&item.image_link)) {
-            return Err(QuestError::QuestValidation("Image link is not valid".to_string()));
-        }
-
         if items.len() > 0 {
+            if !items.iter().all(|item| is_url(&item.image_link)) {
+                return Err(QuestError::QuestValidation("Item's image link is not valid".to_string()));
+            }
+    
+            if !items.iter().all(|item| item.name.len() > 3) {
+                return Err(QuestError::QuestValidation("Item name must be at least 3 characters".to_string()));
+            }
+
             db.add_reward_hook_to_quest(&id, hook)
             .await
             .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;

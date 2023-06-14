@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::errors::DBResult;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -31,6 +33,19 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
 
     async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()>;
     async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>>;
+
+    async fn add_reward_hook_to_quest(
+        &self,
+        quest_id: &str,
+        reward: &QuestRewardHook,
+    ) -> DBResult<()>;
+    async fn get_quest_reward_hook(&self, quest_id: &str) -> DBResult<QuestRewardHook>;
+    async fn add_reward_items_to_quest(
+        &self,
+        quest_id: &str,
+        items: &[QuestRewardItem],
+    ) -> DBResult<()>;
+    async fn get_quest_reward_items(&self, quest_id: &str) -> DBResult<Vec<QuestRewardItem>>;
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
@@ -71,6 +86,18 @@ pub struct StoredQuest {
     pub description: String,
     pub definition: Vec<u8>,
     pub creator_address: String,
+}
+
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+pub struct QuestRewardHook {
+    pub webhook_url: String,
+    pub request_body: Option<HashMap<String, String>>,
+}
+
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+pub struct QuestRewardItem {
+    pub name: String,
+    pub image_link: String,
 }
 
 pub trait CloneDatabase {

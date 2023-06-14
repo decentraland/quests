@@ -1,21 +1,22 @@
 pub mod core;
 
-use std::str::FromStr;
-
 use crate::core::{
-    definitions::{AddEvent, CreateQuest, Event, QuestInstance, QuestsDatabase, StoredQuest},
+    definitions::{
+        AddEvent, CreateQuest, Event, QuestInstance, QuestRewardHook, QuestRewardItem,
+        QuestsDatabase, StoredQuest,
+    },
     errors::{DBError, DBResult},
     ops::{Connect, GetConnection, Migrate},
 };
+pub use sqlx::Executor;
 use sqlx::{
     pool::PoolConnection,
     postgres::{PgConnectOptions, PgPoolOptions},
-    Error, PgPool, Postgres, Row, Transaction,
+    types::Json,
+    Error, PgPool, Postgres, QueryBuilder, Row, Transaction,
 };
-
+use std::{collections::HashMap, str::FromStr};
 use uuid::Uuid;
-
-pub use sqlx::Executor;
 
 pub struct DatabaseOptions {
     url: String,
@@ -198,7 +199,7 @@ impl QuestsDatabase for Database {
         .bind(parse_str_to_uuid(quest_id)?)
         .fetch_one(&self.pool)
         .await
-        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
+        .map_err(|err| DBError::GetActiveQuestFailed(Box::new(err)))?;
 
         Ok(quest_exists)
     }
@@ -226,7 +227,7 @@ impl QuestsDatabase for Database {
         .bind(parse_str_to_uuid(quest_instance_id)?)
         .fetch_one(&self.pool)
         .await
-        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
+        .map_err(|err| DBError::GetActiveQuestInstanceFailed(Box::new(err)))?;
 
         Ok(quest_instance_exists)
     }
@@ -246,7 +247,7 @@ impl QuestsDatabase for Database {
         .bind(parse_str_to_uuid(quest_id)?)
         .fetch_one(&self.pool)
         .await
-        .map_err(|err| DBError::GetQuestsFailed(Box::new(err)))?;
+        .map_err(|err| DBError::HasActiveQuestInstance(quest_id.to_string(), user_address.to_string(), Box::new(err)))?;
 
         Ok(quest_instance_exists)
     }
@@ -312,7 +313,9 @@ impl QuestsDatabase for Database {
         .bind(user_address)
         .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
         .await
-        .map_err(|err| DBError::GetQuestInstanceFailed(Box::new(err)))?;
+        .map_err(|err| {
+            DBError::GetActiveQuestInstancesFailed(user_address.to_string(), Box::new(err))
+        })?;
 
         let mut quests = vec![];
 
@@ -390,6 +393,100 @@ impl QuestsDatabase for Database {
         }
 
         Ok(events)
+    }
+
+    async fn add_reward_hook_to_quest(
+        &self,
+        quest_id: &str,
+        reward: &QuestRewardHook,
+    ) -> DBResult<()> {
+        sqlx::query(
+            "INSERT INTO quest_reward_hooks (quest_id, webhook_url, request_body) VALUES ($1, $2, $3)",
+        )
+        .bind(parse_str_to_uuid(quest_id)?)
+        .bind(&reward.webhook_url)
+        .bind(Json(&reward.request_body))
+        .execute(&self.pool)
+        .await
+        .map_err(|err| DBError::CreateQuestRewardFailed(Box::new(err)))?;
+
+        Ok(())
+    }
+
+    async fn get_quest_reward_hook(&self, quest_id: &str) -> DBResult<QuestRewardHook> {
+        let quest_reward = sqlx::query("SELECT * FROM quest_reward_hooks WHERE quest_id = $1")
+            .bind(parse_str_to_uuid(quest_id)?)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|err| match err {
+                Error::RowNotFound => DBError::RowNotFound,
+                _ => DBError::GetQuestRewardFailed(Box::new(err)),
+            })?;
+
+        let req_body: Option<Json<HashMap<String, String>>> = quest_reward
+            .try_get("request_body")
+            .map_err(|err| DBError::RowCorrupted(Box::new(err)))?;
+
+        Ok(QuestRewardHook {
+            webhook_url: quest_reward
+                .try_get("webhook_url")
+                .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            request_body: if let Some(body) = req_body {
+                Some(body.0)
+            } else {
+                None
+            },
+        })
+    }
+
+    async fn add_reward_items_to_quest(
+        &self,
+        quest_id: &str,
+        items: &[QuestRewardItem],
+    ) -> DBResult<()> {
+        let mut builder = QueryBuilder::new(
+            "INSERT INTO quest_reward_items (quest_id, reward_name, reward_image)",
+        );
+
+        let quest_id = parse_str_to_uuid(quest_id)?;
+
+        builder.push_values(items, |mut b, item| {
+            b.push_bind(quest_id)
+                .push_bind(&item.name)
+                .push_bind(&item.image_link);
+        });
+
+        let query = builder.build();
+
+        query
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DBError::CreateQuestRewardFailed(Box::new(err)))?;
+
+        Ok(())
+    }
+
+    async fn get_quest_reward_items(&self, quest_id: &str) -> DBResult<Vec<QuestRewardItem>> {
+        let query_result = sqlx::query("SELECT * FROM quest_reward_items WHERE quest_id = $1")
+            .bind(parse_str_to_uuid(quest_id)?)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|err| DBError::GetQuestRewardFailed(Box::new(err)))?;
+
+        let mut items = vec![];
+
+        for row in query_result {
+            items.push(QuestRewardItem {
+                name: row
+                    .try_get("reward_name")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                image_link: row
+                    .try_get("reward_image")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            })
+        }
+
+        Ok(items)
     }
 }
 

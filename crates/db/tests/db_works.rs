@@ -9,13 +9,14 @@ use quests_db::{
 
 #[tokio::test]
 async fn quests_database_works() {
-    let db_url = env::var("DATABASE_URL").unwrap();
+    let db_url = env::var("DATABASE_URL")
+        .unwrap_or("postgres://postgres:postgres@localhost:5432/quests_db".to_string());
 
     let database_opts = DatabaseOptions::new(&db_url);
 
     let database = database_opts.connect().await.unwrap();
 
-    database.migrate().await.unwrap();
+    let _ = database.migrate().await;
 
     quest_database_works(
         &database,

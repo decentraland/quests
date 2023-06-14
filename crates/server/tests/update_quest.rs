@@ -78,6 +78,7 @@ async fn update_quest_should_be_200() {
                 },
             ],
         },
+        reward: None,
     };
 
     let path = format!("/quests/{}", id);
@@ -170,6 +171,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
                 },
             ],
         },
+        reward: None,
     };
 
     let quest_update = CreateQuestRequest {
@@ -213,6 +215,7 @@ async fn update_quest_should_be_400_quest_validation_error() {
             connections: vec![], // not needed for test
             steps: vec![],       // not needed for this test
         },
+        reward: None,
     };
 
     let quest_update = CreateQuestRequest {
@@ -304,6 +307,7 @@ async fn update_quest_should_be_401() {
                 },
             ],
         },
+        reward: None,
     };
 
     let path = format!("/quests/{}", uuid::Uuid::new_v4());
@@ -388,6 +392,7 @@ async fn update_quest_should_be_403() {
                 },
             ],
         },
+        reward: None,
     };
 
     let path = format!("/quests/{}", id);

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use actix_web::{post, web, HttpResponse, HttpRequest};
 use derive_more::Deref;
-use quests_db::{core::definitions::{QuestsDatabase, CreateQuest}, Database};
+use quests_db::{core::definitions::{QuestsDatabase, CreateQuest, QuestRewardHook, QuestRewardItem}, Database};
 use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -9,10 +9,17 @@ use crate::{
     api::routes::{errors::CommonError, quests::get_user_address_from_request},
     domain::{quests::QuestError, types::ToCreateQuest},
 };
+use super::is_url;
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateQuestResponse {
-    id: String,
+    pub id: String,
+}
+
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
+pub struct QuestReward {
+    pub hook: QuestRewardHook,
+    pub items: Vec<QuestRewardItem>
 }
 
 #[derive(Deserialize, Serialize, ToSchema, Deref, Debug)]
@@ -21,6 +28,7 @@ pub struct CreateQuestRequest {
     pub description: String,
     #[deref]
     pub definition: QuestDefinition,
+    pub reward: Option<QuestReward>,
 }
 
 #[utoipa::path(
@@ -53,18 +61,44 @@ pub async fn create_quest(
 
 async fn create_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
-    quest: &CreateQuestRequest,
+    create_quest_req: &CreateQuestRequest,
     creator_address: &str
 ) -> Result<String, QuestError> {
-    quest
+    create_quest_req
         .is_valid()
         .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
 
-    
-    let quest = quest.to_create_quest()?;
-    db.create_quest(&quest, creator_address)
+    let quest = create_quest_req.to_create_quest()?;
+    let id = db.create_quest(&quest, creator_address)
         .await
-        .map_err(|_| QuestError::CommonError(CommonError::Unknown))
+        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
+
+    if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
+        if !is_url(&hook.webhook_url) {
+            return Err(QuestError::QuestValidation("Webhook url is not valid".to_string()));
+        }
+
+        if !items.is_empty() {
+            if !items.iter().all(|item| is_url(&item.image_link)) {
+                return Err(QuestError::QuestValidation("Item's image link is not valid".to_string()));
+            }
+    
+            if !items.iter().all(|item| item.name.len() > 3) {
+                return Err(QuestError::QuestValidation("Item name must be at least 3 characters".to_string()));
+            }
+
+            db.add_reward_hook_to_quest(&id, hook)
+            .await
+            .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
+
+            db.add_reward_items_to_quest(&id, items).await.map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
+        } else {
+            return Err(QuestError::QuestValidation("Reward items must be at least one".to_string()));
+        }
+        
+    }
+
+    Ok(id)
 }
 
 impl ToCreateQuest for CreateQuestRequest {

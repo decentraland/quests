@@ -38,6 +38,7 @@ dcl-crypto-middleware-rs = { version = "0.2.1", features = [
   "ws_signed_headers",
   "signed_fetch",
 ] }
+regex = "1.8.4"
 
 [dev-dependencies]
 uuid = { workspace = true }

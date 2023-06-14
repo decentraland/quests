@@ -54,6 +54,7 @@ impl ResponseError for QuestError {
             Self::NotInstanceOwner => StatusCode::FORBIDDEN,
             Self::NotFoundOrInactive => StatusCode::NOT_FOUND,
             Self::NotQuestCreator => StatusCode::FORBIDDEN,
+            Self::QuestHasNoReward => StatusCode::NOT_FOUND,
         }
     }
 

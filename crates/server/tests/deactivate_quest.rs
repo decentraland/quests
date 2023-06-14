@@ -22,6 +22,7 @@ async fn deactivate_quest_should_be_200() {
             connections: vec![], // not needed for this test
             steps: vec![],       // not needed for this test
         },
+        reward: None,
     };
 
     let create_quest = CreateQuest {
@@ -109,6 +110,7 @@ async fn deactivate_quest_should_be_403() {
             connections: vec![], // not needed for this test
             steps: vec![],       // not needed for this test
         },
+        reward: None,
     };
 
     let create_quest = CreateQuest {

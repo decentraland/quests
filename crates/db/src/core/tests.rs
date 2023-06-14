@@ -1,8 +1,64 @@
 use super::definitions::{AddEvent, CreateQuest, QuestsDatabase};
+use crate::core::{
+    definitions::{QuestRewardHook, QuestRewardItem},
+    errors::DBError,
+};
+use std::collections::HashMap;
 
 pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQuest<'_>) {
     assert!(db.ping().await);
     let quest_id = db.create_quest(&quest, "0xA").await.unwrap();
+
+    let quest_reward = db.get_quest_reward_hook(&quest_id).await.unwrap_err();
+
+    assert!(matches!(quest_reward, DBError::RowNotFound));
+
+    db.add_reward_hook_to_quest(
+        &quest_id,
+        &QuestRewardHook {
+            webhook_url: "https://rewards.webhook.com/{quest_id}".to_string(),
+            request_body: Some(HashMap::from([(
+                "beneficiary".to_owned(),
+                "{user_address}".to_owned(),
+            )])),
+        },
+    )
+    .await
+    .unwrap();
+
+    db.add_reward_items_to_quest(
+        &quest_id,
+        &[QuestRewardItem {
+            name: "SunGlasses".to_string(),
+            image_link: "https://github.com/decentraland".to_string(),
+        }],
+    )
+    .await
+    .unwrap();
+
+    let quest_reward = db.get_quest_reward_hook(&quest_id).await.unwrap();
+
+    assert_eq!(
+        quest_reward.webhook_url,
+        "https://rewards.webhook.com/{quest_id}"
+    );
+
+    assert_eq!(
+        quest_reward.request_body,
+        Some(HashMap::from([(
+            "beneficiary".to_owned(),
+            "{user_address}".to_owned()
+        )]))
+    );
+
+    let quest_reward_items = db.get_quest_reward_items(&quest_id).await.unwrap();
+
+    assert_eq!(quest_reward_items.len(), 1);
+    assert_eq!(quest_reward_items[0].name, "SunGlasses");
+    assert_eq!(
+        quest_reward_items[0].image_link,
+        "https://github.com/decentraland"
+    );
 
     let is_active = db.is_active_quest(&quest_id).await.unwrap();
     assert!(is_active);

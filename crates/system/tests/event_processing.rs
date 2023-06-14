@@ -17,7 +17,7 @@ mod common;
 
 #[tokio::test]
 async fn can_process_events() {
-    env_logger::init();
+    let _ = env_logger::try_init();
     let db_url = create_test_db().await;
     let db = create_quests_db_component(&db_url, true)
         .await
@@ -135,7 +135,7 @@ async fn can_process_events() {
 
 #[tokio::test]
 async fn should_call_rewards_hook_when_user_completes_a_quest() {
-    env_logger::init();
+    let _ = env_logger::try_init();
     let db_url = create_test_db().await;
     let db = create_quests_db_component(&db_url, true)
         .await

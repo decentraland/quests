@@ -92,6 +92,6 @@ mod tests {
     #[test]
     fn should_be_not_valid_url() {
         let url = "https:/google.com";
-        assert!(super::is_url(url));
+        assert!(!super::is_url(url));
     }
 }

@@ -45,8 +45,6 @@ pub async fn get_quest_rewards_controller<DB: QuestsDatabase>(
 
             Ok(rewards)
         }
-        Err(_) => {
-            return Err(QuestError::CommonError(CommonError::Unknown));
-        }
+        Err(_) => Err(QuestError::CommonError(CommonError::Unknown)),
     }
 }

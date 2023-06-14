@@ -78,7 +78,7 @@ async fn create_quest_controller<DB: QuestsDatabase>(
             return Err(QuestError::QuestValidation("Webhook url is not valid".to_string()));
         }
 
-        if items.len() > 0 {
+        if !items.is_empty() {
             if !items.iter().all(|item| is_url(&item.image_link)) {
                 return Err(QuestError::QuestValidation("Item's image link is not valid".to_string()));
             }

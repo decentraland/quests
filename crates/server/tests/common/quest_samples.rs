@@ -52,6 +52,7 @@ pub fn grab_some_apples() -> Quest {
                 },
             ],
         }),
+        ..Default::default()
     }
 }
 
@@ -107,6 +108,7 @@ pub fn grab_some_pies() -> Quest {
                 },
             ],
         }),
+        ..Default::default()
     }
 }
 
@@ -134,6 +136,7 @@ pub fn one_step_quest() -> (Quest, Action) {
                 description: "".to_string(),
             }],
         }),
+        ..Default::default()
     };
     (quest, action)
 }

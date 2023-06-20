@@ -18,6 +18,7 @@ async fn deactivate_quest_should_be_200() {
     let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
         description: "Grab some apples".to_string(),
+        image_url: "".to_string(),
         definition: QuestDefinition {
             connections: vec![], // not needed for this test
             steps: vec![],       // not needed for this test
@@ -28,6 +29,7 @@ async fn deactivate_quest_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
+        image_url: &quest_definition.image_url,
         definition: vec![],
     };
 
@@ -110,12 +112,14 @@ async fn deactivate_quest_should_be_403() {
             connections: vec![], // not needed for this test
             steps: vec![],       // not needed for this test
         },
+        image_url: "".to_string(),
         reward: None,
     };
 
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
+        image_url: &quest_definition.image_url,
         definition: vec![],
     };
 

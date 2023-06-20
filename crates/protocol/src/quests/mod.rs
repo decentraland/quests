@@ -262,6 +262,7 @@ mod tests {
                 ],
                 steps: vec![], // not needed for test
             }),
+            ..Default::default()
         };
 
         let starting_steps = quest.get_steps_without_from();
@@ -287,6 +288,7 @@ mod tests {
                 ],
                 steps: vec![], // not needed for test
             }),
+            ..Default::default()
         };
 
         let steps_pointing_to_end = quest.get_steps_without_to();
@@ -335,6 +337,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
 
         assert!(quest.is_valid().is_ok())
@@ -352,6 +355,7 @@ mod tests {
                 connections: vec![],
                 steps: vec![], // not needed for test
             }),
+            ..Default::default()
         };
         let assert = matches!(
             quest.is_valid().unwrap_err(),
@@ -377,6 +381,7 @@ mod tests {
                     }],
                 }],
             }),
+            ..Default::default()
         };
         let err = QuestValidationError::MissingStepForStartingNode("A1".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -399,6 +404,7 @@ mod tests {
                     }],
                 }],
             }),
+            ..Default::default()
         };
         let err = QuestValidationError::MissingStepForEndNode("B".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -441,6 +447,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
         let err = QuestValidationError::NoConnectionDefinedForStep("A1".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -474,6 +481,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
         let err = QuestValidationError::NoStepDefinedForConnectionHalf("B".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -525,6 +533,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
         let err = QuestValidationError::NotUniqueIDForStep("A".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -574,6 +583,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
         let err = QuestValidationError::NotUniqueIDForStepTask("A".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
@@ -619,6 +629,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
         let err = QuestValidationError::MissingTasksForStep("B".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);

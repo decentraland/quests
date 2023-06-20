@@ -118,6 +118,7 @@ pub fn grab_some_apples() -> Quest {
                 },
             ],
         }),
+        ..Default::default()
     }
 }
 

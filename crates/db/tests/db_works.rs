@@ -24,6 +24,7 @@ async fn quests_database_works() {
             name: "NEW_QUEST",
             description: "Talk to a NPC",
             definition: vec![0, 1, 4],
+            image_url: "",
         },
     )
     .await;

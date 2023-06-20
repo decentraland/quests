@@ -76,6 +76,7 @@ pub struct QuestInstance {
 pub struct CreateQuest<'a> {
     pub name: &'a str,
     pub description: &'a str,
+    pub image_url: &'a str,
     pub definition: Vec<u8>,
 }
 
@@ -86,6 +87,7 @@ pub struct StoredQuest {
     pub description: String,
     pub definition: Vec<u8>,
     pub creator_address: String,
+    pub image_url: String,
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]

@@ -21,6 +21,7 @@ async fn get_quest_with_defintiions_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
+        image_url: &quest_definition.image_url,
         definition: quest_definition
             .definition
             .as_ref()
@@ -89,6 +90,7 @@ async fn get_quest_without_defintiions_should_be_200() {
     let create_quest = CreateQuest {
         name: &quest_definition.name,
         description: &quest_definition.description,
+        image_url: &quest_definition.image_url,
         definition: quest_definition
             .definition
             .as_ref()

@@ -28,6 +28,7 @@ pub struct CreateQuestRequest {
     pub description: String,
     #[deref]
     pub definition: QuestDefinition,
+    pub image_url: String,
     pub reward: Option<QuestReward>,
 }
 
@@ -107,12 +108,14 @@ impl ToCreateQuest for CreateQuestRequest {
             name,
             description,
             definition,
+            image_url,
             ..
         } = self;
 
         Ok(CreateQuest {
             name,
             description,
+            image_url,
             definition: definition.encode_to_vec(),
         })
     }

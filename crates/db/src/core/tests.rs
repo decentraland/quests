@@ -67,6 +67,7 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         name: "UPDATED_QUEST",
         description: quest.description,
         definition: quest.definition.clone(),
+        image_url: quest.image_url,
     };
 
     let new_quest_id = db

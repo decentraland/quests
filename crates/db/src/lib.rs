@@ -115,6 +115,9 @@ impl QuestsDatabase for Database {
                 creator_address: row
                     .try_get("creator_address")
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                image_url: row
+                    .try_get("image_url")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
             })
         }
 
@@ -185,6 +188,9 @@ impl QuestsDatabase for Database {
                 .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
             creator_address: query_result
                 .try_get("creator_address")
+                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
+            image_url: query_result
+                .try_get("image_url")
                 .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
         })
     }
@@ -499,13 +505,14 @@ impl Database {
     ) -> DBResult<String> {
         let quest_id = Uuid::new_v4().to_string();
         let query = sqlx::query(
-            "INSERT INTO quests (id, name, description, definition, creator_address) VALUES ($1, $2, $3, $4, $5)",
+            "INSERT INTO quests (id, name, description, definition, creator_address, image_url) VALUES ($1, $2, $3, $4, $5, $6)",
         )
         .bind(parse_str_to_uuid(&quest_id)?)
         .bind(quest.name)
         .bind(quest.description)
         .bind(&quest.definition)
-        .bind(creator_address);
+        .bind(creator_address)
+        .bind(quest.image_url);
 
         let result = if let Some(tx) = tx {
             query.execute(tx).await

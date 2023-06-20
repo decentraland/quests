@@ -19,6 +19,7 @@ impl ToQuest for StoredQuest {
             name: self.name.to_string(),
             description: self.description.to_string(),
             creator_address: self.creator_address.to_string(),
+            image_url: self.image_url.to_string(),
             definition: Some(definition),
         })
     }
@@ -30,6 +31,7 @@ impl ToCreateQuest for Quest {
             name,
             description,
             definition,
+            image_url,
             ..
         } = self;
 
@@ -40,6 +42,7 @@ impl ToCreateQuest for Quest {
         Ok(CreateQuest {
             name,
             description,
+            image_url,
             definition: definition.encode_to_vec(),
         })
     }

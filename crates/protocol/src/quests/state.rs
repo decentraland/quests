@@ -182,6 +182,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
         let quest_graph = QuestGraph::from(&quest);
         let mut events = vec![
@@ -363,6 +364,7 @@ mod tests {
                     },
                 ],
             }),
+            ..Default::default()
         };
 
         let quest_graph = QuestGraph::from(&quest);

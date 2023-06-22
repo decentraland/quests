@@ -286,25 +286,7 @@ impl QuestsDatabase for Database {
                 _ => DBError::GetQuestInstanceFailed(Box::new(err)),
             })?;
 
-        // QuestInstance uses a number as the timestamp (unix time) but SQLX returns a specific type (chrono)
-        let start_timestamp = date_time_to_unix(
-            query_result
-                .try_get("start_timestamp")
-                .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-        );
-
-        Ok(QuestInstance {
-            id: id.to_string(),
-            quest_id: parse_uuid_to_str(
-                query_result
-                    .try_get("quest_id")
-                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-            ),
-            user_address: query_result
-                .try_get("user_address")
-                .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-            start_timestamp,
-        })
+        Ok(QuestInstance::try_from(query_result)?)
     }
 
     async fn get_active_user_quest_instances(
@@ -327,23 +309,7 @@ impl QuestsDatabase for Database {
 
         for row in query_result {
             // not using functional methods due to "question mark"
-            quests.push(QuestInstance {
-                id: parse_uuid_to_str(
-                    row.try_get("id")
-                        .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-                ),
-                quest_id: parse_uuid_to_str(
-                    row.try_get("quest_id")
-                        .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-                ),
-                user_address: row
-                    .try_get("user_address")
-                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-                start_timestamp: date_time_to_unix(
-                    row.try_get("start_timestamp")
-                        .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-                ),
-            })
+            quests.push(QuestInstance::try_from(row)?)
         }
 
         Ok(quests)
@@ -493,6 +459,45 @@ impl QuestsDatabase for Database {
         }
 
         Ok(items)
+    }
+
+    async fn get_quest_instances_by_quest_id(
+        &self,
+        quest_id: &str,
+    ) -> DBResult<(Vec<QuestInstance>, Vec<QuestInstance>)> {
+        let uuid = parse_str_to_uuid(quest_id)?;
+        let instances = sqlx::query(
+            "SELECT *, true as active FROM quest_instances 
+            WHERE quest_id = $1 
+            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests) 
+
+            UNION 
+            
+            SELECT *, false as active FROM quest_instances 
+            WHERE quest_id = $1 
+            AND id IN (SELECT quest_instance_id as id FROM abandoned_quests)",
+        )
+        .bind(uuid)
+        .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
+        .await
+        .map_err(|err| DBError::GetQuestInstancesByQuestId(quest_id.to_string(), Box::new(err)))?;
+
+        let mut actives = vec![];
+        let mut not_actives = vec![];
+
+        for instance in instances {
+            let active: bool = instance
+                .try_get("active")
+                .map_err(|err| DBError::RowCorrupted(Box::new(err)))?;
+
+            if active {
+                actives.push(QuestInstance::try_from(instance)?);
+            } else {
+                not_actives.push(QuestInstance::try_from(instance)?);
+            }
+        }
+
+        Ok((actives, not_actives))
     }
 }
 

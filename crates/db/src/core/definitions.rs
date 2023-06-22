@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
-use super::errors::DBResult;
+use super::errors::{DBError, DBResult};
+use crate::{date_time_to_unix, parse_uuid_to_str};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use sqlx::{postgres::PgRow, Row};
 
 #[async_trait]
 pub trait QuestsDatabase: Send + Sync + CloneDatabase {
@@ -30,6 +32,11 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
         &self,
         user_address: &str,
     ) -> DBResult<Vec<QuestInstance>>;
+
+    async fn get_quest_instances_by_quest_id(
+        &self,
+        quest_id: &str,
+    ) -> DBResult<(Vec<QuestInstance>, Vec<QuestInstance>)>;
 
     async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()>;
     async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>>;
@@ -70,6 +77,32 @@ pub struct QuestInstance {
     pub quest_id: String,
     pub user_address: String,
     pub start_timestamp: i64,
+}
+
+impl TryFrom<PgRow> for QuestInstance {
+    type Error = DBError;
+    fn try_from(value: PgRow) -> Result<Self, Self::Error> {
+        Ok(QuestInstance {
+            id: parse_uuid_to_str(
+                value
+                    .try_get("id")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            ),
+            quest_id: parse_uuid_to_str(
+                value
+                    .try_get("quest_id")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            ),
+            user_address: value
+                .try_get("user_address")
+                .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            start_timestamp: date_time_to_unix(
+                value
+                    .try_get("start_timestamp")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            ),
+        })
+    }
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]

@@ -20,6 +20,7 @@ async fn get_quest_stats_should_be_200() {
     let Quest {
         id: _,
         creator_address: _,
+        image_url: _,
         name,
         description,
         definition,
@@ -31,6 +32,7 @@ async fn get_quest_stats_should_be_200() {
                 name: &name,
                 description: &description,
                 definition: definition.unwrap().encode_to_vec(),
+                image_url: "",
             },
             "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1bf5", // identity address
         )
@@ -79,6 +81,7 @@ async fn get_quest_stats_should_be_403() {
 
     let Quest {
         id: _,
+        image_url: _,
         creator_address: _,
         name,
         description,
@@ -91,6 +94,7 @@ async fn get_quest_stats_should_be_403() {
                 name: &name,
                 description: &description,
                 definition: definition.unwrap().encode_to_vec(),
+                image_url: "",
             },
             "0xB",
         )
@@ -131,6 +135,7 @@ async fn get_quest_stats_should_be_401() {
     let Quest {
         id: _,
         creator_address: _,
+        image_url: _,
         name,
         description,
         definition,
@@ -142,6 +147,7 @@ async fn get_quest_stats_should_be_401() {
                 name: &name,
                 description: &description,
                 definition: definition.unwrap().encode_to_vec(),
+                image_url: "",
             },
             "0xB",
         )

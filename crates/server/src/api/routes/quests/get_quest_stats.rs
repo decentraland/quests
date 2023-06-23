@@ -59,9 +59,9 @@ async fn get_quest_stats_controller<DB: QuestsDatabase>(
 ) -> Result<QuestStats, QuestError> {
     let mut futs = FuturesUnordered::new();
 
-    match db.get_quest(&quest_id).await {
+    match db.get_quest(quest_id).await {
         Ok(quest) => {
-            if quest.creator_address.eq_ignore_ascii_case(&user_address) {
+            if quest.creator_address.eq_ignore_ascii_case(user_address) {
                 match db.get_quest_instances_by_quest_id(quest_id).await {
                     Ok((actives, abandoned)) => {
                         let mut stats = QuestStats {

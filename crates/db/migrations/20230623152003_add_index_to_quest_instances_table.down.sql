@@ -1,0 +1,1 @@
+DROP INDEX quest_instances_quest_id_idx;

@@ -97,6 +97,11 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert_eq!(get_quest_instance.user_address, "0xA");
     assert_eq!(get_quest_instance.quest_id, quest_id);
 
+    let instances_by_quest_id = db.get_quest_instances_by_quest_id(&quest_id).await.unwrap();
+
+    assert_eq!(instances_by_quest_id.0.len(), 1);
+    assert_eq!(instances_by_quest_id.1.len(), 0);
+
     let event = AddEvent {
         id: uuid::Uuid::new_v4().to_string(),
         user_address: "0xA",

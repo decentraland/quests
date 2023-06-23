@@ -40,7 +40,7 @@ async fn get_quest_stats_should_be_200() {
         .unwrap();
 
     db.start_quest(&id, "0xA").await.unwrap();
-    db.start_quest(&id, "0xB").await.unwrap();
+    let instance_id = db.start_quest(&id, "0xB").await.unwrap();
     db.start_quest(&id, "0xC").await.unwrap();
 
     let headers = get_signed_headers(
@@ -59,15 +59,17 @@ async fn get_quest_stats_should_be_200() {
         .append_header(headers[4].clone())
         .to_request();
 
+    db.abandon_quest(&instance_id).await.unwrap();
+
     let response = call_service(&app, req).await;
 
     assert!(response.status().is_success());
 
     let response: QuestStats = read_body_json(response).await;
 
-    assert_eq!(response.active_players, 3);
-    assert_eq!(response.abandoned, 0);
-    assert_eq!(response.started_in_last_24_hours, 3);
+    assert_eq!(response.active_players, 2);
+    assert_eq!(response.abandoned, 1);
+    assert_eq!(response.started_in_last_24_hours, 2);
     assert_eq!(response.completed, 0);
 }
 

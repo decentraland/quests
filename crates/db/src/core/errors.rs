@@ -55,6 +55,9 @@ pub enum DBError {
     #[error("Unable to check if a quest is still active: {0}")]
     GetActiveQuestFailed(BoxDynError),
 
+    #[error("Unable to retrieve all instances related to a Quest ID: {0}")]
+    GetQuestInstancesByQuestId(String, BoxDynError),
+
     #[error("Unable to check if a quest instance is still active: {0}")]
     GetActiveQuestInstanceFailed(BoxDynError),
 

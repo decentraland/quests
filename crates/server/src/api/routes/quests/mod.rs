@@ -11,6 +11,7 @@ pub use create_quest::*;
 use dcl_crypto::Address;
 pub use delete_quest::*;
 pub use get_quest::*;
+pub use get_quest_rewards::*;
 pub use get_quest_stats::*;
 pub use get_quests::*;
 use quests_db::core::definitions::StoredQuest;
@@ -27,6 +28,7 @@ pub fn services(config: &mut ServiceConfig) {
         .service(update_quest)
         .service(delete_quest)
         .service(get_quest)
+        .service(get_quest_rewards)
         .service(get_quest_stats);
 }
 
@@ -35,6 +37,7 @@ pub struct ProtectedQuest {
     pub id: String,
     pub name: String,
     pub description: String,
+    pub image_url: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub definition: Option<QuestDefinition>,
 }
@@ -45,6 +48,7 @@ impl From<StoredQuest> for ProtectedQuest {
             id: value.id,
             name: value.name,
             description: value.description,
+            image_url: value.image_url,
             definition: None,
         }
     }
@@ -56,6 +60,7 @@ impl From<&StoredQuest> for ProtectedQuest {
             id: value.id.clone(),
             name: value.name.clone(),
             description: value.description.clone(),
+            image_url: value.image_url.clone(),
             definition: None,
         }
     }

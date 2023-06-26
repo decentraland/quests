@@ -47,6 +47,7 @@ pub async fn get_quest(
                 id: quest_id,
                 name: quest.name,
                 description: quest.description,
+                image_url: quest.image_url,
                 definition: if let Some(address) = user {
                     if address
                         .to_string()

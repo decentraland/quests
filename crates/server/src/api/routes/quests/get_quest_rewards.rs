@@ -6,8 +6,9 @@ use quests_db::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use utoipa::ToSchema;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct QuestRewards {
     pub items: Vec<QuestRewardItem>,
 }

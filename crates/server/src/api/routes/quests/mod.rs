@@ -11,6 +11,7 @@ pub use create_quest::*;
 use dcl_crypto::Address;
 pub use delete_quest::*;
 pub use get_quest::*;
+pub use get_quest_rewards::*;
 pub use get_quest_stats::*;
 pub use get_quests::*;
 use quests_db::core::definitions::StoredQuest;
@@ -27,6 +28,7 @@ pub fn services(config: &mut ServiceConfig) {
         .service(update_quest)
         .service(delete_quest)
         .service(get_quest)
+        .service(get_quest_rewards)
         .service(get_quest_stats);
 }
 

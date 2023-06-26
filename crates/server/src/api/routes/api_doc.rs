@@ -11,6 +11,7 @@ use utoipa_swagger_ui::SwaggerUi;
                 health::live,
                 quests::get_quest,
                 quests::get_quests,
+                quests::get_quest_rewards,
                 quests::get_quest_stats,
                 quests::update_quest,
                 quests::create_quest,
@@ -24,6 +25,7 @@ use utoipa_swagger_ui::SwaggerUi;
                         quests::get_quests::GetQuestsResponse,
                         quests::update_quest::UpdateQuestRequest,
                         quests::update_quest::UpdateQuestResponse,
+                        quests::get_quest_rewards::QuestRewards,
                 )
         ),
         tags(

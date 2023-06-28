@@ -39,6 +39,7 @@ dcl-crypto-middleware-rs = { version = "0.2.1", features = [
   "signed_fetch",
 ] }
 regex = "1.8.4"
+prometheus = { version = "0.13.3", features = ["process"] }
 
 [dev-dependencies]
 uuid = { workspace = true }

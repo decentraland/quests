@@ -1,3 +1,4 @@
+mod metrics_collector;
 mod service;
 
 use crate::configuration::Config;
@@ -23,10 +24,12 @@ use service::QuestsServiceImplementation;
 use std::{collections::HashMap, sync::Arc};
 use tokio::{sync::RwLock, task::JoinHandle};
 use warp::{
-    http::StatusCode,
+    http::{HeaderValue, StatusCode},
     reject::{MissingHeader, Reject},
     reply, Filter, Rejection, Reply,
 };
+
+use self::metrics_collector::MetricsCollector;
 
 pub struct QuestsRpcServerContext {
     pub config: Arc<Config>,
@@ -35,6 +38,7 @@ pub struct QuestsRpcServerContext {
     pub redis_channel_subscriber: RedisChannelSubscriber,
     pub redis_channel_publisher: Arc<RedisChannelPublisher>,
     pub transport_contexts: Arc<RwLock<HashMap<u32, TransportContext>>>,
+    pub metrics_collector: Arc<MetricsCollector>,
 }
 
 pub struct TransportContext {
@@ -57,6 +61,10 @@ pub async fn run_rpc_server(
         [0, 0, 0, 0],
         config.ws_server_port.parse::<u16>().unwrap_or(5001),
     );
+
+    let metrics_collector = Arc::new(MetricsCollector::new());
+    let metrics_token = config.wkc_metrics_bearer_token.clone();
+
     let ctx = QuestsRpcServerContext {
         config,
         db,
@@ -64,6 +72,7 @@ pub async fn run_rpc_server(
         redis_channel_subscriber,
         redis_channel_publisher,
         transport_contexts: Arc::new(RwLock::new(HashMap::new())),
+        metrics_collector: metrics_collector.clone(),
     };
 
     let transport_contexts: Arc<RwLock<HashMap<u32, TransportContext>>> =
@@ -112,8 +121,26 @@ pub async fn run_rpc_server(
         .and(warp::path::end())
         .map(|| "\"alive\"".to_string());
 
+    let metrics_route = warp::get()
+        .and(warp::path("metrics"))
+        .and(warp::path::end())
+        .and(warp::header::value("authorization"))
+        .and_then(move |header_value: HeaderValue| {
+            let expected_token = metrics_token.clone();
+            validate_bearer_token(header_value, expected_token)
+        })
+        .untuple_one()
+        .and(warp::any().map(move || Arc::clone(&metrics_collector)))
+        .and_then(|metrics_collector: Arc<MetricsCollector>| async move {
+            if let Ok(metrics) = metrics_collector.collect() {
+                Ok(metrics)
+            } else {
+                Err(warp::reject())
+            }
+        });
+
     let routes = warp::get()
-        .and(ws_routes.or(health_route))
+        .and(ws_routes.or(health_route).or(metrics_route))
         .recover(handle_rejection);
 
     rpc_server.set_module_registrator_handler(|port| {
@@ -168,17 +195,19 @@ fn ping_every_30s(websocket: Arc<WarpWebSocket>) {
 }
 
 #[derive(Debug)]
-struct Unauthorized {}
-
+struct Unauthorized;
 impl Reject for Unauthorized {}
+
+#[derive(Debug)]
+struct InvalidHeader;
+impl Reject for InvalidHeader {}
 
 async fn handle_rejection(err: Rejection) -> Result<impl Reply, std::convert::Infallible> {
     if err.find::<Unauthorized>().is_some() {
         Ok(reply::with_status("UNAUTHORIZED", StatusCode::UNAUTHORIZED))
-    } else if err.find::<MissingHeader>().is_some() {
+    } else if err.find::<InvalidHeader>().is_some() || err.find::<MissingHeader>().is_some() {
         Ok(reply::with_status("BAD_REQUEST", StatusCode::BAD_REQUEST))
     } else {
-        eprintln!("unhandled rejection: {:?}", err);
         Ok(reply::with_status(
             "INTERNAL_SERVER_ERROR",
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -198,4 +227,24 @@ impl<'a> AuthenticatedWSWithSignedHeaders for AuthWs<'a> {
             None => Err(()),
         }
     }
+}
+
+pub async fn validate_bearer_token(
+    header_value: HeaderValue,
+    expected_token: String,
+) -> Result<(), Rejection> {
+    header_value
+        .to_str()
+        .map_err(|_| warp::reject::custom(InvalidHeader))
+        .and_then(|header_value_str| {
+            let split_header_bearer = header_value_str.split(' ').collect::<Vec<&str>>();
+            let token = split_header_bearer.get(1);
+            let token = token.map_or("", |token| token.to_owned());
+
+            if token == expected_token {
+                Ok(())
+            } else {
+                Err(warp::reject::custom(Unauthorized))
+            }
+        })
 }

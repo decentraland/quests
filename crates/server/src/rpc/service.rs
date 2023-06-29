@@ -16,7 +16,7 @@ use quests_protocol::definitions::*;
 use quests_system::{get_all_quest_states_by_user_address, get_quest};
 use quests_system::{get_instance_state, QUESTS_CHANNEL_NAME};
 
-pub struct QuestsServiceImplementation {}
+pub struct QuestsServiceImplementation;
 
 type QuestRpcResult<T> = Result<T, ServiceError>;
 
@@ -27,6 +27,11 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         request: StartQuestRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<StartQuestResponse> {
+        let record_procedure_duration = context
+            .server_context
+            .metrics_collector
+            .record_procedure_call_duration(Procedure::StartQuest);
+
         let StartQuestRequest { quest_id } = request;
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
@@ -82,6 +87,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                     .server_context
                     .metrics_collector
                     .record_procedure_call(Procedure::StartQuest, Status::Accepted);
+                record_procedure_duration(Status::Accepted);
                 Ok(StartQuestResponse::accepted())
             }
             Err(err) => {
@@ -92,6 +98,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                             .server_context
                             .metrics_collector
                             .record_procedure_call(Procedure::StartQuest, Status::NotFound);
+                        record_procedure_duration(Status::NotFound);
                         Ok(StartQuestResponse::invalid_quest())
                     }
                     QuestError::QuestAlreadyStarted => {
@@ -102,6 +109,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                                 Procedure::StartQuest,
                                 Status::QuestAlreadyStarted,
                             );
+                        record_procedure_duration(Status::QuestAlreadyStarted);
                         Ok(StartQuestResponse::quest_already_started())
                     }
                     QuestError::CommonError(CommonError::NotUUID) => {
@@ -109,6 +117,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                             .server_context
                             .metrics_collector
                             .record_procedure_call(Procedure::StartQuest, Status::NotUUID);
+                        record_procedure_duration(Status::NotUUID);
                         Ok(StartQuestResponse::not_uuid_error())
                     }
                     _ => {
@@ -119,6 +128,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                                 Procedure::StartQuest,
                                 Status::InternalServerError,
                             );
+                        record_procedure_duration(Status::InternalServerError);
                         Ok(StartQuestResponse::internal_server_error())
                     }
                 }
@@ -131,6 +141,11 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         request: AbortQuestRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<AbortQuestResponse> {
+        let record_procedure_duration = context
+            .server_context
+            .metrics_collector
+            .record_procedure_call_duration(Procedure::AbortQuest);
+
         let transport_contexts = context.server_context.transport_contexts.read().await;
         if let Some(transport_context) = transport_contexts.get(&context.transport_id) {
             let user_address = transport_context.user_address.to_string();
@@ -148,6 +163,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                         .server_context
                         .metrics_collector
                         .record_procedure_call(Procedure::AbortQuest, Status::Accepted);
+                    record_procedure_duration(Status::Accepted);
                     Ok(AbortQuestResponse::accepted())
                 }
                 Err(err) => match err {
@@ -156,6 +172,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                             .server_context
                             .metrics_collector
                             .record_procedure_call(Procedure::AbortQuest, Status::NotAuth);
+                        record_procedure_duration(Status::NotAuth);
                         Ok(AbortQuestResponse::not_owner())
                     }
                     QuestError::CommonError(CommonError::NotFound) => {
@@ -163,6 +180,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                             .server_context
                             .metrics_collector
                             .record_procedure_call(Procedure::AbortQuest, Status::NotFound);
+                        record_procedure_duration(Status::NotFound);
                         Ok(AbortQuestResponse::not_found_quest_instance())
                     }
                     QuestError::CommonError(CommonError::NotUUID) => {
@@ -170,6 +188,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                             .server_context
                             .metrics_collector
                             .record_procedure_call(Procedure::AbortQuest, Status::NotUUID);
+                        record_procedure_duration(Status::NotUUID);
                         Ok(AbortQuestResponse::not_uuid_error())
                     }
                     _ => {
@@ -180,6 +199,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                                 Procedure::AbortQuest,
                                 Status::InternalServerError,
                             );
+                        record_procedure_duration(Status::InternalServerError);
                         Ok(AbortQuestResponse::internal_server_error())
                     }
                 },
@@ -189,6 +209,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                 .server_context
                 .metrics_collector
                 .record_procedure_call(Procedure::AbortQuest, Status::NotExistsTransportID);
+            record_procedure_duration(Status::NotExistsTransportID);
             Err(ServiceError::NotExistsTransportID)
         }
     }
@@ -198,6 +219,11 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         request: EventRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<EventResponse> {
+        let record_procedure_duration = context
+            .server_context
+            .metrics_collector
+            .record_procedure_call_duration(Procedure::SendEvent);
+
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
             context
@@ -222,6 +248,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                     .server_context
                     .metrics_collector
                     .record_procedure_call(Procedure::SendEvent, Status::Accepted);
+                record_procedure_duration(Status::Accepted);
                 Ok(EventResponse::accepted(event_id))
             }
             Err(error) => {
@@ -232,6 +259,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                             .server_context
                             .metrics_collector
                             .record_procedure_call(Procedure::SendEvent, Status::Ignored);
+                        record_procedure_duration(Status::Ignored);
                         Ok(EventResponse::ignored())
                     }
                     AddEventError::PushFailed => {
@@ -242,6 +270,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                                 Procedure::SendEvent,
                                 Status::InternalServerError,
                             );
+                        record_procedure_duration(Status::InternalServerError);
                         Ok(EventResponse::internal_server_error())
                     }
                 }
@@ -253,12 +282,20 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         &self,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<ServerStreamResponse<UserUpdate>> {
+        let record_procedure_duration = context
+            .server_context
+            .metrics_collector
+            .record_procedure_call_duration(Procedure::Subscribe);
+
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
             context
             .server_context
             .metrics_collector
             .record_procedure_call(Procedure::Subscribe, Status::NotExistsTransportID);
+
+            record_procedure_duration(Status::NotExistsTransportID);
+
             return Err(ServiceError::NotExistsTransportID);
         };
 
@@ -320,6 +357,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
             .server_context
             .metrics_collector
             .record_procedure_call(Procedure::Subscribe, Status::Accepted);
+        record_procedure_duration(Status::Accepted);
 
         Ok(generator)
     }
@@ -328,12 +366,20 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         &self,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<GetAllQuestsResponse> {
+        let record_procedure_duration = context
+            .server_context
+            .metrics_collector
+            .record_procedure_call_duration(Procedure::GetAllQuests);
+
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
             context
             .server_context
             .metrics_collector
             .record_procedure_call(Procedure::GetAllQuests, Status::NotExistsTransportID);
+
+            record_procedure_duration(Status::NotExistsTransportID);
+
             return Err(ServiceError::NotExistsTransportID);
         };
 
@@ -357,6 +403,9 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                     .server_context
                     .metrics_collector
                     .record_procedure_call(Procedure::GetAllQuests, Status::Accepted);
+
+                record_procedure_duration(Status::Accepted);
+
                 Ok(GetAllQuestsResponse::ok(quests))
             }
             Err(_) => {
@@ -364,6 +413,9 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                     .server_context
                     .metrics_collector
                     .record_procedure_call(Procedure::GetAllQuests, Status::InternalServerError);
+
+                record_procedure_duration(Status::InternalServerError);
+
                 Ok(GetAllQuestsResponse::internal_server_error())
             }
         }
@@ -374,12 +426,18 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         request: GetQuestDefinitionRequest,
         context: ProcedureContext<QuestsRpcServerContext>,
     ) -> QuestRpcResult<GetQuestDefinitionResponse> {
+        let record_procedure_duration = context
+            .server_context
+            .metrics_collector
+            .record_procedure_call_duration(Procedure::GetQuestDefinition);
+
         match get_quest(context.server_context.db.clone(), &request.quest_id).await {
             Ok(quest) => {
                 context
                     .server_context
                     .metrics_collector
                     .record_procedure_call(Procedure::GetQuestDefinition, Status::Accepted);
+                record_procedure_duration(Status::Accepted);
                 Ok(GetQuestDefinitionResponse::ok(quest))
             }
             Err(_) => {
@@ -390,6 +448,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                         Procedure::GetQuestDefinition,
                         Status::InternalServerError,
                     );
+                record_procedure_duration(Status::InternalServerError);
                 Ok(GetQuestDefinitionResponse::internal_server_error())
             }
         }

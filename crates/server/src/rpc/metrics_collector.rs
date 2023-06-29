@@ -1,8 +1,12 @@
-use prometheus::{Encoder, IntCounterVec, IntGauge, Opts, Registry, TextEncoder};
+use actix_web::cookie::time::Instant;
+use prometheus::{
+    Encoder, HistogramOpts, HistogramVec, IntCounterVec, IntGauge, Opts, Registry, TextEncoder,
+};
 
 pub struct MetricsCollector {
     registry: Registry,
     procedure_call_collector: IntCounterVec,
+    procedure_call_duration_collector: HistogramVec,
     connections_collector: IntGauge,
 }
 
@@ -11,7 +15,19 @@ impl MetricsCollector {
         let registry = Registry::new();
 
         let procedure_call_collector = IntCounterVec::new(
-            Opts::new("dcl_quests_rpc_procedure_call", "DCL Quests RPC Call"),
+            Opts::new(
+                "dcl_quests_rpc_procedure_call_total",
+                "DCL Quests RPC Calls",
+            ),
+            &["procedure", "status"],
+        )
+        .expect("expect to be able to create a custom collector");
+
+        let procedure_call_duration_collector = HistogramVec::new(
+            HistogramOpts::new(
+                "dcl_quests_rpc_procedure_call_duration_seconds",
+                "DCL Quests RPC Calls Duration in Seconds",
+            ),
             &["procedure", "status"],
         )
         .expect("expect to be able to create a custom collector");
@@ -26,6 +42,9 @@ impl MetricsCollector {
             .register(Box::new(procedure_call_collector.clone()))
             .expect("expect to be able to register a custom collector");
         registry
+            .register(Box::new(procedure_call_duration_collector.clone()))
+            .expect("expect to be able to register a custom collector");
+        registry
             .register(Box::new(connections_collector.clone()))
             .expect("expect to be able to register a custom collector");
 
@@ -33,6 +52,7 @@ impl MetricsCollector {
             registry,
             procedure_call_collector,
             connections_collector,
+            procedure_call_duration_collector,
         }
     }
 
@@ -44,6 +64,18 @@ impl MetricsCollector {
         self.procedure_call_collector
             .with_label_values(&[procedure.into(), status.into()])
             .inc()
+    }
+
+    pub fn record_procedure_call_duration<'a, P: Into<&'a str> + 'a, S: Into<&'a str> + 'a>(
+        &'a self,
+        procedure: P,
+    ) -> impl FnOnce(S) + 'a {
+        let start = Instant::now();
+        move |status: S| {
+            self.procedure_call_duration_collector
+                .with_label_values(&[procedure.into(), status.into()])
+                .observe(start.elapsed().as_seconds_f64())
+        }
     }
 
     pub fn client_connected(&self) {

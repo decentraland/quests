@@ -1,4 +1,5 @@
 pub mod quest_samples;
+pub mod rewards;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 

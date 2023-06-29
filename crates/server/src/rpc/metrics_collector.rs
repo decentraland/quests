@@ -12,6 +12,7 @@ pub struct MetricsCollector {
     out_procedure_call_size_collector: HistogramVec,
     subscribe_procedure_duration_collector: Histogram,
     connections_collector: IntGauge,
+    connections_duration_collector: Histogram,
 }
 
 impl MetricsCollector {
@@ -66,6 +67,12 @@ impl MetricsCollector {
         )
         .expect("expect to be able to create a custom collector");
 
+        let connections_duration_collector = Histogram::with_opts(HistogramOpts::new(
+            "dcl_quests_ws_clients_duration_seconds",
+            "DCL Quests WS clients Duration in Seconds",
+        ))
+        .expect("expect to be able to create a custom collector");
+
         registry
             .register(Box::new(procedure_call_collector.clone()))
             .expect("expect to be able to register a custom collector");
@@ -90,6 +97,7 @@ impl MetricsCollector {
             in_procedure_call_size_collector,
             out_procedure_call_size_collector,
             subscribe_procedure_duration_collector,
+            connections_duration_collector,
         }
     }
 
@@ -138,6 +146,10 @@ impl MetricsCollector {
 
     pub fn client_disconnected(&self) {
         self.connections_collector.dec()
+    }
+
+    pub fn record_client_duration(&self, duration: f64) {
+        self.connections_duration_collector.observe(duration)
     }
 
     pub fn record_subscribe_duration(&self, duration: f64) {

@@ -44,6 +44,7 @@ pub struct TransportContext {
     pub subscription_handle: Option<(JoinHandle<()>, Instant)>,
     pub quest_instance_ids: Arc<Mutex<Vec<String>>>,
     pub user_address: Address,
+    pub connection_ts: Instant,
 }
 
 pub async fn run_rpc_server(
@@ -158,6 +159,8 @@ pub async fn run_rpc_server(
         tokio::spawn(async move {
             let transport = transport_contexts.write().await.remove(&transport_id);
             if let Some(transport) = transport {
+                metrics_collector
+                    .record_client_duration(transport.connection_ts.elapsed().as_secs_f64());
                 if let Some((_, instant)) = transport.subscription_handle {
                     metrics_collector.record_subscribe_duration(instant.elapsed().as_secs_f64())
                 }
@@ -176,6 +179,7 @@ pub async fn run_rpc_server(
                     subscription_handle: None,
                     quest_instance_ids: Arc::new(Mutex::new(vec![])),
                     user_address: transport.context,
+                    connection_ts: Instant::now(),
                 },
             );
         });

@@ -21,7 +21,7 @@ use quests_message_broker::{
 use quests_protocol::definitions::*;
 use service::QuestsServiceImplementation;
 use std::{collections::HashMap, sync::Arc};
-use tokio::{sync::RwLock, task::JoinHandle};
+use tokio::{sync::RwLock, task::JoinHandle, time::Instant};
 use warp::{
     http::{HeaderValue, StatusCode},
     reject::{MissingHeader, Reject},
@@ -41,7 +41,7 @@ pub struct QuestsRpcServerContext {
 }
 
 pub struct TransportContext {
-    pub subscription_handle: Option<JoinHandle<()>>,
+    pub subscription_handle: Option<(JoinHandle<()>, Instant)>,
     pub quest_instance_ids: Arc<Mutex<Vec<String>>>,
     pub user_address: Address,
 }
@@ -152,8 +152,16 @@ pub async fn run_rpc_server(
     rpc_server.set_on_transport_closes_handler(move |_, transport_id| {
         let transport_contexts = cloned_transport_contexts_closes.clone();
         metrics_collector_cloned.client_disconnected();
+
+        let metrics_collector = metrics_collector_cloned.clone();
+
         tokio::spawn(async move {
-            transport_contexts.write().await.remove(&transport_id);
+            let transport = transport_contexts.write().await.remove(&transport_id);
+            if let Some(transport) = transport {
+                if let Some((_, instant)) = transport.subscription_handle {
+                    metrics_collector.record_subscribe_duration(instant.elapsed().as_secs_f64())
+                }
+            }
         });
     });
 

@@ -1,6 +1,7 @@
 use actix_web::cookie::time::Instant;
 use prometheus::{
-    Encoder, HistogramOpts, HistogramVec, IntCounterVec, IntGauge, Opts, Registry, TextEncoder,
+    Encoder, Histogram, HistogramOpts, HistogramVec, IntCounterVec, IntGauge, Opts, Registry,
+    TextEncoder,
 };
 
 pub struct MetricsCollector {
@@ -9,6 +10,7 @@ pub struct MetricsCollector {
     procedure_call_duration_collector: HistogramVec,
     in_procedure_call_size_collector: HistogramVec,
     out_procedure_call_size_collector: HistogramVec,
+    subscribe_procedure_duration_collector: Histogram,
     connections_collector: IntGauge,
 }
 
@@ -32,6 +34,12 @@ impl MetricsCollector {
             ),
             &["procedure", "status"],
         )
+        .expect("expect to be able to create a custom collector");
+
+        let subscribe_procedure_duration_collector = Histogram::with_opts(HistogramOpts::new(
+            "dcl_quests_subscribe_procedure_duration_seconds",
+            "DCL Quests Subscribe Procedure Duration in Seconds",
+        ))
         .expect("expect to be able to create a custom collector");
 
         let in_procedure_call_size_collector = HistogramVec::new(
@@ -81,6 +89,7 @@ impl MetricsCollector {
             procedure_call_duration_collector,
             in_procedure_call_size_collector,
             out_procedure_call_size_collector,
+            subscribe_procedure_duration_collector,
         }
     }
 
@@ -129,6 +138,11 @@ impl MetricsCollector {
 
     pub fn client_disconnected(&self) {
         self.connections_collector.dec()
+    }
+
+    pub fn record_subscribe_duration(&self, duration: f64) {
+        self.subscribe_procedure_duration_collector
+            .observe(duration)
     }
 
     pub fn collect(&self) -> Result<String, String> {

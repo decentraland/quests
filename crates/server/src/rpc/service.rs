@@ -15,6 +15,7 @@ use quests_message_broker::channel::{ChannelPublisher, ChannelSubscriber};
 use quests_protocol::definitions::*;
 use quests_system::{get_all_quest_states_by_user_address, get_quest};
 use quests_system::{get_instance_state, QUESTS_CHANNEL_NAME};
+use tokio::time::Instant;
 
 pub struct QuestsServiceImplementation;
 
@@ -548,7 +549,8 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
             .await
             .entry(context.transport_id)
             .and_modify(|current_context| {
-                current_context.subscription_handle = Some(subscription_join_handle);
+                current_context.subscription_handle =
+                    Some((subscription_join_handle, Instant::now()));
                 // TODO: add timestamp to track subscription duration
             });
 

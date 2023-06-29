@@ -1,8 +1,9 @@
-use prometheus::{Encoder, IntCounterVec, Opts, Registry, TextEncoder};
+use prometheus::{Encoder, IntCounterVec, IntGauge, Opts, Registry, TextEncoder};
 
 pub struct MetricsCollector {
     registry: Registry,
     procedure_call_collector: IntCounterVec,
+    connections_collector: IntGauge,
 }
 
 impl MetricsCollector {
@@ -15,13 +16,23 @@ impl MetricsCollector {
         )
         .expect("expect to be able to create a custom collector");
 
+        let connections_collector = IntGauge::new(
+            "dcl_quests_ws_connected_clients_total",
+            "DCL Quests WS connected clients",
+        )
+        .expect("expect to be able to create a custom collector");
+
         registry
             .register(Box::new(procedure_call_collector.clone()))
+            .expect("expect to be able to register a custom collector");
+        registry
+            .register(Box::new(connections_collector.clone()))
             .expect("expect to be able to register a custom collector");
 
         Self {
             registry,
             procedure_call_collector,
+            connections_collector,
         }
     }
 
@@ -33,6 +44,14 @@ impl MetricsCollector {
         self.procedure_call_collector
             .with_label_values(&[procedure.into(), status.into()])
             .inc()
+    }
+
+    pub fn client_connected(&self) {
+        self.connections_collector.inc()
+    }
+
+    pub fn client_disconnected(&self) {
+        self.connections_collector.dec()
     }
 
     pub fn collect(&self) -> Result<String, String> {

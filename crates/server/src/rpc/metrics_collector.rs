@@ -70,6 +70,9 @@ impl MetricsCollector {
         registry
             .register(Box::new(in_procedure_call_size_collector.clone()))
             .expect("expect to be able to register a custom collector");
+        registry
+            .register(Box::new(out_procedure_call_size_collector.clone()))
+            .expect("expect to be able to register a custom collector");
 
         Self {
             registry,

@@ -9,7 +9,6 @@ use dcl_crypto_middleware_rs::ws_signed_headers::{
 };
 use dcl_rpc::{
     server::RpcServer,
-    stream_protocol::GeneratorYielder,
     transports::web_sockets::{warp::WarpWebSocket, Message, WebSocket, WebSocketTransport},
 };
 use futures_util::lock::Mutex;
@@ -42,7 +41,6 @@ pub struct QuestsRpcServerContext {
 }
 
 pub struct TransportContext {
-    pub subscription: Option<GeneratorYielder<UserUpdate>>,
     pub subscription_handle: Option<JoinHandle<()>>,
     pub quest_instance_ids: Arc<Mutex<Vec<String>>>,
     pub user_address: Address,
@@ -167,7 +165,6 @@ pub async fn run_rpc_server(
             transport_contexts.write().await.insert(
                 transport_id,
                 TransportContext {
-                    subscription: None,
                     subscription_handle: None,
                     quest_instance_ids: Arc::new(Mutex::new(vec![])),
                     user_address: transport.context,

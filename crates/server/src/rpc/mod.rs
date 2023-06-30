@@ -9,7 +9,6 @@ use dcl_crypto_middleware_rs::ws_signed_headers::{
 };
 use dcl_rpc::{
     server::RpcServer,
-    stream_protocol::GeneratorYielder,
     transports::web_sockets::{warp::WarpWebSocket, Message, WebSocket, WebSocketTransport},
 };
 use futures_util::lock::Mutex;
@@ -22,7 +21,7 @@ use quests_message_broker::{
 use quests_protocol::definitions::*;
 use service::QuestsServiceImplementation;
 use std::{collections::HashMap, sync::Arc};
-use tokio::{sync::RwLock, task::JoinHandle};
+use tokio::{sync::RwLock, task::JoinHandle, time::Instant};
 use warp::{
     http::{HeaderValue, StatusCode},
     reject::{MissingHeader, Reject},
@@ -42,10 +41,10 @@ pub struct QuestsRpcServerContext {
 }
 
 pub struct TransportContext {
-    pub subscription: Option<GeneratorYielder<UserUpdate>>,
-    pub subscription_handle: Option<JoinHandle<()>>,
+    pub subscription_handle: Option<(JoinHandle<()>, Instant)>,
     pub quest_instance_ids: Arc<Mutex<Vec<String>>>,
     pub user_address: Address,
+    pub connection_ts: Instant,
 }
 
 pub async fn run_rpc_server(
@@ -121,6 +120,7 @@ pub async fn run_rpc_server(
         .and(warp::path::end())
         .map(|| "\"alive\"".to_string());
 
+    let metrics_collector_cloned = Arc::clone(&metrics_collector);
     let metrics_route = warp::get()
         .and(warp::path("metrics"))
         .and(warp::path::end())
@@ -130,7 +130,7 @@ pub async fn run_rpc_server(
             validate_bearer_token(header_value, expected_token)
         })
         .untuple_one()
-        .and(warp::any().map(move || Arc::clone(&metrics_collector)))
+        .and(warp::any().map(move || Arc::clone(&metrics_collector_cloned)))
         .and_then(|metrics_collector: Arc<MetricsCollector>| async move {
             if let Ok(metrics) = metrics_collector.collect() {
                 Ok(metrics)
@@ -149,24 +149,37 @@ pub async fn run_rpc_server(
     });
 
     let cloned_transport_contexts_closes = transport_contexts.clone();
+    let metrics_collector_cloned = Arc::clone(&metrics_collector);
     rpc_server.set_on_transport_closes_handler(move |_, transport_id| {
         let transport_contexts = cloned_transport_contexts_closes.clone();
+        metrics_collector_cloned.client_disconnected();
+
+        let metrics_collector = metrics_collector_cloned.clone();
+
         tokio::spawn(async move {
-            transport_contexts.write().await.remove(&transport_id);
+            let transport = transport_contexts.write().await.remove(&transport_id);
+            if let Some(transport) = transport {
+                metrics_collector
+                    .record_client_duration(transport.connection_ts.elapsed().as_secs_f64());
+                if let Some((_, instant)) = transport.subscription_handle {
+                    metrics_collector.record_subscribe_duration(instant.elapsed().as_secs_f64())
+                }
+            }
         });
     });
 
     rpc_server.set_on_transport_connected_handler(move |transport, transport_id| {
         let transport_contexts = transport_contexts.clone();
+        metrics_collector.client_connected();
         tokio::spawn(async move {
             debug!("> OnConnected > Address: {:?}", transport.context);
             transport_contexts.write().await.insert(
                 transport_id,
                 TransportContext {
-                    subscription: None,
                     subscription_handle: None,
                     quest_instance_ids: Arc::new(Mutex::new(vec![])),
                     user_address: transport.context,
+                    connection_ts: Instant::now(),
                 },
             );
         });

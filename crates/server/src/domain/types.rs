@@ -4,7 +4,7 @@ use quests_protocol::definitions::*;
 use crate::domain::quests::QuestError;
 
 pub trait ToQuest {
-    fn to_quest(&self) -> Result<Quest, QuestError>;
+    fn to_quest(&self, decode: bool) -> Result<Quest, QuestError>;
 }
 
 pub trait ToCreateQuest {
@@ -12,15 +12,19 @@ pub trait ToCreateQuest {
 }
 
 impl ToQuest for StoredQuest {
-    fn to_quest(&self) -> Result<Quest, QuestError> {
-        let definition = QuestDefinition::decode(self.definition.as_slice())?;
+    fn to_quest(&self, decode: bool) -> Result<Quest, QuestError> {
         Ok(Quest {
             id: self.id.clone(),
             name: self.name.to_string(),
             description: self.description.to_string(),
             creator_address: self.creator_address.to_string(),
             image_url: self.image_url.to_string(),
-            definition: Some(definition),
+            definition: if decode {
+                Some(QuestDefinition::decode(self.definition.as_slice())?)
+            } else {
+                None
+            },
+            active: self.active,
         })
     }
 }

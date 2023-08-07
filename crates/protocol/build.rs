@@ -11,6 +11,11 @@ fn main() -> Result<()> {
     prost_build_config.service_generator(Box::new(dcl_rpc::codegen::RPCServiceGenerator::new()));
     prost_build_config
         .type_attribute(".", "#[derive(serde::Serialize,serde::Deserialize)]")
+        .type_attribute(".", "#[serde(rename_all = \"camelCase\")]")
+        .field_attribute(
+            "definition",
+            "#[serde(skip_serializing_if = \"Option::is_none\")]",
+        )
         .compile_protos(&[abs_path], &[path])?;
 
     Ok(())

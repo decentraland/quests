@@ -1,69 +1,44 @@
+pub mod activate_quest;
 pub mod create_quest;
 pub mod delete_quest;
 pub mod get_quest;
 pub mod get_quest_rewards;
 pub mod get_quest_stats;
+pub mod get_quest_updates;
 pub mod get_quests;
 pub mod update_quest;
 
-use actix_web::{web::ServiceConfig, HttpMessage, HttpRequest, HttpResponse};
+pub use super::creators::get_quests_by_creator_id::get_quests_by_creator_id;
+pub use activate_quest::*;
+use actix_web::{
+    web::{self, ServiceConfig},
+    HttpMessage, HttpRequest, HttpResponse,
+};
 pub use create_quest::*;
 use dcl_crypto::Address;
 pub use delete_quest::*;
 pub use get_quest::*;
 pub use get_quest_rewards::*;
 pub use get_quest_stats::*;
+pub use get_quest_updates::*;
 pub use get_quests::*;
-use quests_db::core::definitions::StoredQuest;
-use quests_protocol::definitions::QuestDefinition;
 use regex::Regex;
-use serde::{Deserialize, Serialize};
 pub use update_quest::*;
-use utoipa::ToSchema;
 
 pub fn services(config: &mut ServiceConfig) {
-    config
-        .service(get_quests)
-        .service(create_quest)
-        .service(update_quest)
-        .service(delete_quest)
-        .service(get_quest)
-        .service(get_quest_rewards)
-        .service(get_quest_stats);
-}
-
-#[derive(Deserialize, Serialize, ToSchema)]
-pub struct ProtectedQuest {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub image_url: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub definition: Option<QuestDefinition>,
-}
-
-impl From<StoredQuest> for ProtectedQuest {
-    fn from(value: StoredQuest) -> Self {
-        Self {
-            id: value.id,
-            name: value.name,
-            description: value.description,
-            image_url: value.image_url,
-            definition: None,
-        }
-    }
-}
-
-impl From<&StoredQuest> for ProtectedQuest {
-    fn from(value: &StoredQuest) -> Self {
-        Self {
-            id: value.id.clone(),
-            name: value.name.clone(),
-            description: value.description.clone(),
-            image_url: value.image_url.clone(),
-            definition: None,
-        }
-    }
+    config.service(
+        web::scope("/api")
+            .service(get_quests)
+            .service(create_quest)
+            .service(update_quest)
+            .service(delete_quest)
+            .service(get_quest)
+            .service(get_quest_reward)
+            .service(get_quest_stats)
+            .service(get_quests_by_creator_id)
+            .service(activate_quest)
+            .service(get_quest_updates),
+    );
 }
 
 pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpResponse> {
@@ -71,6 +46,7 @@ pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpRe
     if let Some(address) = extensions.get::<Address>() {
         Ok(address.to_string())
     } else {
+        log::error!("No Address");
         Err(HttpResponse::BadRequest().body("Bad Request"))
     }
 }

@@ -10,10 +10,7 @@ pub mod update_quest;
 
 pub use super::creators::get_quests_by_creator_id::get_quests_by_creator_id;
 pub use activate_quest::*;
-use actix_web::{
-    web::{self, ServiceConfig},
-    HttpMessage, HttpRequest, HttpResponse,
-};
+use actix_web::{HttpMessage, HttpRequest, HttpResponse, Scope};
 pub use create_quest::*;
 use dcl_crypto::Address;
 pub use delete_quest::*;
@@ -25,20 +22,17 @@ pub use get_quests::*;
 use regex::Regex;
 pub use update_quest::*;
 
-pub fn services(config: &mut ServiceConfig) {
-    config.service(
-        web::scope("/api")
-            .service(get_quests)
-            .service(create_quest)
-            .service(update_quest)
-            .service(delete_quest)
-            .service(get_quest)
-            .service(get_quest_reward)
-            .service(get_quest_stats)
-            .service(get_quests_by_creator_id)
-            .service(activate_quest)
-            .service(get_quest_updates),
-    );
+pub fn services(api_scope: Scope) -> Scope {
+    api_scope
+        .service(get_quests)
+        .service(create_quest)
+        .service(update_quest)
+        .service(delete_quest)
+        .service(get_quest)
+        .service(get_quest_reward)
+        .service(get_quest_stats)
+        .service(activate_quest)
+        .service(get_quest_updates)
 }
 
 pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpResponse> {

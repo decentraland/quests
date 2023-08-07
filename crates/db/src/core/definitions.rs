@@ -20,6 +20,12 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn deactivate_quest(&self, id: &str) -> DBResult<String>;
     async fn get_quest(&self, id: &str) -> DBResult<StoredQuest>;
     async fn get_active_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>>;
+    async fn get_quests_by_creator_id(
+        &self,
+        creator_id: &str,
+        offset: i64,
+        limit: i64,
+    ) -> DBResult<Vec<StoredQuest>>;
     async fn is_active_quest(&self, quest_id: &str) -> DBResult<bool>;
     async fn has_active_quest_instance(&self, user_address: &str, quest_id: &str)
         -> DBResult<bool>;
@@ -53,6 +59,13 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
         items: &[QuestRewardItem],
     ) -> DBResult<()>;
     async fn get_quest_reward_items(&self, quest_id: &str) -> DBResult<Vec<QuestRewardItem>>;
+
+    async fn can_activate_quest(&self, quest_id: &str) -> DBResult<bool>;
+    async fn activate_quest(&self, quest_id: &str) -> DBResult<bool>;
+
+    async fn is_updatable(&self, quest_id: &str) -> DBResult<bool>;
+
+    async fn get_all_quest_versions(&self, quest_id: &str) -> DBResult<Vec<String>>;
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
@@ -121,15 +134,18 @@ pub struct StoredQuest {
     pub definition: Vec<u8>,
     pub creator_address: String,
     pub image_url: String,
+    pub active: bool,
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct QuestRewardHook {
     pub webhook_url: String,
     pub request_body: Option<HashMap<String, String>>,
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct QuestRewardItem {
     pub name: String,
     pub image_link: String,

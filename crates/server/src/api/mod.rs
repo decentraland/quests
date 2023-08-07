@@ -63,6 +63,7 @@ pub fn get_app_router(
             ],
             [
                 "GET:/api/quests/{quest_id}",
+                "GET:/api/quests/{quest_id}/reward",
                 "GET:/api/creators/{user_address}/quests",
             ],
         ))

@@ -43,22 +43,28 @@ pub fn get_app_router(
         InitError = (),
     >,
 > {
+    let cors = actix_cors::Cors::permissive();
     App::new()
         .app_data(query_extractor_config())
         .app_data(config.clone())
         .app_data(db.clone())
         .app_data(redis.clone())
+        .wrap(cors)
         .wrap(middlewares::metrics())
         .wrap(TracingLogger::default())
         .wrap(middlewares::metrics_token(&config.wkc_metrics_bearer_token))
         .wrap(middlewares::dcl_auth_middleware(
             [
-                "POST:/quests",
-                "DELETE:/quests/{quest_id}",
-                "PUT:/quests/{quest_id}",
-                "GET:/quests/{quest_id}/stats",
+                "POST:/api/quests",
+                "DELETE:/api/quests/{quest_id}",
+                "PUT:/api/quests/{quest_id}",
+                "GET:/api/quests/{quest_id}/stats",
+                "PUT:/api/quests/{quest_id}/activate",
             ],
-            ["GET:/quests/{quest_id}"],
+            [
+                "GET:/api/quests/{quest_id}",
+                "GET:/api/creators/{user_address}/quests",
+            ],
         ))
         .configure(routes::services)
 }

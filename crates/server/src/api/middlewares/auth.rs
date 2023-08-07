@@ -12,8 +12,8 @@ use std::collections::HashMap;
 
 // This middlware is intended for routes where the auth is REQUIRED
 pub fn dcl_auth_middleware<S, B>(
-    required_auth_routes: [&'static str; 4],
-    optional_auth_routes: [&'static str; 1],
+    required_auth_routes: [&'static str; 5],
+    optional_auth_routes: [&'static str; 2],
 ) -> impl Transform<
     S,
     ServiceRequest,
@@ -47,20 +47,15 @@ where
                 Err(ErrorUnauthorized("Unathorized"))
             }
         } else if optional_auth_routes.contains(&route.as_str()) {
-            if let Ok(address) =
-                verification(req.headers(), req.method().as_str(), req.path()).await
-            {
-                {
-                    let mut extensions = req.extensions_mut();
-                    extensions.insert(Some(address));
+            match verification(req.headers(), req.method().as_str(), req.path()).await {
+                Ok(address) => {
+                    {
+                        let mut extensions = req.extensions_mut();
+                        extensions.insert(address);
+                    }
+                    next.call(req).await
                 }
-                next.call(req).await
-            } else {
-                {
-                    let mut extensions = req.extensions_mut();
-                    extensions.insert(Option::<Address>::None);
-                }
-                next.call(req).await
+                Err(_) => next.call(req).await,
             }
         } else {
             next.call(req).await
@@ -78,5 +73,8 @@ async fn verification(
         .map(|(key, val)| (key.to_string(), val.to_str().unwrap_or("").to_string()))
         .collect::<HashMap<String, String>>();
 
-    verify(method, path, headers, VerificationOptions::default()).await
+    match verify(method, path, headers, VerificationOptions::default()).await {
+        Ok(address) => Ok(address),
+        Err(err) => Err(err),
+    }
 }

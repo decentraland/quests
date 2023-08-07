@@ -7,7 +7,7 @@ use quests_db::{
     create_quests_db_component,
 };
 use quests_protocol::definitions::*;
-use quests_server::api::routes::quests::QuestStats;
+use quests_server::api::routes::quests::GetQuestStatsResponse;
 
 #[actix_web::test]
 async fn get_quest_stats_should_be_200() {
@@ -66,7 +66,7 @@ async fn get_quest_stats_should_be_200() {
 
     assert!(response.status().is_success());
 
-    let response: QuestStats = read_body_json(response).await;
+    let response: GetQuestStatsResponse = read_body_json(response).await;
 
     assert_eq!(response.active_players, 2);
     assert_eq!(response.abandoned, 1);

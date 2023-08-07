@@ -16,7 +16,7 @@ pub struct GetQuestsQuery {
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct GetQuestsResponse {
+pub struct GetCreatorQuestsResponse {
     pub quests: Vec<Quest>,
 }
 
@@ -63,7 +63,7 @@ pub async fn get_quests_by_creator_id(
                     Err(err) => return HttpResponse::from_error(err),
                 }
             }
-            HttpResponse::Ok().json(GetQuestsResponse { quests })
+            HttpResponse::Ok().json(GetCreatorQuestsResponse { quests })
         }
         Err(err) => {
             log::error!("Error getting quests: {:?}", err);

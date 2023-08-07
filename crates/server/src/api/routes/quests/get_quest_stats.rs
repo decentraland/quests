@@ -12,7 +12,7 @@ use utoipa::ToSchema;
 use crate::{api::routes::quests::get_user_address_from_request, domain::quests::QuestError};
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct QuestStats {
+pub struct GetQuestStatsResponse {
     pub active_players: usize,
     pub abandoned: usize,
     pub completed: usize,
@@ -56,7 +56,7 @@ async fn get_quest_stats_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     quest_id: &str,
     user_address: &str,
-) -> Result<QuestStats, QuestError> {
+) -> Result<GetQuestStatsResponse, QuestError> {
     let mut futs = FuturesUnordered::new();
 
     match db.get_quest(quest_id).await {
@@ -64,7 +64,7 @@ async fn get_quest_stats_controller<DB: QuestsDatabase>(
             if quest.creator_address.eq_ignore_ascii_case(user_address) {
                 match db.get_quest_instances_by_quest_id(quest_id).await {
                     Ok((actives, abandoned)) => {
-                        let mut stats = QuestStats {
+                        let mut stats = GetQuestStatsResponse {
                             active_players: actives.len(),
                             abandoned: abandoned.len(),
                             completed: 0,

@@ -1,6 +1,7 @@
 use actix_web::web::ServiceConfig;
 
 mod api_doc;
+pub mod creators;
 pub mod errors;
 mod health;
 pub mod quests;

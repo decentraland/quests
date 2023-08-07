@@ -32,6 +32,7 @@ async fn create_quest_should_be_200_without_reward() {
         description,
         definition,
         image_url,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -87,6 +88,7 @@ async fn create_quest_should_be_200_with_reward() {
         description,
         definition,
         image_url,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -196,6 +198,7 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_webhook() {
         description,
         definition,
         image_url,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -252,6 +255,7 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
         description,
         definition,
         image_url,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let mut create_quest_request = CreateQuestRequest {

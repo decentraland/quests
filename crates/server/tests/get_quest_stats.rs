@@ -24,6 +24,7 @@ async fn get_quest_stats_should_be_200() {
         name,
         description,
         definition,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -88,6 +89,7 @@ async fn get_quest_stats_should_be_403() {
         name,
         description,
         definition,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -141,6 +143,7 @@ async fn get_quest_stats_should_be_401() {
         name,
         description,
         definition,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let id = db

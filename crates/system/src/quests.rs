@@ -33,6 +33,7 @@ pub async fn get_quest(
         creator_address: quest.creator_address,
         definition: Some(quest_definition),
         image_url: quest.image_url,
+        active: quest.active,
     };
     Ok(quest)
 }

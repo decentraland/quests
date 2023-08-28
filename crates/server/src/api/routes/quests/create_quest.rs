@@ -34,6 +34,14 @@ pub struct CreateQuestRequest {
 
 impl CreateQuestRequest {
     pub fn is_valid(&self) -> Result<(), QuestError> {
+        if self.name.trim().len() < 5 {
+            return Err(QuestError::QuestValidation("Name should be longer".to_string()))
+        }
+
+        if self.description.trim().len() < 10 {
+            return Err(QuestError::QuestValidation("Description should be longer".to_string()))
+        }
+
         self.definition
         .is_valid()
         .map_err(|error| QuestError::QuestValidation(error.to_string()))?;

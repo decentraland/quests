@@ -13,7 +13,7 @@ use std::collections::HashMap;
 // This middlware is intended for routes where the auth is REQUIRED
 pub fn dcl_auth_middleware<S, B>(
     required_auth_routes: [&'static str; 5],
-    optional_auth_routes: [&'static str; 2],
+    optional_auth_routes: [&'static str; 3],
 ) -> impl Transform<
     S,
     ServiceRequest,

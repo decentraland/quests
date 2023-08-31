@@ -59,9 +59,10 @@ impl CreateQuestRequest {
                 if !items.iter().all(|item| item.name.len() >= 3) {
                     return Err(QuestError::QuestValidation("Item name must be at least 3 characters".to_string()));
                 }
+            } else {
+                return Err(QuestError::QuestValidation("Reward items must be at least one".to_string()));
+
             }
-        } else {
-            return Err(QuestError::QuestValidation("Reward items must be at least one".to_string()));
         }
 
         Ok(())

@@ -24,7 +24,7 @@ pub struct GetQuestRewardResponse {
 
 #[derive(Deserialize, IntoParams)]
 pub struct GetQuestRewardsParams {
-    with_hook: bool,
+    with_hook: Option<bool>,
 }
 
 #[utoipa::path(
@@ -46,7 +46,9 @@ pub async fn get_quest_reward(
 
     let user = get_user_address_from_request(&req).ok();
 
-    match get_quest_rewards_controller(user, db, &quest_id, query_params.with_hook).await {
+    match get_quest_rewards_controller(user, db, &quest_id, query_params.with_hook.unwrap_or(false))
+        .await
+    {
         Ok(rewards) => match rewards {
             Rewards::Items(items) => {
                 HttpResponse::Ok().json(GetQuestRewardResponse { items, hook: None })

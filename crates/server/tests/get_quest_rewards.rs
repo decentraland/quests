@@ -43,7 +43,7 @@ async fn get_quest_rewards_should_be_200() {
         .await
         .unwrap();
 
-    let reward = create_reward();
+    let reward = rewards::create_reward();
     _ = db.add_reward_hook_to_quest(&id, &reward.hook).await;
     _ = db.add_reward_items_to_quest(&id, &reward.items).await;
 

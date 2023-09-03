@@ -1,7 +1,10 @@
 pub mod middlewares;
 pub mod routes;
 
-use self::routes::query_extractor_config;
+use self::routes::{
+    errors::{json_extractor_config, path_extractor_config},
+    query_extractor_config,
+};
 use crate::configuration::Config;
 use actix_web::{
     body::MessageBody,
@@ -46,6 +49,8 @@ pub fn get_app_router(
     let cors = actix_cors::Cors::permissive();
     App::new()
         .app_data(query_extractor_config())
+        .app_data(json_extractor_config())
+        .app_data(path_extractor_config())
         .app_data(config.clone())
         .app_data(db.clone())
         .app_data(redis.clone())

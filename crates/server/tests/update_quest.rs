@@ -83,7 +83,7 @@ async fn update_quest_should_be_200() {
         reward: None,
     };
 
-    let path = format!("/quests/{}", id);
+    let path = format!("/api/quests/{}", id);
 
     let headers = get_signed_headers(
         create_test_identity(),
@@ -185,12 +185,12 @@ async fn update_quest_should_be_400_uuid_bad_format() {
     let headers = get_signed_headers(
         create_test_identity(),
         "put",
-        "/quests/1aa",
+        "/api/quests/1aa",
         &serde_json::to_string(&quest_update).unwrap(),
     );
 
     let req = TestRequest::put()
-        .uri("/quests/1aa")
+        .uri("/api/quests/1aa")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -229,7 +229,7 @@ async fn update_quest_should_be_400_quest_validation_error() {
 
     let uuid = uuid::Uuid::new_v4();
 
-    let path = format!("/quests/{}", uuid);
+    let path = format!("/api/quests/{}", uuid);
 
     let headers = get_signed_headers(
         create_test_identity(),
@@ -315,7 +315,7 @@ async fn update_quest_should_be_401() {
         reward: None,
     };
 
-    let path = format!("/quests/{}", uuid::Uuid::new_v4());
+    let path = format!("/api/quests/{}", uuid::Uuid::new_v4());
 
     let req = TestRequest::put()
         .uri(&path)
@@ -402,7 +402,7 @@ async fn update_quest_should_be_403() {
         reward: None,
     };
 
-    let path = format!("/quests/{}", id);
+    let path = format!("/api/quests/{}", id);
 
     let headers = get_signed_headers(
         create_test_identity(),

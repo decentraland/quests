@@ -47,12 +47,12 @@ async fn get_quest_stats_should_be_200() {
     let headers = get_signed_headers(
         create_test_identity(),
         "get",
-        format!("/quests/{}/stats", id).as_str(),
+        format!("/api/quests/{}/stats", id).as_str(),
         "{}",
     );
 
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/stats", id).as_str())
+        .uri(format!("/api/quests/{}/stats", id).as_str())
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -110,12 +110,12 @@ async fn get_quest_stats_should_be_403() {
     let headers = get_signed_headers(
         create_test_identity(),
         "get",
-        format!("/quests/{}/stats", id).as_str(),
+        format!("/api/quests/{}/stats", id).as_str(),
         "{}",
     );
 
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/stats", id).as_str())
+        .uri(format!("/api/quests/{}/stats", id).as_str())
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -160,7 +160,7 @@ async fn get_quest_stats_should_be_401() {
         .unwrap();
 
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/stats", id).as_str())
+        .uri(format!("/api/quests/{}/stats", id).as_str())
         .to_request();
 
     match try_call_service(&app, req).await {

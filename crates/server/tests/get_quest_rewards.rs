@@ -43,12 +43,20 @@ async fn get_quest_rewards_should_be_200() {
         .await
         .unwrap();
 
-    let reward = rewards::create_reward();
+    let reward = create_reward();
     _ = db.add_reward_hook_to_quest(&id, &reward.hook).await;
     _ = db.add_reward_items_to_quest(&id, &reward.items).await;
 
+    let path = format!("/api/quests/{}/reward", id);
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "{}");
+
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/rewards", id).as_str())
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
         .to_request();
 
     let response = call_service(&app, req).await;
@@ -89,8 +97,16 @@ async fn quest_has_no_rewards() {
         .await
         .unwrap();
 
+    let path = format!("/api/quests/{}/reward", id);
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "{}");
+
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/rewards", id).as_str())
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
         .to_request();
 
     let response = call_service(&app, req).await;

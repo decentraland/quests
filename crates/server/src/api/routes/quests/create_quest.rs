@@ -106,17 +106,15 @@ async fn create_quest_controller<DB: QuestsDatabase>(
         .is_valid()?; 
     
     let quest = create_quest_req.to_create_quest()?;
-    let id = db.create_quest(&quest, creator_address)
+    let id = if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
+        db.create_quest_with_reward(&quest, creator_address, hook, items)
         .await
-        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
-
-    if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
-        db.add_reward_hook_to_quest(&id, hook)
+        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?
+    } else {
+        db.create_quest(&quest, creator_address)
         .await
-        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
-
-        db.add_reward_items_to_quest(&id, items).await.map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
-    }
+        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?
+    };
 
     Ok(id)
 }

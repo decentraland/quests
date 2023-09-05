@@ -185,6 +185,32 @@ impl QuestsDatabase for Database {
         self.do_create_quest(quest, creator_address, None).await
     }
 
+    async fn create_quest_with_reward(
+        &self,
+        quest: &CreateQuest,
+        creator_address: &str,
+        hook: &QuestRewardHook,
+        items: &[QuestRewardItem],
+    ) -> DBResult<String> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|err| DBError::TransactionBeginFailed(Box::new(err)))?;
+
+        let quest_id = self
+            .do_create_quest(quest, creator_address, Some(&mut tx))
+            .await?;
+
+        self.do_add_quest_reward_hook(&quest_id, hook, Some(&mut tx))
+            .await?;
+
+        self.do_add_quest_reward_items(&quest_id, items, Some(&mut tx))
+            .await?;
+
+        Ok(quest_id)
+    }
+
     async fn update_quest(
         &self,
         previous_quest_id: &str,

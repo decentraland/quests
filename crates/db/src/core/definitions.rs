@@ -11,6 +11,13 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn ping(&self) -> bool;
 
     async fn create_quest(&self, quest: &CreateQuest, creator_address: &str) -> DBResult<String>;
+    async fn create_quest_with_reward(
+        &self,
+        quest: &CreateQuest,
+        creator_address: &str,
+        hook: &QuestRewardHook,
+        items: &[QuestRewardItem],
+    ) -> DBResult<String>;
     async fn update_quest(
         &self,
         previous_quest_id: &str,

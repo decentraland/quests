@@ -38,7 +38,7 @@ impl CreateQuestRequest {
             return Err(QuestError::QuestValidation("Name should be longer".to_string()))
         }
 
-        if self.description.trim().len() < 10 {
+        if self.description.trim().len() < 5 {
             return Err(QuestError::QuestValidation("Description should be longer".to_string()))
         }
 

@@ -142,7 +142,7 @@ impl QuestsDatabase for Database {
                 OFFSET $2 LIMIT $3
             ",
         )
-        .bind(creator_address) // TODO: create an index
+        .bind(creator_address)
         .bind(offset)
         .bind(limit)
         .fetch_all(&self.pool)

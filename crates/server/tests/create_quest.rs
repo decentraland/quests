@@ -385,7 +385,7 @@ async fn create_quest_should_be_401() {
     match try_call_service(&app, req).await {
         Ok(res) => {
             let s = res.status();
-            panic!("shoudl fail {}", s)
+            panic!("should fail {}", s)
         }
         Err(err) => {
             let response = err.error_response();

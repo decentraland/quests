@@ -73,8 +73,5 @@ async fn verification(
         .map(|(key, val)| (key.to_string(), val.to_str().unwrap_or("").to_string()))
         .collect::<HashMap<String, String>>();
 
-    match verify(method, path, headers, VerificationOptions::default()).await {
-        Ok(address) => Ok(address),
-        Err(err) => Err(err),
-    }
+    verify(method, path, headers, VerificationOptions::default()).await
 }

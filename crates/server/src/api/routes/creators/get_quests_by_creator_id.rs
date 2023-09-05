@@ -22,7 +22,7 @@ pub struct GetCreatorQuestsResponse {
 
 #[utoipa::path(
     params(
-        ("quest_id" = String, description = "Quest ID")
+        ("user_address" = String, description = "Creator's Ethereum Address")
     ),
     responses(
         (status = 200, description = "Quest definition", body = GetQuestResponse),

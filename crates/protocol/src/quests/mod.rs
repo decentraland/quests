@@ -122,7 +122,7 @@ impl QuestDefinition {
                 for action_item in &task.action_items {
                     match &*action_item.r#type {
                         "CUSTOM" => {
-                            if action_item.parameters.get("id").is_none() {
+                            if action_item.parameters.keys().len() == 0 {
                                 return Err(QuestValidationError::ActionItemParametersNotValid(
                                     "CUSTOM".to_string(),
                                 ));

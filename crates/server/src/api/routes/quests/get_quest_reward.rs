@@ -28,6 +28,9 @@ pub struct GetQuestRewardsParams {
 }
 
 #[utoipa::path(
+    params(
+        ("quest_id" = String, description = "ID of the Quest")
+    ),
     responses(
         (status = 200, description = "Quest Rewards", body = GetQuestRewardResponse),
         (status = 404, description = "Not found rewards"),
@@ -102,13 +105,7 @@ async fn get_quest_rewards_controller<DB: QuestsDatabase>(
                     hook,
                 })
             }
-            (Err(err), _) => {
-                if matches!(err, DBError::RowNotFound) {
-                    return Err(QuestError::CommonError(CommonError::NotFound));
-                }
-                Err(QuestError::CommonError(CommonError::Unknown))
-            }
-            (_, Err(err)) => {
+            (Err(err), _) | (_, Err(err)) => {
                 if matches!(err, DBError::RowNotFound) {
                     return Err(QuestError::CommonError(CommonError::NotFound));
                 }
@@ -117,13 +114,8 @@ async fn get_quest_rewards_controller<DB: QuestsDatabase>(
         }
     } else {
         match db.get_quest_reward_items(quest_id).await {
-            Ok(rewards) => {
-                if rewards.is_empty() {
-                    return Err(QuestError::QuestHasNoReward);
-                }
-
-                Ok(Rewards::Items(rewards))
-            }
+            Ok(rewards) if rewards.is_empty() => Err(QuestError::QuestHasNoReward),
+            Ok(rewards) => Ok(Rewards::Items(rewards)),
             Err(_) => Err(QuestError::CommonError(CommonError::Unknown)),
         }
     }

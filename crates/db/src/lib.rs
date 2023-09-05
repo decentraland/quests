@@ -208,6 +208,10 @@ impl QuestsDatabase for Database {
         self.do_add_quest_reward_items(&quest_id, items, Some(&mut tx))
             .await?;
 
+        tx.commit()
+            .await
+            .map_err(|err| DBError::TransactionFailed(Box::new(err)))?;
+
         Ok(quest_id)
     }
 

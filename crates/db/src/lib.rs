@@ -642,7 +642,7 @@ impl Database {
     async fn do_get_quest_reward_hook(
         &self,
         quest_id: &str,
-        tx: Option<&mut Transaction<'static, Postgres>>,
+        tx: Option<&mut Transaction<'_, Postgres>>,
     ) -> DBResult<QuestRewardHook> {
         let quest_reward = sqlx::query("SELECT * FROM quest_reward_hooks WHERE quest_id = $1")
             .bind(parse_str_to_uuid(quest_id)?);

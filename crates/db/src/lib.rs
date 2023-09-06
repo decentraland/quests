@@ -139,6 +139,7 @@ impl QuestsDatabase for Database {
                 LEFT JOIN deactivated_quests dq ON q.id = dq.quest_id
                 LEFT JOIN quest_updates uq ON q.id = uq.previous_quest_id
                 WHERE q.creator_address = $1 AND uq.id IS NULL
+                ORDER BY created_at DESC
                 OFFSET $2 LIMIT $3
             ",
         )
@@ -550,7 +551,7 @@ impl QuestsDatabase for Database {
         let quest_exists: bool = sqlx::query_scalar(
             "
                 SELECT EXISTS (SELECT 1 FROM deactivated_quests
-                WHERE quest_id = $1 AND id NOT IN (SELECT quest_id as id FROM quest_updates where previous_quest_id = $1))
+                WHERE quest_id = $1 AND quest_id NOT IN (SELECT previous_quest_id FROM quest_updates where previous_quest_id = $1))
             ",
         )
         .bind(parse_str_to_uuid(quest_id)?)

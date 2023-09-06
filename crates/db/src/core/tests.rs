@@ -99,11 +99,13 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     db.deactivate_quest(&deactivated_quest).await.unwrap();
     // creators quests should be TWO because query returns current versions (activated and deactivated) and not old versions
     let quests_by_creator = db.get_quests_by_creator_id("0xA", 0, 50).await.unwrap();
+    println!("quests {quests_by_creator:?}");
     assert_eq!(quests_by_creator.len(), 2);
-    assert_eq!(quests_by_creator.get(0).unwrap().id, new_quest_id);
-    assert!(quests_by_creator.get(0).unwrap().active);
-    assert_eq!(quests_by_creator.get(1).unwrap().id, deactivated_quest);
+    // order by desc
+    assert_eq!(quests_by_creator.get(0).unwrap().id, deactivated_quest);
     assert!(!quests_by_creator.get(0).unwrap().active);
+    assert_eq!(quests_by_creator.get(1).unwrap().id, new_quest_id);
+    assert!(quests_by_creator.get(1).unwrap().active);
 
     // new quest old versions
     let old_versions = db.get_all_quest_versions(&new_quest_id).await.unwrap();

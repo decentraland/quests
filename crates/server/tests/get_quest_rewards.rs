@@ -2,7 +2,7 @@ mod common;
 
 use actix_web::{
     http::StatusCode,
-    test::{call_service, init_service, read_body_json, try_call_service, TestRequest},
+    test::{call_service, init_service, read_body_json, TestRequest},
 };
 use common::*;
 use quests_db::{
@@ -10,7 +10,7 @@ use quests_db::{
     create_quests_db_component,
 };
 use quests_protocol::definitions::*;
-use quests_server::api::routes::quests::QuestRewards;
+use quests_server::api::routes::quests::GetQuestRewardResponse;
 
 #[actix_web::test]
 async fn get_quest_rewards_should_be_200() {
@@ -27,6 +27,7 @@ async fn get_quest_rewards_should_be_200() {
         name,
         description,
         definition,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -46,14 +47,22 @@ async fn get_quest_rewards_should_be_200() {
     _ = db.add_reward_hook_to_quest(&id, &reward.hook).await;
     _ = db.add_reward_items_to_quest(&id, &reward.items).await;
 
+    let path = format!("/api/quests/{}/reward", id);
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "{}");
+
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/rewards", id).as_str())
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
         .to_request();
 
     let response = call_service(&app, req).await;
     assert!(response.status().is_success());
 
-    let rewards: QuestRewards = read_body_json(response).await;
+    let rewards: GetQuestRewardResponse = read_body_json(response).await;
     assert_eq!(rewards.items.len(), 1);
 }
 
@@ -72,6 +81,7 @@ async fn quest_has_no_rewards() {
         name,
         description,
         definition,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -87,8 +97,16 @@ async fn quest_has_no_rewards() {
         .await
         .unwrap();
 
+    let path = format!("/api/quests/{}/reward", id);
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "{}");
+
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/rewards", id).as_str())
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
         .to_request();
 
     let response = call_service(&app, req).await;

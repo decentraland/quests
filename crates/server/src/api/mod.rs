@@ -1,7 +1,10 @@
 pub mod middlewares;
 pub mod routes;
 
-use self::routes::query_extractor_config;
+use self::routes::{
+    errors::{json_extractor_config, path_extractor_config},
+    query_extractor_config,
+};
 use crate::configuration::Config;
 use actix_web::{
     body::MessageBody,
@@ -43,22 +46,31 @@ pub fn get_app_router(
         InitError = (),
     >,
 > {
+    let cors = actix_cors::Cors::permissive();
     App::new()
         .app_data(query_extractor_config())
+        .app_data(json_extractor_config())
+        .app_data(path_extractor_config())
         .app_data(config.clone())
         .app_data(db.clone())
         .app_data(redis.clone())
+        .wrap(cors)
         .wrap(middlewares::metrics())
         .wrap(TracingLogger::default())
         .wrap(middlewares::metrics_token(&config.wkc_metrics_bearer_token))
         .wrap(middlewares::dcl_auth_middleware(
             [
-                "POST:/quests",
-                "DELETE:/quests/{quest_id}",
-                "PUT:/quests/{quest_id}",
-                "GET:/quests/{quest_id}/stats",
+                "POST:/api/quests",
+                "DELETE:/api/quests/{quest_id}",
+                "PUT:/api/quests/{quest_id}",
+                "GET:/api/quests/{quest_id}/stats",
+                "PUT:/api/quests/{quest_id}/activate",
             ],
-            ["GET:/quests/{quest_id}"],
+            [
+                "GET:/api/quests/{quest_id}",
+                "GET:/api/quests/{quest_id}/reward",
+                "GET:/api/creators/{user_address}/quests",
+            ],
         ))
         .configure(routes::services)
 }

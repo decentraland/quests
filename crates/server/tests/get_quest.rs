@@ -34,7 +34,7 @@ async fn get_quest_with_defintiions_should_be_200() {
         .await
         .unwrap();
 
-    let path = format!("/quests/{}", id);
+    let path = format!("/api/quests/{}", id);
 
     let headers = get_signed_headers(
         create_test_identity(),
@@ -103,7 +103,7 @@ async fn get_quest_without_defintiions_should_be_200() {
         .await
         .unwrap();
 
-    let path = format!("/quests/{}", id);
+    let path = format!("/api/quests/{}", id);
 
     let req = TestRequest::get().uri(&path).to_request();
 
@@ -120,7 +120,7 @@ async fn get_quest_without_defintiions_should_be_200() {
 async fn get_quest_should_be_400() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
-    let req = TestRequest::get().uri("/quests/1aaa").to_request();
+    let req = TestRequest::get().uri("/api/quests/1aaa").to_request();
 
     let response = call_service(&app, req).await;
 
@@ -137,7 +137,7 @@ async fn get_quest_should_be_404() {
     let id = uuid::Uuid::new_v4().to_string();
 
     let req = TestRequest::get()
-        .uri(format!("/quests/{}", id).as_str())
+        .uri(format!("/api/quests/{}", id).as_str())
         .to_request();
 
     let response = call_service(&app, req).await;

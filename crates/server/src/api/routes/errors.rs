@@ -1,5 +1,5 @@
 use crate::domain::quests::QuestError;
-use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
+use actix_web::{error::JsonPayloadError, http::StatusCode, web, HttpResponse, ResponseError};
 use quests_db::core::errors::DBError;
 use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
@@ -55,6 +55,8 @@ impl ResponseError for QuestError {
             Self::NotFoundOrInactive => StatusCode::NOT_FOUND,
             Self::NotQuestCreator => StatusCode::FORBIDDEN,
             Self::QuestHasNoReward => StatusCode::NOT_FOUND,
+            Self::QuestNotActivable => StatusCode::BAD_REQUEST,
+            Self::QuestIsNotUpdatable => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -70,6 +72,21 @@ impl ResponseError for QuestError {
 
 pub fn query_extractor_config() -> web::QueryConfig {
     web::QueryConfig::default()
+        .error_handler(|err, _| CommonError::BadRequest(err.to_string()).into())
+}
+
+pub fn json_extractor_config() -> web::JsonConfig {
+    web::JsonConfig::default().error_handler(|err, _| match err {
+        JsonPayloadError::Deserialize(des_err) => {
+            let err_string = des_err.to_string();
+            CommonError::BadRequest(err_string).into()
+        }
+        _ => CommonError::BadRequest(err.to_string()).into(),
+    })
+}
+
+pub fn path_extractor_config() -> web::PathConfig {
+    web::PathConfig::default()
         .error_handler(|err, _| CommonError::BadRequest(err.to_string()).into())
 }
 

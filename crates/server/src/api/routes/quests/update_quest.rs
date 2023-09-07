@@ -28,6 +28,7 @@ pub struct UpdateQuestResponse {
     responses(
         (status = 200, description = "Quest updated", body = UpdateQuestResponse),
         (status = 400, description = "Bad Request"),
+        (status = 400, description = "Requested Quest was previously updated and replaced with a new Quest"),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Quest not found"),
         (status = 403, description = "Quest modification is forbidden"),
@@ -72,6 +73,9 @@ async fn update_quest_controller<DB: QuestsDatabase>(
                 .creator_address
                 .eq_ignore_ascii_case(creator_address)
             {
+                if !db.is_updatable(&id).await? {
+                    return Err(QuestError::QuestIsNotUpdatable);
+                }
                 db.update_quest(
                     &id,
                     &quest.to_create_quest()?,

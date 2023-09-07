@@ -51,7 +51,7 @@ impl Action {
         let parameters = HashMap::from_iter([
             ("x".to_string(), coords.x.to_string()),
             ("y".to_string(), coords.y.to_string()),
-            ("emote_id".to_string(), emote_id.to_string()),
+            ("id".to_string(), emote_id.to_string()),
         ]);
 
         Self {

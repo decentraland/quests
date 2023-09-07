@@ -38,7 +38,7 @@ async fn deactivate_quest_should_be_200() {
         .await
         .unwrap();
 
-    let path = format!("/quests/{}", id);
+    let path = format!("/api/quests/{}", id);
 
     let headers = get_signed_headers(create_test_identity(), "delete", &path, "{}");
 
@@ -63,11 +63,11 @@ async fn deactivate_quest_should_be_200() {
 async fn delete_quest_should_be_400() {
     let config = get_configuration().await;
 
-    let headers = get_signed_headers(create_test_identity(), "delete", "/quests/1aab", "{}");
+    let headers = get_signed_headers(create_test_identity(), "delete", "/api/quests/1aab", "{}");
 
     let app = init_service(build_app(&config).await).await;
     let req = TestRequest::delete()
-        .uri("/quests/1aab")
+        .uri("/api/quests/1aab")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -87,7 +87,7 @@ async fn delete_quest_should_be_400() {
 async fn delete_quest_should_be_401() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
-    let req = TestRequest::delete().uri("/quests/1aab").to_request();
+    let req = TestRequest::delete().uri("/api/quests/1aab").to_request();
 
     match try_call_service(&app, req).await {
         Ok(_) => panic!("shoudl fail"),
@@ -125,7 +125,7 @@ async fn deactivate_quest_should_be_403() {
 
     let id = db.create_quest(&create_quest, "0xA").await.unwrap();
 
-    let path = format!("/quests/{}", id);
+    let path = format!("/api/quests/{}", id);
 
     let headers = get_signed_headers(create_test_identity(), "delete", &path, "{}");
 

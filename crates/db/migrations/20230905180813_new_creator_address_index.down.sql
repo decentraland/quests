@@ -1,0 +1,1 @@
+DROP INDEX quest_creator_address_idx;

@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use actix_web::{post, web, HttpResponse, HttpRequest};
-use derive_more::Deref;
 use quests_db::{core::definitions::{QuestsDatabase, CreateQuest, QuestRewardHook, QuestRewardItem}, Database};
 use quests_protocol::definitions::*;
 use serde::{Deserialize, Serialize};
@@ -17,19 +16,57 @@ pub struct CreateQuestResponse {
 }
 
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct QuestReward {
     pub hook: QuestRewardHook,
     pub items: Vec<QuestRewardItem>
 }
 
-#[derive(Deserialize, Serialize, ToSchema, Deref, Debug)]
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateQuestRequest {
     pub name: String,
     pub description: String,
-    #[deref]
     pub definition: QuestDefinition,
     pub image_url: String,
     pub reward: Option<QuestReward>,
+}
+
+impl CreateQuestRequest {
+    pub fn is_valid(&self) -> Result<(), QuestError> {
+        if self.name.trim().len() < 5 {
+            return Err(QuestError::QuestValidation("Name should be longer".to_string()))
+        }
+
+        if self.description.trim().len() < 5 {
+            return Err(QuestError::QuestValidation("Description should be longer".to_string()))
+        }
+
+        self.definition
+        .is_valid()
+        .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
+
+        if let Some(QuestReward { hook, items }) = &self.reward {
+            if !is_url(&hook.webhook_url) {
+                return Err(QuestError::QuestValidation("Webhook url is not valid".to_string()));
+            }
+    
+            if !items.is_empty() {
+                if !items.iter().all(|item| is_url(&item.image_link)) {
+                    return Err(QuestError::QuestValidation("Item's image link is not valid".to_string()));
+                }
+        
+                if !items.iter().all(|item| item.name.len() >= 3) {
+                    return Err(QuestError::QuestValidation("Item name must be at least 3 characters".to_string()));
+                }
+            } else {
+                return Err(QuestError::QuestValidation("Reward items must be at least one".to_string()));
+
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[utoipa::path(
@@ -66,38 +103,18 @@ async fn create_quest_controller<DB: QuestsDatabase>(
     creator_address: &str
 ) -> Result<String, QuestError> {
     create_quest_req
-        .is_valid()
-        .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
-
-    let quest = create_quest_req.to_create_quest()?;
-    let id = db.create_quest(&quest, creator_address)
-        .await
-        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
-
-    if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
-        if !is_url(&hook.webhook_url) {
-            return Err(QuestError::QuestValidation("Webhook url is not valid".to_string()));
-        }
-
-        if !items.is_empty() {
-            if !items.iter().all(|item| is_url(&item.image_link)) {
-                return Err(QuestError::QuestValidation("Item's image link is not valid".to_string()));
-            }
+        .is_valid()?; 
     
-            if !items.iter().all(|item| item.name.len() > 3) {
-                return Err(QuestError::QuestValidation("Item name must be at least 3 characters".to_string()));
-            }
-
-            db.add_reward_hook_to_quest(&id, hook)
-            .await
-            .map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
-
-            db.add_reward_items_to_quest(&id, items).await.map_err(|_| QuestError::CommonError(CommonError::Unknown))?;
-        } else {
-            return Err(QuestError::QuestValidation("Reward items must be at least one".to_string()));
-        }
-        
-    }
+    let quest = create_quest_req.to_create_quest()?;
+    let id = if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
+        db.create_quest_with_reward(&quest, creator_address, hook, items)
+        .await
+        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?
+    } else {
+        db.create_quest(&quest, creator_address)
+        .await
+        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?
+    };
 
     Ok(id)
 }

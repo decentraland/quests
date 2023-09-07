@@ -7,7 +7,7 @@ use quests_db::{
     create_quests_db_component,
 };
 use quests_protocol::definitions::*;
-use quests_server::api::routes::quests::QuestStats;
+use quests_server::api::routes::quests::GetQuestStatsResponse;
 
 #[actix_web::test]
 async fn get_quest_stats_should_be_200() {
@@ -24,6 +24,7 @@ async fn get_quest_stats_should_be_200() {
         name,
         description,
         definition,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -46,12 +47,12 @@ async fn get_quest_stats_should_be_200() {
     let headers = get_signed_headers(
         create_test_identity(),
         "get",
-        format!("/quests/{}/stats", id).as_str(),
+        format!("/api/quests/{}/stats", id).as_str(),
         "{}",
     );
 
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/stats", id).as_str())
+        .uri(format!("/api/quests/{}/stats", id).as_str())
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -65,7 +66,7 @@ async fn get_quest_stats_should_be_200() {
 
     assert!(response.status().is_success());
 
-    let response: QuestStats = read_body_json(response).await;
+    let response: GetQuestStatsResponse = read_body_json(response).await;
 
     assert_eq!(response.active_players, 2);
     assert_eq!(response.abandoned, 1);
@@ -88,6 +89,7 @@ async fn get_quest_stats_should_be_403() {
         name,
         description,
         definition,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -108,12 +110,12 @@ async fn get_quest_stats_should_be_403() {
     let headers = get_signed_headers(
         create_test_identity(),
         "get",
-        format!("/quests/{}/stats", id).as_str(),
+        format!("/api/quests/{}/stats", id).as_str(),
         "{}",
     );
 
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/stats", id).as_str())
+        .uri(format!("/api/quests/{}/stats", id).as_str())
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -141,6 +143,7 @@ async fn get_quest_stats_should_be_401() {
         name,
         description,
         definition,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -157,7 +160,7 @@ async fn get_quest_stats_should_be_401() {
         .unwrap();
 
     let req = TestRequest::get()
-        .uri(format!("/quests/{}/stats", id).as_str())
+        .uri(format!("/api/quests/{}/stats", id).as_str())
         .to_request();
 
     match try_call_service(&app, req).await {

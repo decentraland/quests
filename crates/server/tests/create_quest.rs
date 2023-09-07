@@ -32,6 +32,7 @@ async fn create_quest_should_be_200_without_reward() {
         description,
         definition,
         image_url,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -45,14 +46,14 @@ async fn create_quest_should_be_200_without_reward() {
     let headers = get_signed_headers(
         create_test_identity(),
         "post",
-        "/quests",
+        "/api/quests",
         serde_json::to_string(&create_quest_request)
             .unwrap()
             .as_str(),
     );
 
     let req = TestRequest::post()
-        .uri("/quests")
+        .uri("/api/quests")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -87,6 +88,7 @@ async fn create_quest_should_be_200_with_reward() {
         description,
         definition,
         image_url,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -106,14 +108,14 @@ async fn create_quest_should_be_200_with_reward() {
     let headers = get_signed_headers(
         create_test_identity(),
         "post",
-        "/quests",
+        "/api/quests",
         serde_json::to_string(&create_quest_request)
             .unwrap()
             .as_str(),
     );
 
     let req = TestRequest::post()
-        .uri("/quests")
+        .uri("/api/quests")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -161,12 +163,12 @@ async fn create_quest_should_be_400_quest_validation_error_missing_definition() 
     let headers = get_signed_headers(
         create_test_identity(),
         "post",
-        "/quests",
+        "/api/quests",
         serde_json::to_string(&quest_definition).unwrap().as_str(),
     );
 
     let req = TestRequest::post()
-        .uri("/quests")
+        .uri("/api/quests")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -196,6 +198,7 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_webhook() {
         description,
         definition,
         image_url,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -215,14 +218,14 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_webhook() {
     let headers = get_signed_headers(
         create_test_identity(),
         "post",
-        "/quests",
+        "/api/quests",
         serde_json::to_string(&create_quest_request)
             .unwrap()
             .as_str(),
     );
 
     let req = TestRequest::post()
-        .uri("/quests")
+        .uri("/api/quests")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -252,6 +255,7 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
         description,
         definition,
         image_url,
+        active: _,
     } = quest_samples::grab_some_apples();
 
     let mut create_quest_request = CreateQuestRequest {
@@ -271,14 +275,14 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
     let headers = get_signed_headers(
         create_test_identity(),
         "post",
-        "/quests",
+        "/api/quests",
         serde_json::to_string(&create_quest_request)
             .unwrap()
             .as_str(),
     );
 
     let req = TestRequest::post()
-        .uri("/quests")
+        .uri("/api/quests")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -303,14 +307,14 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
     let headers = get_signed_headers(
         create_test_identity(),
         "post",
-        "/quests",
+        "/api/quests",
         serde_json::to_string(&create_quest_request)
             .unwrap()
             .as_str(),
     );
 
     let req = TestRequest::post()
-        .uri("/quests")
+        .uri("/api/quests")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -332,14 +336,14 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
     let headers = get_signed_headers(
         create_test_identity(),
         "post",
-        "/quests",
+        "/api/quests",
         serde_json::to_string(&create_quest_request)
             .unwrap()
             .as_str(),
     );
 
     let req = TestRequest::post()
-        .uri("/quests")
+        .uri("/api/quests")
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
@@ -374,12 +378,15 @@ async fn create_quest_should_be_401() {
     };
 
     let req = TestRequest::post()
-        .uri("/quests")
+        .uri("/api/quests")
         .set_json(quest_definition)
         .to_request();
 
     match try_call_service(&app, req).await {
-        Ok(_) => panic!("shoudl fail"),
+        Ok(res) => {
+            let s = res.status();
+            panic!("should fail {}", s)
+        }
         Err(err) => {
             let response = err.error_response();
             assert_eq!(response.status(), 401);

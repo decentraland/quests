@@ -118,6 +118,51 @@ impl QuestDefinition {
                         step.id.clone(),
                     ));
                 }
+
+                for action_item in &task.action_items {
+                    match &*action_item.r#type {
+                        "CUSTOM" => {
+                            if action_item.parameters.keys().len() == 0 {
+                                return Err(QuestValidationError::ActionItemParametersNotValid(
+                                    "CUSTOM".to_string(),
+                                ));
+                            }
+                        }
+                        "LOCATION" => {
+                            if action_item.parameters.get("x").is_none()
+                                || action_item.parameters.get("y").is_none()
+                            {
+                                return Err(QuestValidationError::ActionItemParametersNotValid(
+                                    "LOCATION".to_string(),
+                                ));
+                            }
+                        }
+                        "EMOTE" => {
+                            if action_item.parameters.get("x").is_none()
+                                || action_item.parameters.get("y").is_none()
+                                || action_item.parameters.get("id").is_none()
+                            {
+                                return Err(QuestValidationError::ActionItemParametersNotValid(
+                                    "EMOTE".to_string(),
+                                ));
+                            }
+                        }
+                        "JUMP" => {
+                            if action_item.parameters.get("x").is_none()
+                                || action_item.parameters.get("y").is_none()
+                            {
+                                return Err(QuestValidationError::ActionItemParametersNotValid(
+                                    "JUMP".to_string(),
+                                ));
+                            }
+                        }
+                        _ => {
+                            return Err(QuestValidationError::ActionItemTypeNotValid(
+                                action_item.r#type.clone(),
+                            ));
+                        }
+                    }
+                }
             }
 
             // All steps have at least one defined connection
@@ -231,6 +276,12 @@ pub enum QuestValidationError {
     /// Step should not has Tasks::None
     #[error("Step {0} doesn't have tasks defined")]
     MissingTasksForStep(StepID),
+    /// Action Item type should be valid
+    #[error("Action Item's type is not valid: {0}")]
+    ActionItemTypeNotValid(String),
+    /// Action Item parameters should be valid
+    #[error("Action Item's parameters are not valid: {0}")]
+    ActionItemParametersNotValid(String),
 }
 
 impl Connection {

@@ -24,6 +24,10 @@ pub enum QuestError {
     QuestAlreadyCompleted,
     #[error("Quest has no reward")]
     QuestHasNoReward,
+    #[error("Requested Quest cannot be activated because it may be prevoiusly updated and replaced with a new Quest or it may be already active")]
+    QuestNotActivable,
+    #[error("Requested Quest was previously updated and replaced with a new Quest")]
+    QuestIsNotUpdatable,
 }
 
 pub async fn abandon_quest(

@@ -65,11 +65,10 @@ impl Quest {
 
     pub fn hide_actions(&mut self) {
         self.definition.as_mut().map(|definition| {
-            definition.steps.iter_mut().for_each(|step| {
-                step.tasks
-                    .iter_mut()
-                    .for_each(|task| task.action_items.clear())
-            });
+            definition
+                .steps
+                .iter_mut()
+                .for_each(|step| step.tasks.iter_mut().for_each(|task| task.hide_actions()));
         });
     }
 }
@@ -245,6 +244,28 @@ impl QuestDefinition {
         }
 
         steps
+    }
+}
+
+impl QuestState {
+    pub fn hide_actions(&mut self) {
+        for (_, step) in &mut self.current_steps {
+            step.hide_actions();
+        }
+    }
+}
+
+impl StepContent {
+    pub fn hide_actions(&mut self) {
+        for task in &mut self.to_dos {
+            task.hide_actions();
+        }
+    }
+}
+
+impl Task {
+    pub fn hide_actions(&mut self) {
+        self.action_items.clear();
     }
 }
 

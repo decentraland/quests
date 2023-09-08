@@ -590,13 +590,14 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         match get_all_quest_states_by_user_address(context.server_context.db.clone(), &user_address)
             .await
         {
-            Ok(quest_states) => {
+            Ok(mut quest_states) => {
                 let mut quests = Vec::new();
-                for (instance_id, (quest, state)) in quest_states {
+                for (instance_id, (ref mut quest, state)) in quest_states.iter_mut() {
+                    quest.hide_actions();
                     let quest_definition_and_state = QuestInstance {
-                        id: instance_id,
-                        quest: Some(quest),
-                        state: Some(state),
+                        id: instance_id.to_string(),
+                        quest: Some(quest.clone()),
+                        state: Some(state.clone()),
                     };
                     quests.push(quest_definition_and_state);
                 }
@@ -655,13 +656,15 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
             .record_procedure_call_duration(Procedure::GetQuestDefinition);
 
         match get_quest(context.server_context.db.clone(), &request.quest_id).await {
-            Ok(quest) => {
+            Ok(mut quest) => {
                 context
                     .server_context
                     .metrics_collector
                     .record_procedure_call(Procedure::GetQuestDefinition, Status::Accepted);
 
                 record_procedure_duration(Status::Accepted);
+
+                quest.hide_actions();
 
                 let response = GetQuestDefinitionResponse::ok(quest);
 

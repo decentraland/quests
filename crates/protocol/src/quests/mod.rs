@@ -62,6 +62,16 @@ impl Quest {
         };
         definition.is_valid()
     }
+
+    pub fn hide_actions(&mut self) {
+        self.definition.as_mut().map(|definition| {
+            definition.steps.iter_mut().for_each(|step| {
+                step.tasks
+                    .iter_mut()
+                    .for_each(|task| task.action_items.clear())
+            });
+        });
+    }
 }
 
 impl QuestDefinition {

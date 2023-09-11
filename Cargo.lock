@@ -2628,6 +2628,7 @@ dependencies = [
  "dcl-rpc",
  "prost",
  "prost-build",
+ "reqwest",
  "serde",
  "serde_json",
  "thiserror",

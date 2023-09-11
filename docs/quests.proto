@@ -124,6 +124,7 @@ message Quest {
   string creator_address = 5;
   string image_url = 6;
   bool active = 7;
+  fixed32 created_at = 8;
 }
 
 message QuestInstance {

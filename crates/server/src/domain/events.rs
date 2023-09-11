@@ -24,10 +24,15 @@ pub async fn add_event_controller(
             address: user_address.to_string(),
             action: Some(action),
         };
-        if events_queue.push(&event).await.is_ok() {
-            Ok(id)
-        } else {
-            Err(AddEventError::PushFailed)
+        match events_queue.push(&event).await {
+            Ok(queue_size) => {
+                log::debug!("Pushed event to the queue, queue size: {queue_size}");
+                Ok(id)
+            }
+            Err(e) => {
+                log::error!("Failed to push event to the queue {e}");
+                Err(AddEventError::PushFailed)
+            }
         }
     } else {
         Err(AddEventError::NoAction)

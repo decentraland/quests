@@ -34,6 +34,7 @@ pub async fn get_quest(
         definition: Some(quest_definition),
         image_url: quest.image_url,
         active: quest.active,
+        created_at: quest.created_at as u32,
     };
     Ok(quest)
 }

@@ -119,6 +119,9 @@ impl QuestsDatabase for Database {
                     .try_get("image_url")
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
                 active: true,
+                created_at: row
+                    .try_get("created_at")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
             })
         }
 
@@ -175,6 +178,9 @@ impl QuestsDatabase for Database {
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
                 active: row
                     .try_get("active")
+                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                created_at: row
+                    .try_get("created_at")
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
             })
         }
@@ -307,6 +313,9 @@ impl QuestsDatabase for Database {
             active: query_result
                 .try_get("active")
                 .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+            created_at: query_result
+                .try_get("created_at")
+                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
         })
     }
 

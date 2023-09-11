@@ -142,6 +142,7 @@ pub struct StoredQuest {
     pub creator_address: String,
     pub image_url: String,
     pub active: bool,
+    pub created_at: i64,
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]

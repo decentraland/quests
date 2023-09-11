@@ -23,7 +23,7 @@ pub struct UpdateQuestResponse {
 #[utoipa::path(
     request_body = UpdateQuestRequest,
     params(
-        ("quest_id" = String, Path, description = "Quest ID")    
+        ("quest_id" = String, Path, description = "Quest ID")
     ),
     responses(
         (status = 200, description = "Quest updated", body = UpdateQuestResponse),
@@ -82,7 +82,10 @@ async fn update_quest_controller<DB: QuestsDatabase>(
                     &stored_quest.creator_address,
                 )
                 .await
-                .map_err(|error| error.into())
+                .map_err(|error| {
+                    log::error!("Couldn't update quest: {error}");
+                    error.into()
+                })
             } else {
                 Err(QuestError::NotQuestCreator)
             }

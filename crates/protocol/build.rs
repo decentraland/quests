@@ -96,7 +96,7 @@ fn extract_file_url(body: serde_json::Value) -> Url {
 }
 
 fn get_file_info(client: &reqwest::blocking::Client, url: Url) -> serde_json::Value {
-    let res = match client.get(url).header(USER_AGENT, "Social Service").send() {
+    let res = match client.get(url).header(USER_AGENT, "Quests").send() {
         Ok(it) => it,
         Err(err) => panic!("Failed to get file info with {err}"),
     };

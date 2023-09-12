@@ -143,7 +143,7 @@ impl EventProcessor {
         event: &Event,
         quest_id: &str,
         quest_instance_id: &str,
-        quest_state: QuestState,
+        mut quest_state: QuestState,
     ) -> Result<(), ProcessEventError> {
         debug!("Processing event > event applied with new state: {quest_state:?}");
         let add_event = AddEvent {
@@ -165,6 +165,7 @@ impl EventProcessor {
             give_rewards_to_user(self.database.clone(), quest_id, &event.address).await;
         }
 
+        quest_state.hide_actions();
         self.quests_channel
             .publish(UserUpdate {
                 message: Some(user_update::Message::QuestStateUpdate(QuestStateUpdate {

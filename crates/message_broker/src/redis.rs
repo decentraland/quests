@@ -41,7 +41,7 @@ impl Redis {
             None => false,
             Some(mut conn) => {
                 let result: RedisResult<String> = cmd("PING").query_async(&mut conn).await;
-                matches!(result, Ok(_))
+                result.is_ok()
             }
         }
     }

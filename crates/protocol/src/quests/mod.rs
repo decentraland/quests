@@ -64,12 +64,12 @@ impl Quest {
     }
 
     pub fn hide_actions(&mut self) {
-        self.definition.as_mut().map(|definition| {
+        if let Some(definition) = self.definition.as_mut() {
             definition
                 .steps
                 .iter_mut()
                 .for_each(|step| step.tasks.iter_mut().for_each(|task| task.hide_actions()));
-        });
+        }
     }
 }
 
@@ -249,7 +249,7 @@ impl QuestDefinition {
 
 impl QuestState {
     pub fn hide_actions(&mut self) {
-        for (_, step) in &mut self.current_steps {
+        for step in self.current_steps.values_mut() {
             step.hide_actions();
         }
     }

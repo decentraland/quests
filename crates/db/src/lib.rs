@@ -12,7 +12,7 @@ pub use sqlx::Executor;
 use sqlx::{
     pool::PoolConnection,
     postgres::{PgConnectOptions, PgPoolOptions},
-    types::Json,
+    types::{chrono::NaiveDateTime, Json},
     Error, PgPool, Postgres, QueryBuilder, Row, Transaction,
 };
 use std::{collections::HashMap, str::FromStr};
@@ -98,6 +98,10 @@ impl QuestsDatabase for Database {
         let mut quests = vec![];
 
         for row in query_result {
+            let created_at: NaiveDateTime = row
+                .try_get("created_at")
+                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?;
+
             quests.push(StoredQuest {
                 id: parse_uuid_to_str(
                     row.try_get("id")
@@ -119,9 +123,7 @@ impl QuestsDatabase for Database {
                     .try_get("image_url")
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
                 active: true,
-                created_at: row
-                    .try_get("created_at")
-                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                created_at: created_at.timestamp(),
             })
         }
 
@@ -156,6 +158,10 @@ impl QuestsDatabase for Database {
         let mut quests = vec![];
 
         for row in query_result {
+            let created_at: NaiveDateTime = row
+                .try_get("created_at")
+                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?;
+
             quests.push(StoredQuest {
                 id: parse_uuid_to_str(
                     row.try_get("id")
@@ -179,9 +185,7 @@ impl QuestsDatabase for Database {
                 active: row
                     .try_get("active")
                     .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-                created_at: row
-                    .try_get("created_at")
-                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
+                created_at: created_at.timestamp(),
             })
         }
 
@@ -293,6 +297,10 @@ impl QuestsDatabase for Database {
             _ => DBError::GetQuestFailed(Box::new(err)),
         })?;
 
+        let created_at: NaiveDateTime = query_result
+            .try_get("created_at")
+            .map_err(|e| DBError::RowCorrupted(Box::new(e)))?;
+
         Ok(StoredQuest {
             id: id.to_string(),
             name: query_result
@@ -313,9 +321,7 @@ impl QuestsDatabase for Database {
             active: query_result
                 .try_get("active")
                 .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-            created_at: query_result
-                .try_get("created_at")
-                .map_err(|e| DBError::RowCorrupted(Box::new(e)))?,
+            created_at: created_at.timestamp(),
         })
     }
 

@@ -25,6 +25,7 @@ impl ToQuest for StoredQuest {
                 None
             },
             active: self.active,
+            created_at: self.created_at as u32,
         })
     }
 }

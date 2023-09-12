@@ -26,13 +26,11 @@ async fn create_quest_should_be_200_without_reward() {
     let app = init_service(build_app(&config).await).await;
 
     let Quest {
-        id: _,
-        creator_address: _,
         name,
         description,
         definition,
         image_url,
-        active: _,
+        ..
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -82,13 +80,11 @@ async fn create_quest_should_be_200_with_reward() {
     let app = init_service(build_app(&config).await).await;
 
     let Quest {
-        id: _,
-        creator_address: _,
         name,
         description,
         definition,
         image_url,
-        active: _,
+        ..
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -192,13 +188,11 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_webhook() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
     let Quest {
-        id: _,
-        creator_address: _,
         name,
         description,
         definition,
         image_url,
-        active: _,
+        ..
     } = quest_samples::grab_some_apples();
 
     let create_quest_request = CreateQuestRequest {
@@ -249,13 +243,11 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
     let config = get_configuration().await;
     let app = init_service(build_app(&config).await).await;
     let Quest {
-        id: _,
-        creator_address: _,
         name,
         description,
         definition,
         image_url,
-        active: _,
+        ..
     } = quest_samples::grab_some_apples();
 
     let mut create_quest_request = CreateQuestRequest {

@@ -1,14 +1,17 @@
-use std::sync::Arc;
-use actix_web::{post, web, HttpResponse, HttpRequest};
-use quests_db::{core::definitions::{QuestsDatabase, CreateQuest, QuestRewardHook, QuestRewardItem}, Database};
-use quests_protocol::definitions::*;
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use super::is_url;
 use crate::{
     api::routes::{errors::CommonError, quests::get_user_address_from_request},
     domain::{quests::QuestError, types::ToCreateQuest},
 };
-use super::is_url;
+use actix_web::{post, web, HttpRequest, HttpResponse};
+use quests_db::{
+    core::definitions::{CreateQuest, QuestRewardHook, QuestRewardItem, QuestsDatabase},
+    Database,
+};
+use quests_protocol::definitions::*;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateQuestResponse {
@@ -19,7 +22,7 @@ pub struct CreateQuestResponse {
 #[serde(rename_all = "camelCase")]
 pub struct QuestReward {
     pub hook: QuestRewardHook,
-    pub items: Vec<QuestRewardItem>
+    pub items: Vec<QuestRewardItem>,
 }
 
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
@@ -35,33 +38,44 @@ pub struct CreateQuestRequest {
 impl CreateQuestRequest {
     pub fn is_valid(&self) -> Result<(), QuestError> {
         if self.name.trim().len() < 5 {
-            return Err(QuestError::QuestValidation("Name should be longer".to_string()))
+            return Err(QuestError::QuestValidation(
+                "Name should be longer".to_string(),
+            ));
         }
 
         if self.description.trim().len() < 5 {
-            return Err(QuestError::QuestValidation("Description should be longer".to_string()))
+            return Err(QuestError::QuestValidation(
+                "Description should be longer".to_string(),
+            ));
         }
 
         self.definition
-        .is_valid()
-        .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
+            .is_valid()
+            .map_err(|error| QuestError::QuestValidation(error.to_string()))?;
 
         if let Some(QuestReward { hook, items }) = &self.reward {
             if !is_url(&hook.webhook_url) {
-                return Err(QuestError::QuestValidation("Webhook url is not valid".to_string()));
+                return Err(QuestError::QuestValidation(
+                    "Webhook url is not valid".to_string(),
+                ));
             }
-    
+
             if !items.is_empty() {
                 if !items.iter().all(|item| is_url(&item.image_link)) {
-                    return Err(QuestError::QuestValidation("Item's image link is not valid".to_string()));
+                    return Err(QuestError::QuestValidation(
+                        "Item's image link is not valid".to_string(),
+                    ));
                 }
-        
+
                 if !items.iter().all(|item| item.name.len() >= 3) {
-                    return Err(QuestError::QuestValidation("Item name must be at least 3 characters".to_string()));
+                    return Err(QuestError::QuestValidation(
+                        "Item name must be at least 3 characters".to_string(),
+                    ));
                 }
             } else {
-                return Err(QuestError::QuestValidation("Reward items must be at least one".to_string()));
-
+                return Err(QuestError::QuestValidation(
+                    "Reward items must be at least one".to_string(),
+                ));
             }
         }
 
@@ -70,7 +84,7 @@ impl CreateQuestRequest {
 }
 
 #[utoipa::path(
-    request_body = CreateQuestRequest, 
+    request_body = CreateQuestRequest,
     responses(
         (status = 201, description = "Quest created", body = CreateQuestResponse),
         (status = 400, description = "Bad Request"),
@@ -100,20 +114,25 @@ pub async fn create_quest(
 async fn create_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     create_quest_req: &CreateQuestRequest,
-    creator_address: &str
+    creator_address: &str,
 ) -> Result<String, QuestError> {
-    create_quest_req
-        .is_valid()?; 
-    
+    create_quest_req.is_valid()?;
+
     let quest = create_quest_req.to_create_quest()?;
     let id = if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
         db.create_quest_with_reward(&quest, creator_address, hook, items)
-        .await
-        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?
+            .await
+            .map_err(|e| {
+                log::error!("Failed to create quest with reward: {:?}", e);
+                QuestError::CommonError(CommonError::Unknown)
+            })?
     } else {
         db.create_quest(&quest, creator_address)
-        .await
-        .map_err(|_| QuestError::CommonError(CommonError::Unknown))?
+            .await
+            .map_err(|e| {
+                log::error!("Failed to create quest: {:?}", e);
+                QuestError::CommonError(CommonError::Unknown)
+            })?
     };
 
     Ok(id)

@@ -18,13 +18,10 @@ async fn get_quest_stats_should_be_200() {
     let app = init_service(build_app(&config).await).await;
 
     let Quest {
-        id: _,
-        creator_address: _,
-        image_url: _,
         name,
         description,
         definition,
-        active: _,
+        ..
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -83,13 +80,10 @@ async fn get_quest_stats_should_be_403() {
     let app = init_service(build_app(&config).await).await;
 
     let Quest {
-        id: _,
-        image_url: _,
-        creator_address: _,
         name,
         description,
         definition,
-        active: _,
+        ..
     } = quest_samples::grab_some_apples();
 
     let id = db
@@ -137,13 +131,10 @@ async fn get_quest_stats_should_be_401() {
     let app = init_service(build_app(&config).await).await;
 
     let Quest {
-        id: _,
-        creator_address: _,
-        image_url: _,
         name,
         description,
         definition,
-        active: _,
+        ..
     } = quest_samples::grab_some_apples();
 
     let id = db

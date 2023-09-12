@@ -551,7 +551,6 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
             .and_modify(|current_context| {
                 current_context.subscription_handle =
                     Some((subscription_join_handle, Instant::now()));
-                // TODO: add timestamp to track subscription duration
             });
 
         context

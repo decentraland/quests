@@ -9,7 +9,7 @@ const DCL_PROTOCOL_REPO_URL: &str =
     "https://api.github.com/repos/decentraland/protocol/contents/proto/decentraland";
 const QUESTS_PROTO_PATH: &str = "/quests/definitions.proto";
 /// Modify this value to update the proto version, it is the commit sha from protocol repo used for downloading the proto file
-const FRIENDSHIPS_PROTOCOL_VERSION: &str = "feat/add-quests-to-protocol";
+const QUESTS_PROTOCOL_VERSION: &str = "03626d76db879afcdfd4fbcdc0342a04e5b4f663";
 
 fn main() -> Result<()> {
     if should_download_proto() {
@@ -81,11 +81,7 @@ fn save_content_to_file(content: reqwest::blocking::Response) -> Result<()> {
 }
 
 fn download_file(client: reqwest::blocking::Client, file_url: Url) -> reqwest::blocking::Response {
-    match client
-        .get(file_url)
-        .header(USER_AGENT, "Social Service")
-        .send()
-    {
+    match client.get(file_url).header(USER_AGENT, "Quests").send() {
         Ok(it) => it,
         Err(err) => panic!("Failed to download the friendship proto def with {err}"),
     }
@@ -112,7 +108,7 @@ fn get_file_info(client: &reqwest::blocking::Client, url: Url) -> serde_json::Va
 
 fn build_github_url_to_download() -> Url {
     let github_url =
-        format!("{DCL_PROTOCOL_REPO_URL}{QUESTS_PROTO_PATH}?ref={FRIENDSHIPS_PROTOCOL_VERSION}");
+        format!("{DCL_PROTOCOL_REPO_URL}{QUESTS_PROTO_PATH}?ref={QUESTS_PROTOCOL_VERSION}");
 
     match Url::parse(&github_url) {
         Ok(it) => it,

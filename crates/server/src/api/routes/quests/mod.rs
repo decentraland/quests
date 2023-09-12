@@ -38,12 +38,13 @@ pub fn services(api_scope: Scope) -> Scope {
 pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpResponse> {
     let extensions = req.extensions();
     if let Some(address) = extensions.get::<Address>() {
-        Ok(address.to_string())
+        Ok(address.to_string().to_lowercase())
     } else {
         log::error!("No Address");
         Err(HttpResponse::BadRequest().body("Bad Request"))
     }
 }
+
 #[allow(clippy::invalid_regex)]
 pub fn is_url(url: &str) -> bool {
     let regex = Regex::new(

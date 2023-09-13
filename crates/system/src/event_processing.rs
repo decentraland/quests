@@ -161,6 +161,8 @@ impl EventProcessor {
             .await?;
 
         if quest_state.is_completed() {
+            debug!("Processing event > recording instance as completed");
+            self.database.complete_quest(quest_instance_id).await?;
             debug!("Processing event > Calling rewards hook");
             give_rewards_to_user(self.database.clone(), quest_id, &event.address).await;
         }

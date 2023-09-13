@@ -216,8 +216,7 @@ async fn should_call_rewards_hook_when_user_completes_a_quest() {
     .unwrap();
 
     let user_address = "0xB";
-    let result = db.start_quest(&quest_id, user_address).await;
-    assert!(result.is_ok());
+    let quest_instance_id = db.start_quest(&quest_id, user_address).await.unwrap();
 
     let mut config = Config::new().expect("Can parse config");
     config.redis_url = "127.0.0.1:6379/2".to_string();
@@ -276,6 +275,9 @@ async fn should_call_rewards_hook_when_user_completes_a_quest() {
         .expect("can process event");
 
     assert_eq!(result, 1);
+
+    let result = db.is_completed_instance(&quest_instance_id).await.unwrap();
+    assert!(result);
 
     mocked_server.verify().await;
 }

@@ -354,6 +354,32 @@ impl QuestsDatabase for Database {
             .map(|_| id)
     }
 
+    async fn complete_quest(&self, quest_instance_id: &str) -> DBResult<String> {
+        let id = Uuid::new_v4().to_string();
+        let query = sqlx::query(
+            "INSERT INTO completed_quest_instances (id, quest_instance_id) VALUES ($1, $2)",
+        )
+        .bind(parse_str_to_uuid(&id)?)
+        .bind(parse_str_to_uuid(quest_instance_id)?);
+        query
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DBError::DeactivateQuestFailed(Box::new(err)))
+            .map(|_| id)
+    }
+
+    async fn is_completed_instance(&self, quest_instance_id: &str) -> DBResult<bool> {
+        let quest_instance_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM completed_quest_instances WHERE quest_instance_id = $1)",
+        )
+        .bind(parse_str_to_uuid(quest_instance_id)?)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::GetActiveQuestInstanceFailed(Box::new(err)))?;
+
+        Ok(quest_instance_exists)
+    }
+
     async fn is_active_quest_instance(&self, quest_instance_id: &str) -> DBResult<bool> {
         let quest_instance_exists: bool = sqlx::query_scalar(
             "

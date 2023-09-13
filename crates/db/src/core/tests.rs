@@ -170,6 +170,12 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         .unwrap();
     assert!(!is_active_instance);
 
+    let new_instance = db.start_quest(&quest_id, "0xB").await.unwrap();
+    db.complete_quest(&new_instance).await.unwrap();
+
+    let result = db.is_completed_instance(&new_instance).await.unwrap();
+    assert!(result);
+
     let active_quests = db.get_active_quests(0, 10).await.unwrap();
 
     assert_eq!(active_quests.len(), 1);

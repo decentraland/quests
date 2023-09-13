@@ -1,4 +1,4 @@
 {
-    "disableSearch": true
+    "disableSearch": true,
     "htmlTemplate": "./docs/index.html"
 }

@@ -410,29 +410,29 @@ mod tests {
                 steps: vec![
                     Step {
                         id: "A1".to_string(),
-                        description: "".to_string(),
+                        description: "Step desc".to_string(),
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 10))],
                             id: "A1_1".to_string(),
-                            description: "".to_string(),
+                            description: "task desc".to_string(),
                         }],
                     },
                     Step {
                         id: "B".to_string(),
-                        description: "".to_string(),
+                        description: "step desc".to_string(),
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 15))],
                             id: "B_1".to_string(),
-                            description: "".to_string(),
+                            description: "t desc".to_string(),
                         }],
                     },
                     Step {
                         id: "C".to_string(),
-                        description: "".to_string(),
+                        description: "step desc".to_string(),
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 20))],
                             id: "C_1".to_string(),
-                            description: "".to_string(),
+                            description: "c desc".to_string(),
                         }],
                     },
                 ],
@@ -473,10 +473,12 @@ mod tests {
                 connections: vec![Connection::new("A1", "B")],
                 steps: vec![Step {
                     id: "B".to_string(),
-                    description: "".to_string(),
+                    description: "desc".to_string(),
+
                     tasks: vec![Task {
                         id: "B_1".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
+
                         action_items: vec![Action::location(Coordinates::new(10, 15))],
                     }],
                 }],
@@ -490,16 +492,19 @@ mod tests {
         let quest = Quest {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
-            description: "".to_string(),
+            description: "desc".to_string(),
+
             creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B")],
                 steps: vec![Step {
                     id: "A1".to_string(),
-                    description: "".to_string(),
+                    description: "desc".to_string(),
+
                     tasks: vec![Task {
                         id: "A1_1".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
+
                         action_items: vec![Action::location(Coordinates::new(10, 15))],
                     }],
                 }],
@@ -513,35 +518,35 @@ mod tests {
         let quest = Quest {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
-            description: "".to_string(),
+            description: "desc".to_string(),
             creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("B", "C")],
                 steps: vec![
                     Step {
                         id: "A1".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             id: "A1_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(10, 15))],
                         }],
                     },
                     Step {
                         id: "B".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             id: "B_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(20, 15))],
                         }],
                     },
                     Step {
                         id: "C".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(10, 25))],
                         }],
                     },
@@ -556,26 +561,26 @@ mod tests {
         let quest = Quest {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
-            description: "".to_string(),
+            description: "desc".to_string(),
             creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A1", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
                         id: "A1".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             id: "A1_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(20, 15))],
                         }],
                     },
                     Step {
                         id: "C".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(30, 15))],
                         }],
                     },
@@ -590,35 +595,37 @@ mod tests {
         let quest = Quest {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
-            description: "".to_string(),
+            description: "desc".to_string(),
             creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
                         id: "A".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
+
                         tasks: vec![Task {
                             id: "A_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(10, 15))],
                         }],
                     },
                     Step {
                         id: "B".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
+
                         tasks: vec![Task {
                             id: "B_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(20, 15))],
                         }],
                     },
                     Step {
                         id: "C".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(10, 2))],
                         }],
                     },
@@ -627,7 +634,7 @@ mod tests {
                         description: "Another A".to_string(),
                         tasks: vec![Task {
                             id: "A_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(1, 15))],
                         }],
                     },
@@ -642,43 +649,44 @@ mod tests {
         let quest = Quest {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
-            description: "".to_string(),
+            description: "desc".to_string(),
             creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
                 steps: vec![
                     Step {
                         id: "A".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
+
                         tasks: vec![
                             Task {
                                 id: "A_1".to_string(),
-                                description: "".to_string(),
+                                description: "desc".to_string(),
                                 action_items: vec![Action::location(Coordinates::new(10, 20))],
                             },
                             Task {
                                 id: "A_1".to_string(),
-                                description: "".to_string(),
+                                description: "desc".to_string(),
                                 action_items: vec![Action::jump(Coordinates::new(30, 20))],
                             },
                         ],
                     },
                     Step {
                         id: "B".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             id: "B_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                             action_items: vec![Action::location(Coordinates::new(20, 15))],
                         }],
                     },
                     Step {
                         id: "C".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 2))],
                             id: "C_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                         }],
                     },
                 ],
@@ -692,7 +700,52 @@ mod tests {
         let quest = Quest {
             id: "".to_string(),
             name: "CUSTOM_QUEST".to_string(),
-            description: "".to_string(),
+            description: "desc".to_string(),
+            creator_address: "0xB".to_string(),
+            definition: Some(QuestDefinition {
+                connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
+                steps: vec![
+                    Step {
+                        id: "A".to_string(),
+                        description: "desc".to_string(),
+                        tasks: vec![
+                            Task {
+                                id: "A_1".to_string(),
+                                description: "desc".to_string(),
+                                action_items: vec![Action::location(Coordinates::new(10, 20))],
+                            },
+                            Task {
+                                id: "A_2".to_string(),
+                                description: "desc".to_string(),
+                                action_items: vec![Action::location(Coordinates::new(30, 20))],
+                            },
+                        ],
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "desc".to_string(),
+                        tasks: vec![],
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "desc".to_string(),
+                        tasks: vec![Task {
+                            action_items: vec![Action::location(Coordinates::new(10, 2))],
+                            id: "C_1".to_string(),
+                            description: "desc".to_string(),
+                        }],
+                    },
+                ],
+            }),
+            ..Default::default()
+        };
+        let err = QuestValidationError::MissingTasksForStep("B".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
+
+        let quest = Quest {
+            id: "".to_string(),
+            name: "CUSTOM_QUEST".to_string(),
+            description: "desc".to_string(),
             creator_address: "0xB".to_string(),
             definition: Some(QuestDefinition {
                 connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
@@ -703,35 +756,80 @@ mod tests {
                         tasks: vec![
                             Task {
                                 id: "A_1".to_string(),
-                                description: "".to_string(),
+                                description: "desc".to_string(),
                                 action_items: vec![Action::location(Coordinates::new(10, 20))],
                             },
                             Task {
                                 id: "A_2".to_string(),
-                                description: "".to_string(),
+                                description: "desc".to_string(),
                                 action_items: vec![Action::location(Coordinates::new(30, 20))],
                             },
                         ],
                     },
                     Step {
                         id: "B".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![],
                     },
                     Step {
                         id: "C".to_string(),
-                        description: "".to_string(),
+                        description: "desc".to_string(),
                         tasks: vec![Task {
                             action_items: vec![Action::location(Coordinates::new(10, 2))],
                             id: "C_1".to_string(),
-                            description: "".to_string(),
+                            description: "desc".to_string(),
                         }],
                     },
                 ],
             }),
             ..Default::default()
         };
-        let err = QuestValidationError::MissingTasksForStep("B".to_string());
+        let err = QuestValidationError::StepMissingDescription("A".to_string());
+        assert_eq!(quest.is_valid().unwrap_err(), err);
+
+        let quest = Quest {
+            id: "".to_string(),
+            name: "CUSTOM_QUEST".to_string(),
+            description: "desc".to_string(),
+            creator_address: "0xB".to_string(),
+            definition: Some(QuestDefinition {
+                connections: vec![Connection::new("A", "B"), Connection::new("B", "C")],
+                steps: vec![
+                    Step {
+                        id: "A".to_string(),
+                        description: "desc".to_string(),
+                        tasks: vec![
+                            Task {
+                                id: "A_1".to_string(),
+                                description: "".to_string(),
+                                action_items: vec![Action::location(Coordinates::new(10, 20))],
+                            },
+                            Task {
+                                id: "A_2".to_string(),
+                                description: "desc".to_string(),
+                                action_items: vec![Action::location(Coordinates::new(30, 20))],
+                            },
+                        ],
+                    },
+                    Step {
+                        id: "B".to_string(),
+                        description: "desc".to_string(),
+                        tasks: vec![],
+                    },
+                    Step {
+                        id: "C".to_string(),
+                        description: "desc".to_string(),
+                        tasks: vec![Task {
+                            action_items: vec![Action::location(Coordinates::new(10, 2))],
+                            id: "C_1".to_string(),
+                            description: "desc".to_string(),
+                        }],
+                    },
+                ],
+            }),
+            ..Default::default()
+        };
+        let err = QuestValidationError::TaskMissingDescription("A_1".to_string());
         assert_eq!(quest.is_valid().unwrap_err(), err);
     }
 }

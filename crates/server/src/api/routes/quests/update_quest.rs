@@ -63,9 +63,7 @@ async fn update_quest_controller<DB: QuestsDatabase>(
     quest: &CreateQuestRequest,
     creator_address: &str,
 ) -> Result<String, QuestError> {
-    if let Err(err) = quest.is_valid() {
-        return Err(QuestError::QuestValidation(err.to_string()));
-    }
+    quest.is_valid()?;
 
     match db.get_quest(&id).await {
         Ok(stored_quest) => {

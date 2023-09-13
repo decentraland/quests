@@ -38,7 +38,7 @@ pub fn random_quest() -> CreateQuestRequest {
             }
             let task = Task {
                 id: format!("step-{step_id}-task-{task_id}"),
-                description: "".to_string(),
+                description: format!("step-{step_id}-task-{task_id}-description"),
                 action_items,
             };
             tasks.push(task);

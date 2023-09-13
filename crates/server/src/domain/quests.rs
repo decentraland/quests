@@ -28,6 +28,8 @@ pub enum QuestError {
     QuestNotActivable,
     #[error("Requested Quest was previously updated and replaced with a new Quest")]
     QuestIsNotUpdatable,
+    #[error("Quest is currently deactivated")]
+    QuestIsCurrentlyDeactivated,
 }
 
 pub async fn abandon_quest(

@@ -539,46 +539,46 @@ mod tests {
                 steps: vec![
                     Step {
                         id: "A1".to_string(),
-                        description: "".to_string(),
+                        description: "A1 desc".to_string(),
                         tasks: vec![Task {
                             id: "A1_1".to_string(),
-                            description: "".to_string(),
+                            description: "A1_1".to_string(),
                             action_items: vec![],
                         }],
                     },
                     Step {
                         id: "A2".to_string(),
-                        description: "".to_string(),
+                        description: "A2 desc".to_string(),
                         tasks: vec![Task {
                             id: "A2_1".to_string(),
-                            description: "".to_string(),
+                            description: "A_2 desc".to_string(),
                             action_items: vec![],
                         }],
                     },
                     Step {
                         id: "B".to_string(),
-                        description: "".to_string(),
+                        description: "B Desc".to_string(),
                         tasks: vec![Task {
                             id: "B_1".to_string(),
-                            description: "".to_string(),
+                            description: "B_1 desc".to_string(),
                             action_items: vec![],
                         }],
                     },
                     Step {
                         id: "C".to_string(),
-                        description: "".to_string(),
+                        description: "C desc".to_string(),
                         tasks: vec![Task {
                             id: "C_1".to_string(),
-                            description: "".to_string(),
+                            description: "C_1 desc".to_string(),
                             action_items: vec![],
                         }],
                     },
                     Step {
                         id: "D".to_string(),
-                        description: "".to_string(),
+                        description: "D desc".to_string(),
                         tasks: vec![Task {
                             id: "D_1".to_string(),
-                            description: "".to_string(),
+                            description: "D_1 desc".to_string(),
                             action_items: vec![],
                         }],
                     },

@@ -46,10 +46,19 @@ async fn delete_quest_controller<DB: QuestsDatabase>(
                 .creator_address
                 .eq_ignore_ascii_case(creator_address)
             {
-                db.deactivate_quest(&id)
-                    .await
-                    .map(|_| ())
-                    .map_err(|error| error.into())
+                match db.is_active_quest(&id).await {
+                    Ok(result) => {
+                        if result {
+                            db.deactivate_quest(&id)
+                                .await
+                                .map(|_| ())
+                                .map_err(|error| error.into())
+                        } else {
+                            Err(QuestError::QuestIsCurrentlyDeactivated)
+                        }
+                    }
+                    Err(err) => Err(err.into()),
+                }
             } else {
                 Err(QuestError::NotQuestCreator)
             }

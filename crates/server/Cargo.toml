@@ -28,8 +28,8 @@ futures-util = "0.3.25"
 actix-web-lab = "0.18.9"
 thiserror = "1.0.38"
 env_logger = { workspace = true }
-utoipa = { version = "3.0.3", features = ["actix_extras"] }
-utoipa-swagger-ui = { version = "3.0.2", features = ["actix-web"] }
+utoipa = { workspace = true }
+utoipa-redoc = { version = "0.1", features = ["actix-web"] }
 derive_more = "0.99.17"
 warp = "0.3.3"
 tungstenite = "0.19.0"

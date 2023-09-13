@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dcl-rpc = { workspace = true, features = ["client", "tungstenite"] }
+dcl-rpc = { workspace = true }
 env_logger = { workspace = true }
 log = { workspace = true }
 quests_protocol = { path = "../protocol" }
@@ -19,4 +19,7 @@ clap = { version = "4.2.7", features = ["derive"] }
 tungstenite = "0.18"
 serde_json = "1.0"
 dcl-crypto = { workspace = true }
-dcl-crypto-middleware-rs = { version = "0.2.0", features = ["ws_signed_headers", "signed_fetch"]}
+dcl-crypto-middleware-rs = { version = "0.2.0", features = [
+  "ws_signed_headers",
+  "signed_fetch",
+] }

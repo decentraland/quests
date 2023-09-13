@@ -43,10 +43,10 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
             // should not be possible
             context
-            .server_context
-            .metrics_collector
-            .record_procedure_call(Procedure::StartQuest, Status::NotExistsTransportID);
-            return Err(ServiceError::NotExistsTransportID)
+                .server_context
+                .metrics_collector
+                .record_procedure_call(Procedure::StartQuest, Status::NotExistsTransportID);
+            return Err(ServiceError::NotExistsTransportID);
         };
 
         match start_quest(
@@ -372,9 +372,9 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
             context
-            .server_context
-            .metrics_collector
-            .record_procedure_call(Procedure::SendEvent, Status::NotExistsTransportID);
+                .server_context
+                .metrics_collector
+                .record_procedure_call(Procedure::SendEvent, Status::NotExistsTransportID);
             return Err(ServiceError::NotExistsTransportID);
         };
 
@@ -474,9 +474,9 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
             context
-            .server_context
-            .metrics_collector
-            .record_procedure_call(Procedure::Subscribe, Status::NotExistsTransportID);
+                .server_context
+                .metrics_collector
+                .record_procedure_call(Procedure::Subscribe, Status::NotExistsTransportID);
 
             record_procedure_duration(Status::NotExistsTransportID);
 
@@ -574,9 +574,9 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         let transport_contexts = context.server_context.transport_contexts.read().await;
         let Some(transport_context) = transport_contexts.get(&context.transport_id) else {
             context
-            .server_context
-            .metrics_collector
-            .record_procedure_call(Procedure::GetAllQuests, Status::NotExistsTransportID);
+                .server_context
+                .metrics_collector
+                .record_procedure_call(Procedure::GetAllQuests, Status::NotExistsTransportID);
 
             record_procedure_duration(Status::NotExistsTransportID);
 

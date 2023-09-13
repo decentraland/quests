@@ -7,7 +7,7 @@ use quests_protocol::definitions::Quest;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-#[derive(Deserialize, IntoParams)]
+#[derive(Deserialize, IntoParams, ToSchema)]
 pub struct GetQuestsQuery {
     offset: Option<i64>,
     limit: Option<i64>,

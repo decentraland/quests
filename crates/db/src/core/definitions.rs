@@ -5,6 +5,7 @@ use crate::{date_time_to_unix, parse_uuid_to_str};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgRow, Row};
+use utoipa::ToSchema;
 
 #[async_trait]
 pub trait QuestsDatabase: Send + Sync + CloneDatabase {
@@ -145,14 +146,14 @@ pub struct StoredQuest {
     pub created_at: i64,
 }
 
-#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct QuestRewardHook {
     pub webhook_url: String,
     pub request_body: Option<HashMap<String, String>>,
 }
 
-#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct QuestRewardItem {
     pub name: String,

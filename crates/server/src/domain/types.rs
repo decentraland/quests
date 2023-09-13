@@ -41,7 +41,9 @@ impl ToCreateQuest for Quest {
         } = self;
 
         let Some(definition) = definition else {
-            return Err(QuestError::QuestValidation("Quest definition not present".to_string()));
+            return Err(QuestError::QuestValidation(
+                "Quest definition not present".to_string(),
+            ));
         };
 
         Ok(CreateQuest {

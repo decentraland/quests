@@ -1,0 +1,1 @@
+ALTER TABLE abandoned_quests RENAME TO abandoned_quest_instances;

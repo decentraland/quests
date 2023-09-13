@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    api::routes::api_doc::quests_vec_schema,
-    domain::{quests::QuestError, types::ToQuest},
-};
+use crate::domain::{quests::QuestError, types::ToQuest};
 use actix_web::{get, web, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
 use quests_protocol::definitions::Quest;
@@ -18,7 +15,6 @@ pub struct GetQuestsQuery {
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GetQuestsResponse {
-    #[schema(schema_with = quests_vec_schema)]
     pub quests: Vec<Quest>,
 }
 

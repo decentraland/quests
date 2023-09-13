@@ -11,7 +11,8 @@ serde = { version = "1.0.152", features = ["derive"] }
 thiserror = "1.0.38"
 actix-rt = "2"
 sqlx = { workspace = true }
-uuid = {version = "1.2.2", features = ["v4"]}
+uuid = { version = "1.2.2", features = ["v4"] }
+utoipa = { workspace = true }
 
 [dev-dependencies]
-tokio = {version = "1.24.2", features = ["macros", "test-util"]}
+tokio = { version = "1.24.2", features = ["macros", "test-util"] }

@@ -1,5 +1,4 @@
 use super::is_url;
-use crate::api::routes::api_doc::object_schema;
 use crate::{
     api::routes::{errors::CommonError, quests::get_user_address_from_request},
     domain::{quests::QuestError, types::ToCreateQuest},
@@ -22,10 +21,7 @@ pub struct CreateQuestResponse {
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct QuestReward {
-    #[schema(schema_with = object_schema)]
     pub hook: QuestRewardHook,
-
-    #[schema(schema_with = object_schema)]
     pub items: Vec<QuestRewardItem>,
 }
 
@@ -34,7 +30,6 @@ pub struct QuestReward {
 pub struct CreateQuestRequest {
     pub name: String,
     pub description: String,
-    #[schema(schema_with = object_schema)]
     pub definition: QuestDefinition,
     pub image_url: String,
     pub reward: Option<QuestReward>,

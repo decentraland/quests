@@ -4,8 +4,6 @@ use super::quests;
 use actix_web::web::ServiceConfig;
 use actix_web_lab::__reexports::serde_json;
 use actix_web_lab::__reexports::serde_json::json;
-use utoipa::openapi::Object;
-use utoipa::openapi::ObjectBuilder;
 use utoipa::OpenApi;
 use utoipa_redoc::Redoc;
 use utoipa_redoc::Servable;
@@ -44,7 +42,16 @@ use utoipa_redoc::Servable;
                         quests::get_quest_reward::GetQuestRewardResponse,
                         quests::get_quest_stats::GetQuestStatsResponse,
                         quests::get_quest_updates::GetQuestUpdatesResponse,
-                        creators::get_quests_by_creator_id::GetCreatorQuestsResponse
+                        creators::get_quests_by_creator_id::GetCreatorQuestsResponse,
+                        quests_protocol::definitions::Quest,
+                        quests_protocol::definitions::QuestDefinition,
+                        quests_protocol::definitions::Step,
+                        quests_protocol::definitions::Task,
+                        quests_protocol::definitions::Action,
+                        quests_protocol::definitions::Connection,
+                        quests_db::core::definitions::QuestRewardHook,
+                        quests_db::core::definitions::QuestRewardItem,
+
                 )
         ),
         tags(
@@ -80,16 +87,4 @@ pub(crate) fn services(config: &mut ServiceConfig) {
         })
         .custom_html(html),
     );
-}
-
-pub fn quests_schema() -> Object {
-    ObjectBuilder::new().build()
-}
-
-pub fn quests_vec_schema() -> Object {
-    ObjectBuilder::new().build()
-}
-
-pub fn object_schema() -> Object {
-    ObjectBuilder::new().build()
 }

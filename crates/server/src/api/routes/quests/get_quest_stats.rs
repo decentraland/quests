@@ -24,7 +24,7 @@ pub struct GetQuestStatsResponse {
         ("quest_id" = String, description = "Quest ID")
     ),
     responses(
-        (status = 200, description = "Quest Stats"),
+        (status = 200, description = "Quest Stats", body = GetQuestStatsResponse),
         (status = 400, description = "Bad Request"),
         (status = 401, description = "Unathorized"),
         (status = 403, description = "Forbidden"),

@@ -119,12 +119,24 @@ impl QuestDefinition {
                 return Err(QuestValidationError::NotUniqueIDForStep(step.id.clone()));
             }
 
+            if step.description.is_empty() {
+                return Err(QuestValidationError::StepMissingDescription(
+                    step.id.to_string(),
+                ));
+            }
+
             // All steps tasks (if there) have unique ID
             for task in &step.tasks {
                 if !unique_task_ids.insert(task.id.to_string()) {
                     // Task with same id has been seen
                     return Err(QuestValidationError::NotUniqueIDForStepTask(
                         step.id.clone(),
+                    ));
+                }
+
+                if task.description.is_empty() {
+                    return Err(QuestValidationError::TaskMissingDescription(
+                        task.id.to_string(),
                     ));
                 }
 
@@ -313,6 +325,12 @@ pub enum QuestValidationError {
     /// Action Item parameters should be valid
     #[error("Action Item's parameters are not valid: {0}")]
     ActionItemParametersNotValid(String),
+    /// Step must have a description
+    #[error("Step must have a description: {0}")]
+    StepMissingDescription(String),
+    /// Task must have a description
+    #[error("Task must have a description: {0}")]
+    TaskMissingDescription(String),
 }
 
 impl Connection {

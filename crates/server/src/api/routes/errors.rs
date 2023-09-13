@@ -57,6 +57,7 @@ impl ResponseError for QuestError {
             Self::QuestHasNoReward => StatusCode::NOT_FOUND,
             Self::QuestNotActivable => StatusCode::BAD_REQUEST,
             Self::QuestIsNotUpdatable => StatusCode::BAD_REQUEST,
+            Self::QuestIsCurrentlyDeactivated => StatusCode::BAD_REQUEST,
         }
     }
 

@@ -1,5 +1,7 @@
 use crate::{
-    api::routes::{errors::CommonError, quests::get_user_address_from_request},
+    api::routes::{
+        api_doc::object_schema, errors::CommonError, quests::get_user_address_from_request,
+    },
     domain::quests::QuestError,
 };
 use actix_web::{get, web, HttpRequest, HttpResponse};
@@ -17,8 +19,10 @@ use utoipa::{IntoParams, ToSchema};
 
 #[derive(Serialize, Deserialize, ToSchema, Debug)]
 pub struct GetQuestRewardResponse {
+    #[schema(schema_with = object_schema)]
     pub items: Vec<QuestRewardItem>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(schema_with = object_schema)]
     pub hook: Option<QuestRewardHook>,
 }
 

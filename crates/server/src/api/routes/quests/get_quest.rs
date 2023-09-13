@@ -1,4 +1,7 @@
-use crate::{api::routes::quests::get_user_address_from_request, domain::quests::QuestError};
+use crate::{
+    api::routes::{api_doc::quests_schema, quests::get_user_address_from_request},
+    domain::quests::QuestError,
+};
 
 use actix_web::{get, web, HttpRequest, HttpResponse};
 use quests_db::Database;
@@ -8,6 +11,7 @@ use utoipa::ToSchema;
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestResponse {
+    #[schema(schema_with = quests_schema)]
     pub quest: Quest,
 }
 

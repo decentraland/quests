@@ -172,7 +172,10 @@ impl ClientState {
             } => {
                 let act = timeout(context.timeout, updates.next()).await;
                 let Ok(quest_updates) = act else {
-                    error!("User {} > Timeout while fetching started quest state", &user_address[..4]);
+                    error!(
+                        "User {} > Timeout while fetching started quest state",
+                        &user_address[..4]
+                    );
                     return ClientState::StartQuestRequested { updates, quest_id };
                 };
 
@@ -247,8 +250,15 @@ impl ClientState {
                 debug!("User {} > Fetch next event > Next.", &user_address[..4]);
                 let act = timeout(context.timeout, updates.next()).await;
                 let Ok(quest_update) = act else {
-                    error!("User {} > Timeout while fetching next event!", &user_address[..4]);
-                    return ClientState::FetchQuestUpdate { updates, quest_instance_id, quest_state};
+                    error!(
+                        "User {} > Timeout while fetching next event!",
+                        &user_address[..4]
+                    );
+                    return ClientState::FetchQuestUpdate {
+                        updates,
+                        quest_instance_id,
+                        quest_state,
+                    };
                 };
                 debug!("User {} > Fetch next event > Done.", &user_address[..4]);
 

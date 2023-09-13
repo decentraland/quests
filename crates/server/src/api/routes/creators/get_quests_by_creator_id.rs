@@ -1,5 +1,5 @@
 use crate::{
-    api::routes::quests::get_user_address_from_request,
+    api::routes::{api_doc::quests_vec_schema, quests::get_user_address_from_request},
     domain::{quests::QuestError, types::ToQuest},
 };
 
@@ -17,6 +17,7 @@ pub struct GetQuestsQuery {
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GetCreatorQuestsResponse {
+    #[schema(schema_with = quests_vec_schema)]
     pub quests: Vec<Quest>,
 }
 

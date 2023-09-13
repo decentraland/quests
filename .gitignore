@@ -1,2 +1,3 @@
 **/target
 crates/protocol/quests.proto
+.DS_Store

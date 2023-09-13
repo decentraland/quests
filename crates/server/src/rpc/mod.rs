@@ -94,7 +94,8 @@ pub async fn run_rpc_server(
                     30,
                     Authenticator::new(),
                 )
-                .await else {
+                .await
+                else {
                     debug!("Couldn't authenticate a user, closing connection...");
                     let _ = websocket.close().await;
                     return;

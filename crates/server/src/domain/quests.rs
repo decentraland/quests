@@ -48,7 +48,7 @@ pub async fn abandon_quest(
         return Err(QuestError::QuestAlreadyCompleted);
     }
 
-    _ = db.abandon_quest(quest_instance_id).await?;
+    _ = db.abandon_quest_instance(quest_instance_id).await?;
     Ok(())
 }
 

@@ -340,7 +340,7 @@ impl QuestsDatabase for Database {
         Ok(quest_exists)
     }
 
-    async fn abandon_quest(&self, quest_instance_id: &str) -> DBResult<String> {
+    async fn abandon_quest_instance(&self, quest_instance_id: &str) -> DBResult<String> {
         let id = Uuid::new_v4().to_string();
         let query = sqlx::query(
             "INSERT INTO abandoned_quest_instances (id, quest_instance_id) VALUES ($1, $2)",
@@ -354,7 +354,7 @@ impl QuestsDatabase for Database {
             .map(|_| id)
     }
 
-    async fn complete_quest(&self, quest_instance_id: &str) -> DBResult<String> {
+    async fn complete_quest_instance(&self, quest_instance_id: &str) -> DBResult<String> {
         let id = Uuid::new_v4().to_string();
         let query = sqlx::query(
             "INSERT INTO completed_quest_instances (id, quest_instance_id) VALUES ($1, $2)",
@@ -364,7 +364,7 @@ impl QuestsDatabase for Database {
         query
             .execute(&self.pool)
             .await
-            .map_err(|err| DBError::DeactivateQuestFailed(Box::new(err)))
+            .map_err(|err| DBError::CompleteQuestInstanceFailed(Box::new(err)))
             .map(|_| id)
     }
 
@@ -375,7 +375,7 @@ impl QuestsDatabase for Database {
         .bind(parse_str_to_uuid(quest_instance_id)?)
         .fetch_one(&self.pool)
         .await
-        .map_err(|err| DBError::GetActiveQuestInstanceFailed(Box::new(err)))?;
+        .map_err(|err| DBError::IsCompletedInstanceFailed(Box::new(err)))?;
 
         Ok(quest_instance_exists)
     }

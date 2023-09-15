@@ -57,7 +57,7 @@ async fn get_quest_stats_should_be_200() {
         .append_header(headers[4].clone())
         .to_request();
 
-    db.abandon_quest(&instance_id).await.unwrap();
+    db.abandon_quest_instance(&instance_id).await.unwrap();
 
     let response = call_service(&app, req).await;
 

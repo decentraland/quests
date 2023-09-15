@@ -27,6 +27,8 @@ pub struct GetQuestRewardsParams {
     with_hook: Option<bool>,
 }
 
+/// Get a quest rewards
+/// Returns the quest rewards
 #[utoipa::path(
     params(
         ("quest_id" = String, description = "ID of the Quest")

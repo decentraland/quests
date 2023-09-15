@@ -18,6 +18,9 @@ pub struct GetQuestsResponse {
     pub quests: Vec<Quest>,
 }
 
+/// Get quests.
+///
+/// Quests don't include their definition.
 #[utoipa::path(
     params(
         ("query" = GetQuestsQuery, Query, description = "Offset and limit params")

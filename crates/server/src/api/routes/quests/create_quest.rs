@@ -83,6 +83,9 @@ impl CreateQuestRequest {
     }
 }
 
+/// Create a new quest.
+///
+/// Returns the id of the created quest
 #[utoipa::path(
     request_body = CreateQuestRequest,
     responses(

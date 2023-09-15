@@ -20,6 +20,8 @@ pub struct GetCreatorQuestsResponse {
     pub quests: Vec<Quest>,
 }
 
+/// Get quests by creator id
+/// Returns a list of quests created by the user
 #[utoipa::path(
     params(
         ("user_address" = String, description = "Creator's Ethereum Address")

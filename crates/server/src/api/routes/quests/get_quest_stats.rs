@@ -19,6 +19,7 @@ pub struct GetQuestStatsResponse {
     pub started_in_last_24_hours: usize,
 }
 
+/// Get a quest stats
 #[utoipa::path(
     params(
         ("quest_id" = String, description = "Quest ID")

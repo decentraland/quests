@@ -66,15 +66,14 @@ pub(crate) fn services(config: &mut ServiceConfig) {
 
     let mut api_doc = ApiDoc::openapi();
     let mut api_json = serde_json::to_value(&mut api_doc).unwrap();
-    api_json["info"].as_object_mut().map(|info| {
+    if let Some(info) = api_json["info"].as_object_mut() {
         info.insert(
             "x-logo".to_string(),
             json!({
                 "url": "https://cryptologos.cc/logos/decentraland-mana-logo.png",
             }),
         );
-    });
-    println!("api_json:{}", api_json.to_string());
+    }
 
     config.service(
         Redoc::with_url_and_config("/api/docs", api_json, || {

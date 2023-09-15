@@ -10,6 +10,8 @@ pub struct GetQuestUpdatesResponse {
     pub updates: Vec<String>,
 }
 
+/// Get a quest updates
+/// Returns the IDs of the old quests
 #[utoipa::path(
     params(
         ("quest_id" = String, description = "Quest ID")

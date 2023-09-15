@@ -20,6 +20,9 @@ pub struct UpdateQuestResponse {
     pub quest_id: String,
 }
 
+/// Update a quest.
+///
+/// Returns the ID of the updated quest
 #[utoipa::path(
     request_body = UpdateQuestRequest,
     params(

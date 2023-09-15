@@ -4,6 +4,7 @@ use crate::{api::routes::quests::get_user_address_from_request, domain::quests::
 use actix_web::{delete, web, HttpRequest, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
 
+/// Deactivate a quest
 #[utoipa::path(
     params(
         ("quest_id" = String, description = "ID of the quest to deactivate")

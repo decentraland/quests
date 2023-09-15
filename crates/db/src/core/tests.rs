@@ -108,7 +108,7 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert!(quests_by_creator.get(1).unwrap().active);
 
     // new quest old versions
-    let old_versions = db.get_all_quest_versions(&new_quest_id).await.unwrap();
+    let old_versions = db.get_old_quest_versions(&new_quest_id).await.unwrap();
     assert_eq!(old_versions.len(), 1);
     assert_eq!(old_versions.get(0).unwrap(), &quest_id);
 

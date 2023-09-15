@@ -8,6 +8,7 @@ use crate::core::{
     errors::{DBError, DBResult},
     ops::{Connect, GetConnection, Migrate},
 };
+use futures_util::StreamExt;
 pub use sqlx::Executor;
 use sqlx::{
     pool::PoolConnection,
@@ -637,31 +638,28 @@ impl QuestsDatabase for Database {
         Ok(!quest_exists)
     }
 
-    async fn get_all_quest_versions(&self, quest_id: &str) -> DBResult<Vec<String>> {
-        let quest_old_versions = sqlx::query(
-            "
-            SELECT qu.previous_quest_id FROM quest_updates qu 
-            LEFT JOIN quest_updates qu2 ON qu.previous_quest_id = qu2.quest_id AND qu.quest_id = $1 
-            ORDER BY qu.created_at DESC;
-        ",
-        )
-        .bind(parse_str_to_uuid(quest_id)?)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|err| DBError::GetOldQuestVersionsFailed(Box::new(err)))?;
-
-        let mut old_version_ids = vec![];
-
-        for old_id in quest_old_versions {
-            let id: String = parse_uuid_to_str(
-                old_id
-                    .try_get("previous_quest_id")
-                    .map_err(|err| DBError::RowCorrupted(Box::new(err)))?,
-            );
-            old_version_ids.push(id)
+    async fn get_old_quest_versions(&self, quest_id: &str) -> DBResult<Vec<String>> {
+        #[derive(sqlx::FromRow)]
+        struct QuestUpdate {
+            quest_id: String,
+            previous_quest_id: String,
         }
 
-        Ok(old_version_ids)
+        let mut quest_updates = sqlx::query_as::<_, QuestUpdate>(
+            "SELECT * FROM quest_updates ORDER BY created_at DESC",
+        )
+        .fetch(&self.pool);
+
+        let mut old_quest_versions = vec![];
+        let mut quest_id = quest_id.to_string();
+        while let Some(Ok(quest_update)) = quest_updates.next().await {
+            if quest_update.quest_id == quest_id {
+                old_quest_versions.push(quest_update.previous_quest_id.clone());
+                quest_id = quest_update.previous_quest_id;
+            }
+        }
+
+        Ok(old_quest_versions)
     }
 }
 

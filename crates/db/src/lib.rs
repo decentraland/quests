@@ -639,10 +639,10 @@ impl QuestsDatabase for Database {
     }
 
     async fn get_old_quest_versions(&self, quest_id: &str) -> DBResult<Vec<String>> {
-        #[derive(sqlx::FromRow)]
+        #[derive(sqlx::FromRow, Debug)]
         struct QuestUpdate {
-            quest_id: String,
-            previous_quest_id: String,
+            quest_id: Uuid,
+            previous_quest_id: Uuid,
         }
 
         let mut quest_updates = sqlx::query_as::<_, QuestUpdate>(
@@ -653,9 +653,9 @@ impl QuestsDatabase for Database {
         let mut old_quest_versions = vec![];
         let mut quest_id = quest_id.to_string();
         while let Some(Ok(quest_update)) = quest_updates.next().await {
-            if quest_update.quest_id == quest_id {
-                old_quest_versions.push(quest_update.previous_quest_id.clone());
-                quest_id = quest_update.previous_quest_id;
+            if quest_update.quest_id.to_string() == quest_id {
+                old_quest_versions.push(quest_update.previous_quest_id.to_string());
+                quest_id = quest_update.previous_quest_id.to_string();
             }
         }
 

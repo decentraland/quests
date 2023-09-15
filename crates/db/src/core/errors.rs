@@ -81,6 +81,12 @@ pub enum DBError {
     #[error("Unable to check if a quest can be activated: {0}")]
     CanActivateQuestFailed(BoxDynError),
 
+    #[error("Unable to record a quest instance as completed: {0}")]
+    CompleteQuestInstanceFailed(BoxDynError),
+
+    #[error("Unable to check if a quest instance is completed: {0}")]
+    IsCompletedInstanceFailed(BoxDynError),
+
     #[error("Row has incorrect data: {0}")]
     RowCorrupted(BoxDynError),
 

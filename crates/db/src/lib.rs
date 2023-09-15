@@ -340,12 +340,13 @@ impl QuestsDatabase for Database {
         Ok(quest_exists)
     }
 
-    async fn abandon_quest(&self, quest_instance_id: &str) -> DBResult<String> {
+    async fn abandon_quest_instance(&self, quest_instance_id: &str) -> DBResult<String> {
         let id = Uuid::new_v4().to_string();
-        let query =
-            sqlx::query("INSERT INTO abandoned_quests (id, quest_instance_id) VALUES ($1, $2)")
-                .bind(parse_str_to_uuid(&id)?)
-                .bind(parse_str_to_uuid(quest_instance_id)?);
+        let query = sqlx::query(
+            "INSERT INTO abandoned_quest_instances (id, quest_instance_id) VALUES ($1, $2)",
+        )
+        .bind(parse_str_to_uuid(&id)?)
+        .bind(parse_str_to_uuid(quest_instance_id)?);
         query
             .execute(&self.pool)
             .await
@@ -353,11 +354,37 @@ impl QuestsDatabase for Database {
             .map(|_| id)
     }
 
+    async fn complete_quest_instance(&self, quest_instance_id: &str) -> DBResult<String> {
+        let id = Uuid::new_v4().to_string();
+        let query = sqlx::query(
+            "INSERT INTO completed_quest_instances (id, quest_instance_id) VALUES ($1, $2)",
+        )
+        .bind(parse_str_to_uuid(&id)?)
+        .bind(parse_str_to_uuid(quest_instance_id)?);
+        query
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DBError::CompleteQuestInstanceFailed(Box::new(err)))
+            .map(|_| id)
+    }
+
+    async fn is_completed_instance(&self, quest_instance_id: &str) -> DBResult<bool> {
+        let quest_instance_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM completed_quest_instances WHERE quest_instance_id = $1)",
+        )
+        .bind(parse_str_to_uuid(quest_instance_id)?)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::IsCompletedInstanceFailed(Box::new(err)))?;
+
+        Ok(quest_instance_exists)
+    }
+
     async fn is_active_quest_instance(&self, quest_instance_id: &str) -> DBResult<bool> {
         let quest_instance_exists: bool = sqlx::query_scalar(
             "
                 SELECT EXISTS (SELECT 1 FROM quest_instances
-                WHERE id = $1 AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests))
+                WHERE id = $1 AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quest_instances))
             ",
         )
         .bind(parse_str_to_uuid(quest_instance_id)?)
@@ -376,7 +403,7 @@ impl QuestsDatabase for Database {
         let quest_instance_exists: bool = sqlx::query_scalar(
             "
                 SELECT EXISTS (SELECT 1 FROM quest_instances
-                WHERE user_address = $1 AND quest_id = $2 AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests))
+                WHERE user_address = $1 AND quest_id = $2 AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quest_instances))
             ",
         )
         .bind(user_address)
@@ -426,7 +453,7 @@ impl QuestsDatabase for Database {
         let query_result = sqlx::query(
             "SELECT * FROM quest_instances 
             WHERE user_address = $1 
-            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests)",
+            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quest_instances)",
         )
         .bind(user_address)
         .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
@@ -529,13 +556,13 @@ impl QuestsDatabase for Database {
         let instances = sqlx::query(
             "SELECT *, true as active FROM quest_instances 
             WHERE quest_id = $1 
-            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quests) 
+            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quest_instances) 
 
             UNION 
             
             SELECT *, false as active FROM quest_instances 
             WHERE quest_id = $1 
-            AND id IN (SELECT quest_instance_id as id FROM abandoned_quests)",
+            AND id IN (SELECT quest_instance_id as id FROM abandoned_quest_instances)",
         )
         .bind(uuid)
         .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream

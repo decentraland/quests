@@ -39,7 +39,10 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
         -> DBResult<bool>;
 
     async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String>;
-    async fn abandon_quest(&self, quest_instance_id: &str) -> DBResult<String>;
+    async fn abandon_quest_instance(&self, quest_instance_id: &str) -> DBResult<String>;
+    async fn complete_quest_instance(&self, quest_instance_id: &str) -> DBResult<String>;
+    async fn is_completed_instance(&self, quest_instance_id: &str) -> DBResult<bool>;
+
     async fn get_quest_instance(&self, id: &str) -> DBResult<QuestInstance>;
     async fn is_active_quest_instance(&self, quest_instance_id: &str) -> DBResult<bool>;
     async fn get_active_user_quest_instances(

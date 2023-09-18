@@ -31,7 +31,7 @@ pub async fn get_quest_updates(
 
     let quest_id = quest_id.into_inner();
 
-    match db.get_all_quest_versions(&quest_id).await {
+    match db.get_old_quest_versions(&quest_id).await {
         Ok(ids) => {
             if ids.is_empty() {
                 return HttpResponse::NotFound().finish();

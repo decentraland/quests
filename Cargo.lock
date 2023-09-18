@@ -2620,6 +2620,7 @@ version = "0.1.0"
 dependencies = [
  "actix-rt",
  "async-trait",
+ "futures-util",
  "serde",
  "sqlx",
  "thiserror",

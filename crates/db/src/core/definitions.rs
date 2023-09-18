@@ -76,7 +76,7 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
 
     async fn is_updatable(&self, quest_id: &str) -> DBResult<bool>;
 
-    async fn get_all_quest_versions(&self, quest_id: &str) -> DBResult<Vec<String>>;
+    async fn get_old_quest_versions(&self, quest_id: &str) -> DBResult<Vec<String>>;
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]

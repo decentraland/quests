@@ -29,6 +29,6 @@ jobs:
         uses: decentraland/dcl-deploy-action@main
         with:
           dockerImage: "quay.io/decentraland/quests-server:${{ inputs.tag }}"
-          serviceName: "quests-poc-server"
+          serviceName: "quests-server"
           env: ${{ inputs.deployment-environment }}
           token: ${{ secrets.GITHUB_TOKEN }}

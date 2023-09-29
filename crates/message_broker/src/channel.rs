@@ -63,27 +63,24 @@ impl ChannelSubscriber<bool> for RedisChannelSubscriber {
             let mut on_message_stream = pubsub.on_message();
 
             loop {
-                match on_message_stream.next().await {
-                    Some(message) => {
-                        let payload = message.get_payload::<Vec<u8>>();
-                        match payload {
-                            Ok(payload) => {
-                                debug!("New message received from channel");
-                                let update = NewPublishment::decode(&*payload);
-                                match update {
-                                    Ok(update) => {
-                                        debug!("New publishment parsed {update:?}");
-                                        if !on_update_fn(update).await {
-                                            break;
-                                        }
+                if let Some(message) = on_message_stream.next().await {
+                    let payload = message.get_payload::<Vec<u8>>();
+                    match payload {
+                        Ok(payload) => {
+                            debug!("New message received from channel");
+                            let update = NewPublishment::decode(&*payload);
+                            match update {
+                                Ok(update) => {
+                                    debug!("New publishment parsed {update:?}");
+                                    if !on_update_fn(update).await {
+                                        break;
                                     }
-                                    Err(_) => error!("Couldn't deserialize update"),
                                 }
+                                Err(_) => error!("Couldn't deserialize update"),
                             }
-                            Err(_) => error!("Couldn't retrieve payload"),
                         }
+                        Err(_) => error!("Couldn't retrieve payload"),
                     }
-                    None => debug!("Couldn't read a message from stream"),
                 }
             }
         })

@@ -55,9 +55,9 @@ pub fn get_app_router(
         .app_data(db.clone())
         .app_data(redis.clone())
         .wrap(cors)
-        .wrap(middlewares::metrics())
         .wrap(TracingLogger::default())
-        .wrap(middlewares::metrics_token(&config.wkc_metrics_bearer_token))
+        // .wrap(middlewares::metrics())
+        // .wrap(middlewares::metrics_token(&config.wkc_metrics_bearer_token))
         .wrap(middlewares::dcl_auth_middleware(
             [
                 "POST:/api/quests",

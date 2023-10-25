@@ -29,28 +29,3 @@ impl ToQuest for StoredQuest {
         })
     }
 }
-
-impl ToCreateQuest for Quest {
-    fn to_create_quest(&self) -> Result<CreateQuest, QuestError> {
-        let Quest {
-            name,
-            description,
-            definition,
-            image_url,
-            ..
-        } = self;
-
-        let Some(definition) = definition else {
-            return Err(QuestError::QuestValidation(
-                "Quest definition not present".to_string(),
-            ));
-        };
-
-        Ok(CreateQuest {
-            name,
-            description,
-            image_url,
-            definition: definition.encode_to_vec(),
-        })
-    }
-}

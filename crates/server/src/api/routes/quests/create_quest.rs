@@ -5,7 +5,7 @@ use crate::{
 };
 use actix_web::{post, web, HttpRequest, HttpResponse};
 use quests_db::{
-    core::definitions::{CreateQuest, QuestRewardHook, QuestRewardItem, QuestsDatabase},
+    core::definitions::{CreateQuest, QuestReward, QuestsDatabase},
     Database,
 };
 use quests_protocol::definitions::*;
@@ -16,13 +16,6 @@ use utoipa::ToSchema;
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateQuestResponse {
     pub id: String,
-}
-
-#[derive(Deserialize, Serialize, ToSchema, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct QuestReward {
-    pub hook: QuestRewardHook,
-    pub items: Vec<QuestRewardItem>,
 }
 
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
@@ -83,6 +76,26 @@ impl CreateQuestRequest {
     }
 }
 
+impl ToCreateQuest for CreateQuestRequest {
+    fn to_create_quest(&self) -> Result<CreateQuest, QuestError> {
+        let CreateQuestRequest {
+            name,
+            description,
+            definition,
+            image_url,
+            reward,
+        } = self;
+
+        Ok(CreateQuest {
+            name,
+            description,
+            image_url,
+            definition: definition.encode_to_vec(),
+            reward: reward.to_owned(),
+        })
+    }
+}
+
 /// Create a new quest.
 ///
 /// Returns the id of the created quest
@@ -122,40 +135,13 @@ async fn create_quest_controller<DB: QuestsDatabase>(
     create_quest_req.is_valid()?;
 
     let quest = create_quest_req.to_create_quest()?;
-    let id = if let Some(QuestReward { hook, items }) = &create_quest_req.reward {
-        db.create_quest_with_reward(&quest, creator_address, hook, items)
-            .await
-            .map_err(|e| {
-                log::error!("Failed to create quest with reward: {:?}", e);
-                QuestError::CommonError(CommonError::Unknown)
-            })?
-    } else {
-        db.create_quest(&quest, creator_address)
-            .await
-            .map_err(|e| {
-                log::error!("Failed to create quest: {:?}", e);
-                QuestError::CommonError(CommonError::Unknown)
-            })?
-    };
+    let id = db
+        .create_quest(&quest, creator_address)
+        .await
+        .map_err(|e| {
+            log::error!("Failed to create a quest: {:?}", e);
+            QuestError::CommonError(CommonError::Unknown)
+        })?;
 
     Ok(id)
-}
-
-impl ToCreateQuest for CreateQuestRequest {
-    fn to_create_quest(&self) -> Result<CreateQuest, QuestError> {
-        let CreateQuestRequest {
-            name,
-            description,
-            definition,
-            image_url,
-            ..
-        } = self;
-
-        Ok(CreateQuest {
-            name,
-            description,
-            image_url,
-            definition: definition.encode_to_vec(),
-        })
-    }
 }

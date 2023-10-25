@@ -194,35 +194,31 @@ impl QuestsDatabase for Database {
     }
 
     async fn create_quest(&self, quest: &CreateQuest, creator_address: &str) -> DBResult<String> {
-        self.do_create_quest(quest, creator_address, None).await
-    }
+        let quest_id = if let Some(reward) = &quest.reward {
+            let mut tx = self
+                .pool
+                .begin()
+                .await
+                .map_err(|err| DBError::TransactionBeginFailed(Box::new(err)))?;
 
-    async fn create_quest_with_reward(
-        &self,
-        quest: &CreateQuest,
-        creator_address: &str,
-        hook: &QuestRewardHook,
-        items: &[QuestRewardItem],
-    ) -> DBResult<String> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|err| DBError::TransactionBeginFailed(Box::new(err)))?;
+            let quest_id = self
+                .do_create_quest(quest, creator_address, Some(&mut tx))
+                .await?;
 
-        let quest_id = self
-            .do_create_quest(quest, creator_address, Some(&mut tx))
-            .await?;
+            self.do_add_quest_reward_hook(&quest_id, &reward.hook, Some(&mut tx))
+                .await?;
 
-        self.do_add_quest_reward_hook(&quest_id, hook, Some(&mut tx))
-            .await?;
+            self.do_add_quest_reward_items(&quest_id, &reward.items, Some(&mut tx))
+                .await?;
 
-        self.do_add_quest_reward_items(&quest_id, items, Some(&mut tx))
-            .await?;
+            tx.commit()
+                .await
+                .map_err(|err| DBError::TransactionFailed(Box::new(err)))?;
 
-        tx.commit()
-            .await
-            .map_err(|err| DBError::TransactionFailed(Box::new(err)))?;
+            quest_id
+        } else {
+            self.do_create_quest(quest, creator_address, None).await?
+        };
 
         Ok(quest_id)
     }
@@ -245,22 +241,11 @@ impl QuestsDatabase for Database {
         self.do_deactivate_quest(previous_quest_id, Some(&mut transaction))
             .await?;
 
-        match self
-            .do_get_quest_reward_hook(previous_quest_id, Some(&mut transaction))
-            .await
-        {
-            Ok(hook) => {
-                let reward_items = self
-                    .do_get_quest_reward_items(previous_quest_id, Some(&mut transaction))
-                    .await?;
-
-                self.do_add_quest_reward_hook(&quest_id, &hook, Some(&mut transaction))
-                    .await?;
-                self.do_add_quest_reward_items(&quest_id, &reward_items, Some(&mut transaction))
-                    .await?;
-            }
-            Err(DBError::RowNotFound) => {} // ignore because reward is not required for a quest
-            Err(err) => return Err(err),
+        if let Some(reward) = &quest.reward {
+            self.do_add_quest_reward_hook(&quest_id, &reward.hook, Some(&mut transaction))
+                .await?;
+            self.do_add_quest_reward_items(&quest_id, &reward.items, Some(&mut transaction))
+                .await?;
         }
 
         let id = Uuid::new_v4().to_string();

@@ -27,6 +27,7 @@ async fn get_quest_with_defintiions_should_be_200() {
             .as_ref()
             .unwrap()
             .encode_to_vec(),
+        reward: None,
     };
 
     let id = db
@@ -96,6 +97,7 @@ async fn get_quest_without_defintiions_should_be_200() {
             .as_ref()
             .unwrap()
             .encode_to_vec(),
+        reward: None,
     };
 
     let id = db

@@ -31,6 +31,7 @@ async fn deactivate_quest_should_be_200() {
         description: &quest_definition.description,
         image_url: &quest_definition.image_url,
         definition: vec![],
+        reward: None,
     };
 
     let id = db
@@ -121,6 +122,7 @@ async fn deactivate_quest_should_be_403() {
         description: &quest_definition.description,
         image_url: &quest_definition.image_url,
         definition: vec![],
+        reward: None,
     };
 
     let id = db.create_quest(&create_quest, "0xA").await.unwrap();

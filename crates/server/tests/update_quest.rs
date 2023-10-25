@@ -24,6 +24,7 @@ async fn update_quest_should_be_200() {
         description: &quest.description,
         image_url: &quest.image_url,
         definition: quest.definition.as_ref().unwrap().encode_to_vec(),
+        reward: None,
     };
 
     let id = db
@@ -346,6 +347,7 @@ async fn update_quest_should_be_403() {
         description: &quest.description,
         image_url: &quest.image_url,
         definition: quest.definition.as_ref().unwrap().encode_to_vec(),
+        reward: None,
     };
 
     let id = db.create_quest(&create_quest, "0xA").await.unwrap();

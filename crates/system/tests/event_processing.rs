@@ -85,6 +85,7 @@ async fn can_process_events() {
             .as_ref()
             .unwrap()
             .encode_to_vec(),
+        reward: None,
     };
 
     let result = db.create_quest(&create_quest, "0xA").await;
@@ -183,6 +184,7 @@ async fn should_call_rewards_hook_when_user_completes_a_quest() {
             .as_ref()
             .unwrap()
             .encode_to_vec(),
+        reward: None,
     };
 
     let quest_id = db.create_quest(&create_quest, "0xA").await.unwrap();

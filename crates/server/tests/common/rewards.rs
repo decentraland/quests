@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use quests_db::core::definitions::{QuestRewardHook, QuestRewardItem};
-use quests_server::api::routes::quests::QuestReward;
+use quests_db::core::definitions::{QuestReward, QuestRewardHook, QuestRewardItem};
 
 fn create_reward_hook() -> QuestRewardHook {
     let mut request_body = HashMap::new();

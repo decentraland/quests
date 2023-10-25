@@ -34,6 +34,7 @@ async fn get_quest_rewards_should_be_200() {
                 description: &description,
                 definition: definition.unwrap().encode_to_vec(),
                 image_url: "",
+                reward: None,
             },
             "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1bf5", // identity address
         )
@@ -85,6 +86,7 @@ async fn quest_has_no_rewards() {
                 description: &description,
                 definition: definition.unwrap().encode_to_vec(),
                 image_url: "",
+                reward: None,
             },
             "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1bf5", // identity address
         )

@@ -5,14 +5,14 @@ use actix_web_lab::__reexports::serde_json;
 use common::*;
 use quests_db::{
     core::{
-        definitions::{QuestRewardHook, QuestRewardItem, QuestsDatabase},
+        definitions::{QuestReward, QuestRewardHook, QuestRewardItem, QuestsDatabase},
         errors::DBError,
     },
     create_quests_db_component,
 };
 use quests_protocol::definitions::*;
 use quests_server::api::routes::{
-    quests::{CreateQuestRequest, CreateQuestResponse, QuestReward},
+    quests::{CreateQuestRequest, CreateQuestResponse},
     ErrorResponse,
 };
 use std::collections::HashMap;

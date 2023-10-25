@@ -1,6 +1,6 @@
 use super::definitions::{AddEvent, CreateQuest, QuestsDatabase};
 use crate::core::{
-    definitions::{QuestRewardHook, QuestRewardItem},
+    definitions::{QuestReward, QuestRewardHook, QuestRewardItem},
     errors::DBError,
 };
 use std::collections::HashMap;
@@ -68,6 +68,7 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         description: quest.description,
         definition: quest.definition.clone(),
         image_url: quest.image_url,
+        reward: None,
     };
 
     // updatable checks
@@ -91,6 +92,7 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         description: quest.description,
         definition: quest.definition.clone(),
         image_url: quest.image_url,
+        reward: None,
     };
     let deactivated_quest = db
         .create_quest(&create_deactivated_quest, "0xA")
@@ -197,11 +199,11 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert_eq!(active_quests.len(), 1);
 
     // create quest with TX
-    let items = &[QuestRewardItem {
+    let items = vec![QuestRewardItem {
         name: "SunGlasses".to_string(),
         image_link: "https://github.com/decentraland".to_string(),
     }];
-    let hook = &QuestRewardHook {
+    let hook = QuestRewardHook {
         webhook_url: "https://rewards.webhook.com/{quest_id}".to_string(),
         request_body: Some(HashMap::from([(
             "beneficiary".to_owned(),
@@ -209,7 +211,16 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         )])),
     };
     let quest_w_reward_id = db
-        .create_quest_with_reward(&quest, "0xB", hook, items)
+        .create_quest(
+            &CreateQuest {
+                reward: Some(QuestReward {
+                    hook: hook.clone(),
+                    items: items.clone(),
+                }),
+                ..quest
+            },
+            "0xB",
+        )
         .await
         .unwrap();
     let quest_w_reward = db.get_quest(&quest_w_reward_id).await.unwrap();

@@ -33,7 +33,6 @@ use utoipa_redoc::Servable;
                 schemas(
                         quests::create_quest::CreateQuestRequest,
                         quests::create_quest::CreateQuestResponse,
-                        quests::create_quest::QuestReward,
                         quests::get_quest::GetQuestResponse,
                         quests::get_quests::GetQuestsQuery,
                         quests::get_quests::GetQuestsResponse,
@@ -49,8 +48,7 @@ use utoipa_redoc::Servable;
                         quests_protocol::definitions::Task,
                         quests_protocol::definitions::Action,
                         quests_protocol::definitions::Connection,
-                        quests_db::core::definitions::QuestRewardHook,
-                        quests_db::core::definitions::QuestRewardItem,
+                        quests_db::core::definitions::QuestReward,
 
                 )
         ),

@@ -12,13 +12,6 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn ping(&self) -> bool;
 
     async fn create_quest(&self, quest: &CreateQuest, creator_address: &str) -> DBResult<String>;
-    async fn create_quest_with_reward(
-        &self,
-        quest: &CreateQuest,
-        creator_address: &str,
-        hook: &QuestRewardHook,
-        items: &[QuestRewardItem],
-    ) -> DBResult<String>;
     async fn update_quest(
         &self,
         previous_quest_id: &str,
@@ -135,6 +128,7 @@ pub struct CreateQuest<'a> {
     pub description: &'a str,
     pub image_url: &'a str,
     pub definition: Vec<u8>,
+    pub reward: Option<QuestReward>,
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
@@ -147,6 +141,12 @@ pub struct StoredQuest {
     pub image_url: String,
     pub active: bool,
     pub created_at: i64,
+}
+
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug, ToSchema)]
+pub struct QuestReward {
+    pub hook: QuestRewardHook,
+    pub items: Vec<QuestRewardItem>,
 }
 
 #[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug, ToSchema)]

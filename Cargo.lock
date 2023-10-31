@@ -273,18 +273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix-web-prom"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9df3127d20a5d01c9fc9aceb969a38d31a6767e1b48a54d55a8f56c769a84923"
-dependencies = [
- "actix-web",
- "futures-core",
- "pin-project-lite",
- "prometheus",
-]
-
-[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -878,6 +866,17 @@ dependencies = [
  "log",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "dcl-http-prom-metrics"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83271526f6ec17498f8bc85c256913357bc78f8050dd847422d9e90cb9f619af"
+dependencies = [
+ "actix-web",
+ "actix-web-lab",
+ "prometheus",
 ]
 
 [[package]]
@@ -2667,11 +2666,11 @@ dependencies = [
  "actix-cors",
  "actix-web",
  "actix-web-lab",
- "actix-web-prom",
  "async-trait",
  "config",
  "dcl-crypto",
  "dcl-crypto-middleware-rs",
+ "dcl-http-prom-metrics",
  "dcl-rpc",
  "derive_more",
  "env_logger",

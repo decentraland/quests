@@ -9,6 +9,7 @@ use actix_web::web::Data;
 use actix_web::App;
 use actix_web_lab::__reexports::serde_json;
 use dcl_crypto::Identity;
+use dcl_http_prom_metrics::HttpMetricsCollectorBuilder;
 use quests_db::core::ops::{Connect, GetConnection, Migrate};
 use quests_db::{create_quests_db_component, DatabaseOptions, Executor};
 use quests_message_broker::messages_queue::RedisMessagesQueue;
@@ -49,6 +50,7 @@ pub async fn build_app(
         &Data::new(config.clone()),
         &Data::new(db),
         &Data::new(events_queue),
+        &Data::new(HttpMetricsCollectorBuilder::default().build()),
     )
 }
 

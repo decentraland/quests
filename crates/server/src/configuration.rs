@@ -34,7 +34,7 @@ impl Config {
             .set_default("http_server_port", 3000)? // It's empty for local development
             .set_default("ws_server_port", 3001)? // default for local development
             .set_default("env", "dev")?
-            .set_default("wkc_metrics_bearer_token", "")?
+            .set_default("wkc_metrics_bearer_token", "DEV")?
             .set_default(
                 "database_url",
                 "postgres://postgres:postgres@localhost:5432/quests_db",

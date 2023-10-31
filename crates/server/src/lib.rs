@@ -6,6 +6,7 @@ pub mod rpc;
 use std::sync::Arc;
 
 use api::middlewares::initialize_telemetry;
+use dcl_http_prom_metrics::HttpMetricsCollectorBuilder;
 use env_logger::init as initialize_logger;
 use quests_db::create_quests_db_component;
 use quests_message_broker::{
@@ -44,6 +45,8 @@ pub async fn run_app() {
     ));
     let quests_channel_subscriber = RedisChannelSubscriber::new(redis.clone());
 
+    let http_metrics_collector = Arc::new(HttpMetricsCollectorBuilder::default().build());
+
     let (warp_websocket_server, rpc_server) = rpc::run_rpc_server((
         config.clone(),
         database.clone(),
@@ -59,8 +62,13 @@ pub async fn run_app() {
         quests_channel_publisher.clone(),
     );
 
-    let actix_rest_api_server =
-        api::run_server(config.into(), database.into(), events_queue.into()).await;
+    let actix_rest_api_server = api::run_server(
+        config.into(),
+        database.into(),
+        events_queue.into(),
+        http_metrics_collector.into(),
+    )
+    .await;
 
     select! {
         _ = tokio::signal::ctrl_c() => {

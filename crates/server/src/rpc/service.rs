@@ -86,7 +86,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                             .await;
                     }
                     Err(err) => {
-                        log::error!("QuestServiceImplementation > StartQuest Error > Calculating state > {err:?}");
+                        error!("QuestServiceImplementation > StartQuest Error > Calculating state > {err:?}");
                     }
                 }
 
@@ -110,7 +110,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                 Ok(response)
             }
             Err(err) => {
-                log::error!("QuestsServiceImplementation > StartQuest Error > {err:?}");
+                error!("QuestsServiceImplementation > StartQuest Error > QuestID: {quest_id} > {err:?}");
                 match err {
                     QuestError::NotFoundOrInactive => {
                         context
@@ -255,94 +255,97 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
 
                     Ok(response)
                 }
-                Err(err) => match err {
-                    QuestError::NotInstanceOwner => {
-                        context
-                            .server_context
-                            .metrics_collector
-                            .record_procedure_call(Procedure::AbortQuest, Status::NotAuth);
+                Err(err) => {
+                    error!("QuestsServiceImplementation > AbortQuest Error > InstanceID: {:?} > {err:?}", request.quest_instance_id);
+                    match err {
+                        QuestError::NotInstanceOwner => {
+                            context
+                                .server_context
+                                .metrics_collector
+                                .record_procedure_call(Procedure::AbortQuest, Status::NotAuth);
 
-                        record_procedure_duration(Status::NotAuth);
+                            record_procedure_duration(Status::NotAuth);
 
-                        let response = AbortQuestResponse::not_owner();
+                            let response = AbortQuestResponse::not_owner();
 
-                        context
-                            .server_context
-                            .metrics_collector
-                            .record_out_procedure_call_size(
-                                Procedure::AbortQuest,
-                                Status::NotAuth,
-                                response.encoded_len(),
-                            );
+                            context
+                                .server_context
+                                .metrics_collector
+                                .record_out_procedure_call_size(
+                                    Procedure::AbortQuest,
+                                    Status::NotAuth,
+                                    response.encoded_len(),
+                                );
 
-                        Ok(response)
+                            Ok(response)
+                        }
+                        QuestError::CommonError(CommonError::NotFound) => {
+                            context
+                                .server_context
+                                .metrics_collector
+                                .record_procedure_call(Procedure::AbortQuest, Status::NotFound);
+
+                            record_procedure_duration(Status::NotFound);
+
+                            let response = AbortQuestResponse::not_found_quest_instance();
+
+                            context
+                                .server_context
+                                .metrics_collector
+                                .record_out_procedure_call_size(
+                                    Procedure::AbortQuest,
+                                    Status::NotFound,
+                                    response.encoded_len(),
+                                );
+
+                            Ok(response)
+                        }
+                        QuestError::CommonError(CommonError::NotUUID) => {
+                            context
+                                .server_context
+                                .metrics_collector
+                                .record_procedure_call(Procedure::AbortQuest, Status::NotUUID);
+
+                            record_procedure_duration(Status::NotUUID);
+
+                            let response = AbortQuestResponse::not_uuid_error();
+
+                            context
+                                .server_context
+                                .metrics_collector
+                                .record_out_procedure_call_size(
+                                    Procedure::AbortQuest,
+                                    Status::NotUUID,
+                                    response.encoded_len(),
+                                );
+
+                            Ok(response)
+                        }
+                        _ => {
+                            context
+                                .server_context
+                                .metrics_collector
+                                .record_procedure_call(
+                                    Procedure::AbortQuest,
+                                    Status::InternalServerError,
+                                );
+                            record_procedure_duration(Status::InternalServerError);
+
+                            let response = AbortQuestResponse::internal_server_error();
+
+                            context
+                                .server_context
+                                .metrics_collector
+                                .record_out_procedure_call_size(
+                                    Procedure::AbortQuest,
+                                    Status::InternalServerError,
+                                    response.encoded_len(),
+                                );
+
+                            Ok(response)
+                        }
                     }
-                    QuestError::CommonError(CommonError::NotFound) => {
-                        context
-                            .server_context
-                            .metrics_collector
-                            .record_procedure_call(Procedure::AbortQuest, Status::NotFound);
-
-                        record_procedure_duration(Status::NotFound);
-
-                        let response = AbortQuestResponse::not_found_quest_instance();
-
-                        context
-                            .server_context
-                            .metrics_collector
-                            .record_out_procedure_call_size(
-                                Procedure::AbortQuest,
-                                Status::NotFound,
-                                response.encoded_len(),
-                            );
-
-                        Ok(response)
-                    }
-                    QuestError::CommonError(CommonError::NotUUID) => {
-                        context
-                            .server_context
-                            .metrics_collector
-                            .record_procedure_call(Procedure::AbortQuest, Status::NotUUID);
-
-                        record_procedure_duration(Status::NotUUID);
-
-                        let response = AbortQuestResponse::not_uuid_error();
-
-                        context
-                            .server_context
-                            .metrics_collector
-                            .record_out_procedure_call_size(
-                                Procedure::AbortQuest,
-                                Status::NotUUID,
-                                response.encoded_len(),
-                            );
-
-                        Ok(response)
-                    }
-                    _ => {
-                        context
-                            .server_context
-                            .metrics_collector
-                            .record_procedure_call(
-                                Procedure::AbortQuest,
-                                Status::InternalServerError,
-                            );
-                        record_procedure_duration(Status::InternalServerError);
-
-                        let response = AbortQuestResponse::internal_server_error();
-
-                        context
-                            .server_context
-                            .metrics_collector
-                            .record_out_procedure_call_size(
-                                Procedure::AbortQuest,
-                                Status::InternalServerError,
-                                response.encoded_len(),
-                            );
-
-                        Ok(response)
-                    }
-                },
+                }
             }
         } else {
             context
@@ -410,7 +413,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                 Ok(response)
             }
             Err(error) => {
-                log::error!("QuestsServiceImplementation > SendEvent Error > {error:?}");
+                error!("QuestsServiceImplementation > SendEvent Error > {error:?}");
                 match error {
                     AddEventError::NoAction => {
                         context
@@ -538,7 +541,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
 
         if let Err(err) = generator_yielder.r#yield(accepted_response).await {
             // Would be impossible to happen, an "unwrap()" should be safe here
-            log::error!("QuestsServiceImplementation > Subscribe Error > Generator Error before returning it > {err:?}");
+            error!("QuestsServiceImplementation > Subscribe Error > Generator Error before returning it > {err:?}");
             return Err(ServiceError::InternalError);
         }
 
@@ -620,7 +623,8 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
 
                 Ok(response)
             }
-            Err(_) => {
+            Err(err) => {
+                error!("QuestsServiceImplementation > GetAllQuests > get_all_quest_states_by_user_address > {err:?}");
                 context
                     .server_context
                     .metrics_collector

@@ -14,7 +14,7 @@ use sqlx::{
     pool::PoolConnection,
     postgres::{PgConnectOptions, PgPoolOptions},
     types::{chrono::NaiveDateTime, Json},
-    Error, PgPool, Postgres, QueryBuilder, Row, Transaction,
+    ConnectOptions, Error, PgPool, Postgres, QueryBuilder, Row, Transaction,
 };
 use std::{collections::HashMap, str::FromStr};
 use uuid::Uuid;
@@ -38,7 +38,10 @@ impl Connect for DatabaseOptions {
     type Pool = Database;
 
     async fn connect(self) -> DBResult<Self::Pool> {
-        let pg_options = PgConnectOptions::from_str(&self.url).unwrap();
+        let pg_options = PgConnectOptions::from_str(&self.url)
+            .unwrap()
+            .disable_statement_logging()
+            .clone();
         let pool = self
             .pool_options
             .connect_with(pg_options)

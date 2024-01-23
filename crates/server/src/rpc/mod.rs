@@ -12,7 +12,7 @@ use dcl_rpc::{
     transports::web_sockets::{warp::WarpWebSocket, Message, WebSocket, WebSocketTransport},
 };
 use futures_util::lock::Mutex;
-use log::{debug, error};
+use log::{debug, error, info};
 use quests_db::Database;
 use quests_message_broker::{
     channel::{RedisChannelPublisher, RedisChannelSubscriber},
@@ -191,6 +191,7 @@ pub async fn run_rpc_server(
     });
 
     let http_server_handle = tokio::spawn(async move {
+        info!("Quests WS Server running at: {:?}", ws_server_address);
         warp::serve(routes).run(ws_server_address).await;
     });
 

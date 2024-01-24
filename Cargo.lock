@@ -870,9 +870,9 @@ dependencies = [
 
 [[package]]
 name = "dcl-http-prom-metrics"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83271526f6ec17498f8bc85c256913357bc78f8050dd847422d9e90cb9f619af"
+checksum = "7278e7027f169b431d48c7d8b25f08483b7f37553cbb83075107b5d66bec5128"
 dependencies = [
  "actix-web",
  "actix-web-lab",

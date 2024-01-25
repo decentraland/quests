@@ -125,7 +125,7 @@ pub async fn run_rpc_server(
     let metrics_route = warp::get()
         .and(warp::path("metrics"))
         .and(warp::path::end())
-        .and(warp::header::value("authorization"))
+        .and(warp::header::value("Authorization"))
         .and_then(move |header_value: HeaderValue| {
             let expected_token = metrics_token.clone();
             validate_bearer_token(header_value, expected_token)

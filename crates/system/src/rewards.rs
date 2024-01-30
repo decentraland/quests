@@ -18,14 +18,14 @@ pub async fn give_rewards_to_user(db: Arc<Database>, quest_id: &str, user_addres
             {
                 Ok(assigned) => {
                     if assigned {
-                        log::debug!("Processing event > Quest instance > Reward assigned");
+                        log::info!("Processing event > Quest instance > Reward assigned > Quest ID: {quest_id} / User: {user_address}");
                     } else {
-                        log::debug!("Processing event > Quest instance > Reward was not assigned")
+                        log::info!("Processing event > Quest instance > Reward assigned > Quest ID: {quest_id} / User: {user_address}");
                     }
                 }
                 Err(error) => {
                     log::error!(
-                        "Processing event > Quest instance > Failed to assign reward: {error:?}"
+                        "Processing event > Quest instance > Failed to assign reward: {error:?} > Quest ID: {quest_id} / User: {user_address}"
                     );
                 }
             }

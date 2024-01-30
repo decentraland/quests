@@ -13,20 +13,17 @@ fn validate_token(bearer_token: String, request: &ServiceRequest) -> Result<(), 
             .headers()
             .get("Authorization")
             .map(|token| token.to_str());
+
         if bearer_token.is_empty() {
             log::error!("missing wkc_metrics_bearer_token in configuration");
             return Err(ErrorInternalServerError(""));
         }
 
         match token {
-            Some(Ok(token)) if token.len() > 7 => {
-                let mut parts = token.splitn(2, ' ');
-                match parts.next() {
-                    Some(scheme) if scheme == "Bearer" => {}
-                    _ => return Err(ErrorUnauthorized("Wrong schema")),
-                }
-                match parts.next() {
-                    Some(token) if token == bearer_token => {}
+            Some(Ok(token)) if token.starts_with("Bearer") => {
+                let parts = token.splitn(2, ' ').collect::<Vec<&str>>();
+                match parts.get(1) {
+                    Some(token) if *token == bearer_token => {}
                     _ => return Err(ErrorUnauthorized("Invalid token")),
                 }
             }

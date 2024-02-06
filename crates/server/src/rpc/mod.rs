@@ -145,7 +145,6 @@ pub async fn run_rpc_server(
         .recover(handle_rejection);
 
     rpc_server.set_module_registrator_handler(|port| {
-        // Registers service for every port
         QuestsServiceRegistration::register_service(port, QuestsServiceImplementation {})
     });
 

@@ -37,11 +37,11 @@ jobs:
         uses: arduino/setup-protoc@v1
       - uses: actions/checkout@v2
       - run: rustup toolchain install 1.72.0 --profile minimal
-      - uses: Swatinem/rust-cache@v2
-        with:
-          cache-on-failure: true
-          shared-key: main
-          key: build
+      # - uses: Swatinem/rust-cache@v2
+      #   with:
+      #     cache-on-failure: false
+      #     shared-key: main
+      #     key: build
       - name: Run tests 
         run: cargo test --verbose
         env:

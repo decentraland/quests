@@ -2,7 +2,7 @@ use super::creators;
 use super::health;
 use super::quests;
 use actix_web::web::ServiceConfig;
-use actix_web_lab::__reexports::serde_json;
+use actix_web_lab::__reexports::serde_json::{json, to_value};
 use utoipa::OpenApi;
 use utoipa_redoc::Redoc;
 use utoipa_redoc::Servable;
@@ -63,11 +63,11 @@ pub(crate) fn services(config: &mut ServiceConfig) {
     let html = include_str!("../../../docs/index.html");
 
     let mut api_doc = ApiDoc::openapi();
-    let mut api_json = serde_json::to_value(&mut api_doc).unwrap();
+    let mut api_json = to_value(&mut api_doc).unwrap();
     if let Some(info) = api_json["info"].as_object_mut() {
         info.insert(
             "x-logo".to_string(),
-            serde_json::json!({
+            json!({
                 "url": "https://cryptologos.cc/logos/decentraland-mana-logo.png",
             }),
         );
@@ -75,7 +75,7 @@ pub(crate) fn services(config: &mut ServiceConfig) {
 
     config.service(
         Redoc::with_url_and_config("/api/docs", api_json, || {
-            serde_json::json!(
+            json!(
                 {
                     "sideNavStyle": "path-only",
                     "theme": { "colors": { "primary": { "main": "#32329f"}}}

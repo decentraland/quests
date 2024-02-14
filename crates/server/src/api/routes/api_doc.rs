@@ -2,8 +2,7 @@ use super::creators;
 use super::health;
 use super::quests;
 use actix_web::web::ServiceConfig;
-use actix_web_lab::__reexports::serde_json;
-use actix_web_lab::__reexports::serde_json::json;
+use actix_web_lab::__reexports::serde_json::{json, to_value};
 use utoipa::OpenApi;
 use utoipa_redoc::Redoc;
 use utoipa_redoc::Servable;
@@ -49,7 +48,8 @@ use utoipa_redoc::Servable;
                         quests_protocol::definitions::Action,
                         quests_protocol::definitions::Connection,
                         quests_db::core::definitions::QuestReward,
-
+                        quests_db::core::definitions::QuestRewardHook,
+                        quests_db::core::definitions::QuestRewardItem,
                 )
         ),
         tags(
@@ -63,7 +63,7 @@ pub(crate) fn services(config: &mut ServiceConfig) {
     let html = include_str!("../../../docs/index.html");
 
     let mut api_doc = ApiDoc::openapi();
-    let mut api_json = serde_json::to_value(&mut api_doc).unwrap();
+    let mut api_json = to_value(&mut api_doc).unwrap();
     if let Some(info) = api_json["info"].as_object_mut() {
         info.insert(
             "x-logo".to_string(),

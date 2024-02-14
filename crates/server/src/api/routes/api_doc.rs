@@ -3,7 +3,6 @@ use super::health;
 use super::quests;
 use actix_web::web::ServiceConfig;
 use actix_web_lab::__reexports::serde_json;
-use actix_web_lab::__reexports::serde_json::json;
 use utoipa::OpenApi;
 use utoipa_redoc::Redoc;
 use utoipa_redoc::Servable;
@@ -49,7 +48,8 @@ use utoipa_redoc::Servable;
                         quests_protocol::definitions::Action,
                         quests_protocol::definitions::Connection,
                         quests_db::core::definitions::QuestReward,
-
+                        quests_db::core::definitions::QuestRewardHook,
+                        quests_db::core::definitions::QuestRewardItem,
                 )
         ),
         tags(
@@ -67,7 +67,7 @@ pub(crate) fn services(config: &mut ServiceConfig) {
     if let Some(info) = api_json["info"].as_object_mut() {
         info.insert(
             "x-logo".to_string(),
-            json!({
+            serde_json::json!({
                 "url": "https://cryptologos.cc/logos/decentraland-mana-logo.png",
             }),
         );
@@ -75,7 +75,7 @@ pub(crate) fn services(config: &mut ServiceConfig) {
 
     config.service(
         Redoc::with_url_and_config("/api/docs", api_json, || {
-            json!(
+            serde_json::json!(
                 {
                     "sideNavStyle": "path-only",
                     "theme": { "colors": { "primary": { "main": "#32329f"}}}

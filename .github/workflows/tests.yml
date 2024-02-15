@@ -47,6 +47,7 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/quests_db
           REDIS_URL: localhost:6379
+<<<<<<< Updated upstream
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -69,3 +70,5 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             PROJECT=quests_server
+=======
+>>>>>>> Stashed changes

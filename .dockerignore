@@ -3,3 +3,6 @@
 *.dockerfile
 README.md
 .git
+target
+docs
+.github

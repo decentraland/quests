@@ -1,5 +1,5 @@
-FROM rust:1.76.0 as chef
-RUN cargo install cargo-chef
+FROM rust:1.71.0 as chef
+RUN cargo install --version 0.1.62 cargo-chef --locked
 
 WORKDIR /app
 
@@ -20,5 +20,4 @@ RUN cargo build --release -p $PROJECT
 FROM gcr.io/distroless/cc-debian11 as runtime
 ARG PROJECT
 COPY --from=builder /app/target/release/${PROJECT} /usr/local/bin/quests-binary
-# COPY --from=builder /app/configuration.toml /usr/local/bin
 ENTRYPOINT [ "quests-binary" ]

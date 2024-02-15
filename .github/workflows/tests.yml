@@ -58,7 +58,7 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
       - name: Debug
-        uses: ls -la
+        run: ls -la
       - name: Build and push (quests server)
         uses: docker/build-push-action@v3
         with:

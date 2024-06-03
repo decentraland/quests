@@ -1,5 +1,4 @@
 pub mod quest_samples;
-pub mod rewards;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -125,7 +124,7 @@ pub fn get_signed_headers(
     vec![
         (
             "X-Identity-Auth-Chain-0".to_string(),
-            serde_json::to_string(authchain.get(0).unwrap()).unwrap(),
+            serde_json::to_string(authchain.first().unwrap()).unwrap(),
         ),
         (
             "X-Identity-Auth-Chain-1".to_string(),

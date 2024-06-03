@@ -421,7 +421,7 @@ mod tests {
         let tasks = &state.current_steps.get("A").unwrap().to_dos;
         assert_eq!(tasks.len(), 2);
         assert_eq!(
-            tasks.get(0).unwrap(),
+            tasks.first().unwrap(),
             &Task {
                 id: "A_1".to_string(),
                 description: "".to_string(),
@@ -456,7 +456,7 @@ mod tests {
         let tasks = &state.current_steps.get("A").unwrap().to_dos;
         assert_eq!(tasks.len(), 2);
         assert_eq!(
-            tasks.get(0).unwrap(),
+            tasks.first().unwrap(),
             &Task {
                 id: "A_1".to_string(),
                 description: "".to_string(),
@@ -491,7 +491,7 @@ mod tests {
         let tasks = &state.current_steps.get("A").unwrap().to_dos;
         assert_eq!(tasks.len(), 1);
         assert_eq!(
-            tasks.get(0).unwrap(),
+            tasks.first().unwrap(),
             &Task {
                 id: "A_2".to_string(),
                 description: "".to_string(),
@@ -524,7 +524,7 @@ mod tests {
         let subtasks = &state.current_steps.get("A").unwrap().to_dos;
         assert_eq!(subtasks.len(), 1);
         assert_eq!(
-            subtasks.get(0).unwrap(),
+            subtasks.first().unwrap(),
             &Task {
                 id: "A_2".to_string(),
                 description: "".to_string(),
@@ -555,7 +555,7 @@ mod tests {
         let tasks = &state.current_steps.get("B").unwrap().to_dos;
         assert_eq!(tasks.len(), 2);
         assert_eq!(
-            tasks.get(0).unwrap(),
+            tasks.first().unwrap(),
             &Task {
                 id: "B_1".to_string(),
                 description: "".to_string(),
@@ -589,7 +589,7 @@ mod tests {
         let tasks = &state.current_steps.get("B").unwrap().to_dos;
         assert_eq!(tasks.len(), 2);
         assert_eq!(
-            tasks.get(0).unwrap(),
+            tasks.first().unwrap(),
             &Task {
                 id: "B_1".to_string(),
                 description: "".to_string(),
@@ -618,7 +618,7 @@ mod tests {
         let tasks = &state.current_steps.get("B").unwrap().to_dos;
         assert_eq!(tasks.len(), 1);
         assert_eq!(
-            tasks.get(0).unwrap(),
+            tasks.first().unwrap(),
             &Task {
                 id: "B_2".to_string(),
                 description: "".to_string(),
@@ -651,7 +651,7 @@ mod tests {
         let tasks = &state.current_steps.get("B").unwrap().to_dos;
         assert_eq!(tasks.len(), 1);
         assert_eq!(
-            tasks.get(0).unwrap(),
+            tasks.first().unwrap(),
             &Task {
                 id: "B_2".to_string(),
                 description: "".to_string(),

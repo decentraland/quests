@@ -85,8 +85,8 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     // creators quests should be ONE because query returns current versions (activated and deactivated) and not old versions
     let quests_by_creator = db.get_quests_by_creator_id("0xA", 0, 50).await.unwrap();
     assert_eq!(quests_by_creator.len(), 1);
-    assert_eq!(quests_by_creator.get(0).unwrap().id, new_quest_id);
-    assert!(quests_by_creator.get(0).unwrap().active);
+    assert_eq!(quests_by_creator.first().unwrap().id, new_quest_id);
+    assert!(quests_by_creator.first().unwrap().active);
     let create_deactivated_quest = CreateQuest {
         name: "DEACTIVATED_CREATOR_QUEST",
         description: quest.description,
@@ -104,15 +104,15 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     println!("quests {quests_by_creator:?}");
     assert_eq!(quests_by_creator.len(), 2);
     // order by desc
-    assert_eq!(quests_by_creator.get(0).unwrap().id, deactivated_quest);
-    assert!(!quests_by_creator.get(0).unwrap().active);
+    assert_eq!(quests_by_creator.first().unwrap().id, deactivated_quest);
+    assert!(!quests_by_creator.first().unwrap().active);
     assert_eq!(quests_by_creator.get(1).unwrap().id, new_quest_id);
     assert!(quests_by_creator.get(1).unwrap().active);
 
     // new quest old versions
     let old_versions = db.get_old_quest_versions(&new_quest_id).await.unwrap();
     assert_eq!(old_versions.len(), 1);
-    assert_eq!(old_versions.get(0).unwrap(), &quest_id);
+    assert_eq!(old_versions.first().unwrap(), &quest_id);
 
     // old quest is still there
     let get_old_quest = db.get_quest(&quest_id).await.unwrap();
@@ -233,9 +233,9 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
 
     let quest_w_reward_items = db.get_quest_reward_items(&quest_w_reward_id).await.unwrap();
     assert_eq!(quest_reward_items.len(), 1);
-    assert_eq!(quest_w_reward_items.get(0).unwrap().name, "SunGlasses");
+    assert_eq!(quest_w_reward_items.first().unwrap().name, "SunGlasses");
     assert_eq!(
-        quest_w_reward_items.get(0).unwrap().image_link,
+        quest_w_reward_items.first().unwrap().image_link,
         "https://github.com/decentraland"
     )
 }

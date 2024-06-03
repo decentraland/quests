@@ -6,11 +6,14 @@ use actix_web::{
 };
 use common::*;
 use quests_db::{
-    core::definitions::{CreateQuest, QuestsDatabase},
+    core::definitions::{
+        CreateQuest, QuestReward, QuestRewardHook, QuestRewardItem, QuestsDatabase,
+    },
     create_quests_db_component,
 };
 use quests_protocol::definitions::*;
 use quests_server::api::routes::quests::GetQuestRewardResponse;
+use std::collections::HashMap;
 
 #[actix_web::test]
 async fn get_quest_rewards_should_be_200() {
@@ -41,7 +44,7 @@ async fn get_quest_rewards_should_be_200() {
         .await
         .unwrap();
 
-    let reward = rewards::create_reward();
+    let reward = create_reward();
     _ = db.add_reward_hook_to_quest(&id, &reward.hook).await;
     _ = db.add_reward_items_to_quest(&id, &reward.items).await;
 
@@ -108,4 +111,24 @@ async fn quest_has_no_rewards() {
     let response = call_service(&app, req).await;
     assert!(!response.status().is_success());
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+fn create_reward() -> QuestReward {
+    let mut request_body = HashMap::new();
+    request_body.insert("beneficiary".to_string(), "{user_address}".to_string());
+    request_body.insert("campaign_key".to_string(), "eyJpZCI6ImJjMmQ1NWRjLWY3Y2Ut
+NDEyOS05ODMxLWE5Nzk4ZTlmMTRiMSIsImNhbXBhaWduX2lkIjoiNjQ5YzVlMzgtYmVmOC00YmQ2LWIxM2YtYmQ2YTJiZGNjMDk2In0=.EC
+ydl7nxWNUAgPWNgskHcFsqRGArULfHRtMyfc1UXIY=".to_string());
+    let hook = QuestRewardHook {
+        webhook_url: "https://rewards.decentraland.zone/api/campaigns/649c5e38-bef8-4bd6-b13f-bd6a2bdcc096/rewards".to_string(),
+        request_body: Some(request_body),
+    };
+
+    QuestReward {
+        hook,
+        items: vec![    QuestRewardItem {
+            name: "Macarena".to_string(),
+            image_link: "https://peer.decentraland.zone/lambdas/collections/contents/urn:decentraland:matic:collections-v2:0xfb1d9d5dbb92f2dccc841bd3085081bb1bbeb04d:0/thumbnail".to_string(),
+        }],
+    }
 }

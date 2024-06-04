@@ -357,6 +357,19 @@ impl QuestsDatabase for Database {
             .map(|_| id)
     }
 
+    async fn remove_instance_from_completed_instances(
+        &self,
+        quest_instance_id: &str,
+    ) -> DBResult<()> {
+        sqlx::query("DELETE FROM completed_quest_instances WHERE quest_instance_id = $1")
+            .bind(parse_str_to_uuid(quest_instance_id)?)
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DBError::GetQuestEventsFailed(Box::new(err)))?;
+
+        Ok(())
+    }
+
     async fn is_completed_instance(&self, quest_instance_id: &str) -> DBResult<bool> {
         let quest_instance_exists: bool = sqlx::query_scalar(
             "SELECT EXISTS (SELECT 1 FROM completed_quest_instances WHERE quest_instance_id = $1)",
@@ -511,6 +524,16 @@ impl QuestsDatabase for Database {
         }
 
         Ok(events)
+    }
+
+    async fn remove_events(&self, quest_instance_id: &str) -> DBResult<()> {
+        sqlx::query("DELETE FROM events WHERE quest_instance_id = $1")
+            .bind(parse_str_to_uuid(quest_instance_id)?)
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DBError::GetQuestEventsFailed(Box::new(err)))?;
+
+        Ok(())
     }
 
     async fn add_reward_hook_to_quest(

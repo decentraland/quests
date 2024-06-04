@@ -58,6 +58,7 @@ impl ResponseError for QuestError {
             Self::QuestNotActivable => StatusCode::BAD_REQUEST,
             Self::QuestIsNotUpdatable => StatusCode::BAD_REQUEST,
             Self::QuestIsCurrentlyDeactivated => StatusCode::BAD_REQUEST,
+            Self::ResetQuestInstanceNotAllowed => StatusCode::FORBIDDEN,
         }
     }
 

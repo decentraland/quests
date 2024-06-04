@@ -4,6 +4,7 @@ mod api_doc;
 pub mod creators;
 pub mod errors;
 mod health;
+pub mod quest_instances;
 pub mod quests;
 
 pub use errors::{query_extractor_config, ErrorResponse};
@@ -14,6 +15,7 @@ pub(crate) fn services(config: &mut ServiceConfig) {
     let api_scope = web::scope("/api");
     let api_scope = quests::services(api_scope);
     let api_scope = creators::services(api_scope);
+    let api_scope = quest_instances::services(api_scope);
     config.service(api_scope);
 
     health::services(config);

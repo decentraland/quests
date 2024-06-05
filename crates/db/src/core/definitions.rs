@@ -36,6 +36,11 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn complete_quest_instance(&self, quest_instance_id: &str) -> DBResult<String>;
     async fn is_completed_instance(&self, quest_instance_id: &str) -> DBResult<bool>;
 
+    async fn remove_instance_from_completed_instances(
+        &self,
+        quest_instance_id: &str,
+    ) -> DBResult<()>;
+
     async fn get_quest_instance(&self, id: &str) -> DBResult<QuestInstance>;
     async fn is_active_quest_instance(&self, quest_instance_id: &str) -> DBResult<bool>;
     async fn get_active_user_quest_instances(
@@ -50,6 +55,7 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
 
     async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()>;
     async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>>;
+    async fn remove_events(&self, quest_instance_id: &str) -> DBResult<()>;
 
     async fn add_reward_hook_to_quest(
         &self,

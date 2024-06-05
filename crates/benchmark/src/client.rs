@@ -57,7 +57,7 @@ pub async fn handle_client(
         let auth_chain = identity.sign_payload(format!("{method}:{path}:{now}:{metadata}"));
         let signed_headers = format!(
             r#"{{"X-Identity-Auth-Chain-0": {},  "X-Identity-Auth-Chain-1": {},  "X-Identity-Auth-Chain-2": {}, "X-Identity-Timestamp": {}, "X-Identity-Metadata": {} }}"#,
-            serde_json::to_string(auth_chain.get(0).unwrap()).unwrap(),
+            serde_json::to_string(auth_chain.first().unwrap()).unwrap(),
             serde_json::to_string(auth_chain.get(1).unwrap()).unwrap(),
             serde_json::to_string(auth_chain.get(2).unwrap()).unwrap(),
             now,
@@ -131,7 +131,7 @@ pub fn get_signed_headers(
     vec![
         (
             "X-Identity-Auth-Chain-0".to_string(),
-            serde_json::to_string(authchain.get(0).unwrap()).unwrap(),
+            serde_json::to_string(authchain.first().unwrap()).unwrap(),
         ),
         (
             "X-Identity-Auth-Chain-1".to_string(),

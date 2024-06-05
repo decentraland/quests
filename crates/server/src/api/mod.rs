@@ -67,6 +67,7 @@ pub fn get_app_router(
                 "PUT:/api/quests/{quest_id}",
                 "GET:/api/quests/{quest_id}/stats",
                 "PUT:/api/quests/{quest_id}/activate",
+                "PATCH:/api/instances/{quest_instance}/reset",
             ],
             [
                 "GET:/api/quests/{quest_id}",

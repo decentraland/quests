@@ -9,6 +9,12 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert!(db.ping().await);
     let quest_id = db.create_quest(&quest, "0xA").await.unwrap();
 
+    let is_creator = db.is_quest_creator(&quest_id, "0xA").await.unwrap();
+    assert!(is_creator);
+
+    let is_not_creator = db.is_quest_creator(&quest_id, "0xB").await.unwrap();
+    assert!(!is_not_creator);
+
     let quest_reward = db.get_quest_reward_hook(&quest_id).await.unwrap_err();
 
     assert!(matches!(quest_reward, DBError::RowNotFound));
@@ -132,7 +138,10 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert_eq!(get_quest_instance.user_address, "0xA");
     assert_eq!(get_quest_instance.quest_id, quest_id);
 
-    let instances_by_quest_id = db.get_quest_instances_by_quest_id(&quest_id).await.unwrap();
+    let instances_by_quest_id = db
+        .get_all_quest_instances_by_quest_id(&quest_id)
+        .await
+        .unwrap();
 
     assert_eq!(instances_by_quest_id.0.len(), 1);
     assert_eq!(instances_by_quest_id.1.len(), 0);

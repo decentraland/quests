@@ -66,8 +66,7 @@ pub async fn get_quests_by_creator_id(
         }
         Err(err) => {
             log::error!("Error getting quests: {:?}", err);
-            let err: QuestError = err.into();
-            HttpResponse::from_error(err)
+            HttpResponse::from_error(QuestError::from(err))
         }
     }
 }

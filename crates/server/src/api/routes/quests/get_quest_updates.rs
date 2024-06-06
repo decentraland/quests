@@ -38,9 +38,6 @@ pub async fn get_quest_updates(
             }
             HttpResponse::Accepted().json(GetQuestUpdatesResponse { updates: ids })
         }
-        Err(err) => {
-            let err: QuestError = err.into();
-            HttpResponse::from_error(err)
-        }
+        Err(err) => HttpResponse::from_error(QuestError::from(err)),
     }
 }

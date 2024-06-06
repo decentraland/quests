@@ -18,7 +18,6 @@ pub struct GetQuestUpdatesResponse {
     ),
     responses(
         (status = 200, description = "IDs of the old quests", body = GetQuestUpdatesResponse),
-        (status = 404, description = "No Update"),
         (status = 500, description = "Internal Server Error")
     )
 )]
@@ -32,12 +31,7 @@ pub async fn get_quest_updates(
     let quest_id = quest_id.into_inner();
 
     match db.get_old_quest_versions(&quest_id).await {
-        Ok(ids) => {
-            if ids.is_empty() {
-                return HttpResponse::NotFound().finish();
-            }
-            HttpResponse::Accepted().json(GetQuestUpdatesResponse { updates: ids })
-        }
+        Ok(ids) => HttpResponse::Accepted().json(GetQuestUpdatesResponse { updates: ids }),
         Err(err) => HttpResponse::from_error(QuestError::from(err)),
     }
 }

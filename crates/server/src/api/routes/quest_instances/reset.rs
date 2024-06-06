@@ -1,14 +1,6 @@
 use crate::{api::middlewares::RequiredAuthUser, domain::quests};
 use actix_web::{patch, web, HttpResponse};
 use quests_db::Database;
-use quests_protocol::definitions::Quest;
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct GetCreatorQuestsResponse {
-    pub quests: Vec<Quest>,
-}
 
 /// Reset a User's Quest Instance. It can only be executed by the Quest Creator
 #[utoipa::path(

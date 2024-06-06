@@ -1,6 +1,5 @@
-use crate::{api::routes::quests::get_user_address_from_request, domain::quests::QuestError};
-
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use crate::{api::middlewares::OptionalAuthUser, domain::quests::QuestError};
+use actix_web::{get, web, HttpResponse};
 use quests_db::Database;
 use quests_protocol::definitions::Quest;
 use serde::{Deserialize, Serialize};
@@ -26,20 +25,18 @@ pub struct GetQuestResponse {
 )]
 #[get("/quests/{quest_id}")]
 pub async fn get_quest(
-    req: HttpRequest,
     data: web::Data<Database>,
     quest_id: web::Path<String>,
+    auth_user: OptionalAuthUser,
 ) -> HttpResponse {
     let db = data.into_inner();
-
-    let user = get_user_address_from_request(&req).ok();
 
     let quest_id = quest_id.into_inner();
 
     match quests_system::quests::get_quest(db, &quest_id).await {
         Ok(quest) => HttpResponse::Ok().json(GetQuestResponse {
             quest: Quest {
-                definition: if let Some(address) = user {
+                definition: if let Some(address) = &auth_user.address {
                     if address.eq_ignore_ascii_case(&quest.creator_address) {
                         quest.definition
                     } else {

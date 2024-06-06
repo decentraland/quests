@@ -1,6 +1,6 @@
 mod common;
 
-use actix_web::test::{call_service, init_service, read_body_json, try_call_service, TestRequest};
+use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 use common::*;
 use quests_db::{
     core::definitions::{CreateQuest, QuestsDatabase},
@@ -157,11 +157,7 @@ async fn get_quest_stats_should_be_401() {
         .uri(format!("/api/quests/{}/stats", id).as_str())
         .to_request();
 
-    match try_call_service(&app, req).await {
-        Ok(_) => panic!("should fail"),
-        Err(err) => {
-            let res = err.error_response();
-            assert_eq!(res.status(), 401)
-        }
-    }
+    let response = call_service(&app, req).await;
+
+    assert_eq!(response.status(), 401)
 }

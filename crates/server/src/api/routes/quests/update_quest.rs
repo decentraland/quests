@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use actix_web::{put, web, HttpRequest, HttpResponse};
+use actix_web::{put, web, HttpResponse};
 use derive_more::Deref;
 use quests_db::{core::definitions::QuestsDatabase, Database};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::api::routes::quests::get_user_address_from_request;
+use crate::api::middlewares::RequiredAuthUser;
 use crate::domain::quests::QuestError;
 use crate::domain::types::ToCreateQuest;
 
@@ -40,21 +40,18 @@ pub struct UpdateQuestResponse {
 )]
 #[put("/quests/{quest_id}")]
 pub async fn update_quest(
-    req: HttpRequest,
     data: web::Data<Database>,
     quest_id: web::Path<String>,
     quest_update: web::Json<UpdateQuestRequest>,
+    auth_user: RequiredAuthUser,
 ) -> HttpResponse {
     let db = data.into_inner();
     let quest_id = quest_id.into_inner();
     let quest = quest_update.into_inner();
 
-    let user = match get_user_address_from_request(&req) {
-        Ok(address) => address,
-        Err(bad_request_response) => return bad_request_response,
-    };
+    let RequiredAuthUser { address } = auth_user;
 
-    match update_quest_controller(db, quest_id, &quest, &user).await {
+    match update_quest_controller(db, quest_id, &quest, &address).await {
         Ok(quest_id) => HttpResponse::Ok().json(UpdateQuestResponse { quest_id }),
         Err(error) => HttpResponse::from_error(error),
     }

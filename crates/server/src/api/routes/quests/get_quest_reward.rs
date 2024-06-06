@@ -1,8 +1,8 @@
 use crate::{
-    api::routes::{errors::CommonError, quests::get_user_address_from_request},
+    api::{middlewares::OptionalAuthUser, routes::errors::CommonError},
     domain::quests::QuestError,
 };
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use actix_web::{get, web, HttpResponse};
 use quests_db::{
     core::{
         definitions::{QuestRewardHook, QuestRewardItem, QuestsDatabase},
@@ -41,18 +41,21 @@ pub struct GetQuestRewardsParams {
 )]
 #[get("/quests/{quest_id}/reward")]
 pub async fn get_quest_reward(
-    req: HttpRequest,
     quest_id: web::Path<String>,
     db: web::Data<Database>,
     query_params: web::Query<GetQuestRewardsParams>,
+    auth_user: OptionalAuthUser,
 ) -> HttpResponse {
     let quest_id = quest_id.into_inner();
     let db = db.into_inner();
 
-    let user = get_user_address_from_request(&req).ok();
-
-    match get_quest_rewards_controller(user, db, &quest_id, query_params.with_hook.unwrap_or(false))
-        .await
+    match get_quest_rewards_controller(
+        auth_user.address,
+        db,
+        &quest_id,
+        query_params.with_hook.unwrap_or(false),
+    )
+    .await
     {
         Ok(rewards) => match rewards {
             Rewards::Items(items) => {

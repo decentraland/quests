@@ -1,6 +1,6 @@
 mod common;
 
-use actix_web::test::{call_service, init_service, read_body_json, try_call_service, TestRequest};
+use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
@@ -90,13 +90,9 @@ async fn delete_quest_should_be_401() {
     let app = init_service(build_app(&config).await).await;
     let req = TestRequest::delete().uri("/api/quests/1aab").to_request();
 
-    match try_call_service(&app, req).await {
-        Ok(_) => panic!("shoudl fail"),
-        Err(err) => {
-            let response = err.error_response();
-            assert_eq!(response.status(), 401);
-        }
-    }
+    let response = call_service(&app, req).await;
+
+    assert_eq!(response.status(), 401)
 }
 
 #[actix_web::test]

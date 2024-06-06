@@ -1,5 +1,5 @@
-use crate::{api::routes::quests::get_user_address_from_request, domain::quests};
-use actix_web::{patch, web, HttpRequest, HttpResponse};
+use crate::{api::middlewares::RequiredAuthUser, domain::quests};
+use actix_web::{patch, web, HttpResponse};
 use quests_db::Database;
 use quests_protocol::definitions::Quest;
 use serde::{Deserialize, Serialize};
@@ -25,15 +25,15 @@ pub struct GetCreatorQuestsResponse {
 )]
 #[patch("/instances/{quest_instance}/reset")]
 pub async fn reset_quest_instance(
-    req: HttpRequest,
     data: web::Data<Database>,
     quest_instance: web::Path<String>,
+    auth_user: RequiredAuthUser,
 ) -> HttpResponse {
     let db = data.into_inner();
 
-    let auth_user = get_user_address_from_request(&req).unwrap(); // unwrap here is safe
+    let RequiredAuthUser { address } = auth_user;
 
-    match quests::reset_quest_instance(db, &auth_user, &quest_instance).await {
+    match quests::reset_quest_instance(db, &address, &quest_instance).await {
         Ok(_) => HttpResponse::NoContent().finish(),
         Err(err) => HttpResponse::from_error(err),
     }

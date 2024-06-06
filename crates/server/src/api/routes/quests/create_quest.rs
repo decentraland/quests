@@ -1,9 +1,9 @@
 use super::is_url;
 use crate::{
-    api::routes::{errors::CommonError, quests::get_user_address_from_request},
+    api::{middlewares::RequiredAuthUser, routes::errors::CommonError},
     domain::{quests::QuestError, types::ToCreateQuest},
 };
-use actix_web::{post, web, HttpRequest, HttpResponse};
+use actix_web::{post, web, HttpResponse};
 use quests_db::{
     core::definitions::{CreateQuest, QuestReward, QuestsDatabase},
     Database,
@@ -110,18 +110,15 @@ impl ToCreateQuest for CreateQuestRequest {
 )]
 #[post("/quests")]
 pub async fn create_quest(
-    req: HttpRequest,
     data: web::Data<Database>,
     quest: web::Json<CreateQuestRequest>,
+    auth_user: RequiredAuthUser,
 ) -> HttpResponse {
     let db = data.into_inner();
 
-    let user = match get_user_address_from_request(&req) {
-        Ok(address) => address,
-        Err(bad_request_response) => return bad_request_response,
-    };
+    let RequiredAuthUser { address } = auth_user;
 
-    match create_quest_controller(db, &quest, &user).await {
+    match create_quest_controller(db, &quest, &address).await {
         Ok(quest_id) => HttpResponse::Created().json(CreateQuestResponse { id: quest_id }),
         Err(error) => HttpResponse::from_error(error),
     }

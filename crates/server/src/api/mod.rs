@@ -60,21 +60,6 @@ pub fn get_app_router(
         .app_data(db.clone())
         .app_data(redis.clone())
         .app_data(metrics_collector.clone())
-        .wrap(middlewares::dcl_auth_middleware(
-            [
-                "POST:/api/quests",
-                "DELETE:/api/quests/{quest_id}",
-                "PUT:/api/quests/{quest_id}",
-                "GET:/api/quests/{quest_id}/stats",
-                "PUT:/api/quests/{quest_id}/activate",
-                "PATCH:/api/instances/{quest_instance}/reset",
-            ],
-            [
-                "GET:/api/quests/{quest_id}",
-                "GET:/api/quests/{quest_id}/reward",
-                "GET:/api/creators/{user_address}/quests",
-            ],
-        ))
         .wrap(dcl_http_prom_metrics::metrics())
         .wrap(middlewares::metrics_token(&config.wkc_metrics_bearer_token))
         .wrap(TracingLogger::default())

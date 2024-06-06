@@ -27,7 +27,7 @@ pub async fn delete_quest(
 
     let RequiredAuthUser { address } = auth_user;
 
-    match delete_quest_controller(db, quest_id.into_inner(), &address).await {
+    match delete_quest_controller(db, &quest_id.into_inner(), &address).await {
         Ok(()) => HttpResponse::Accepted().finish(),
         Err(err) => HttpResponse::from_error(err),
     }
@@ -35,32 +35,24 @@ pub async fn delete_quest(
 
 async fn delete_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
-    id: String,
+    id: &str,
     creator_address: &str,
 ) -> Result<(), QuestError> {
-    match db.get_quest(&id).await {
-        Ok(stored_quest) => {
-            if stored_quest
-                .creator_address
-                .eq_ignore_ascii_case(creator_address)
-            {
-                match db.is_active_quest(&id).await {
-                    Ok(result) => {
-                        if result {
-                            db.deactivate_quest(&id)
-                                .await
-                                .map(|_| ())
-                                .map_err(|error| error.into())
-                        } else {
-                            Err(QuestError::QuestIsCurrentlyDeactivated)
-                        }
-                    }
-                    Err(err) => Err(err.into()),
+    match db.is_quest_creator(id, creator_address).await {
+        Ok(is_creator) if !is_creator => Err(QuestError::NotQuestCreator),
+        Ok(_) => match db.is_active_quest(id).await {
+            Ok(result) => {
+                if result {
+                    db.deactivate_quest(id)
+                        .await
+                        .map(|_| ())
+                        .map_err(|error| error.into())
+                } else {
+                    Err(QuestError::QuestIsCurrentlyDeactivated)
                 }
-            } else {
-                Err(QuestError::NotQuestCreator)
             }
-        }
+            Err(err) => Err(err.into()),
+        },
         Err(err) => Err(err.into()),
     }
 }

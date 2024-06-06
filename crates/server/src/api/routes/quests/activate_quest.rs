@@ -39,29 +39,21 @@ async fn activate_quest_controller<DB: QuestsDatabase>(
     id: String,
     creator_address: &str,
 ) -> Result<(), QuestError> {
-    match db.get_quest(&id).await {
-        Ok(stored_quest) => {
-            if stored_quest
-                .creator_address
-                .eq_ignore_ascii_case(creator_address)
-            {
-                match db.can_activate_quest(&id).await {
-                    Ok(boolean) => {
-                        if boolean {
-                            db.activate_quest(&id)
-                                .await
-                                .map(|_| ())
-                                .map_err(|error| error.into())
-                        } else {
-                            Err(QuestError::QuestNotActivable)
-                        }
-                    }
-                    Err(err) => Err(err.into()),
+    match db.is_quest_creator(&id, creator_address).await {
+        Ok(is_creator) if !is_creator => Err(QuestError::NotQuestCreator),
+        Ok(_) => match db.can_activate_quest(&id).await {
+            Ok(boolean) => {
+                if boolean {
+                    db.activate_quest(&id)
+                        .await
+                        .map(|_| ())
+                        .map_err(|error| error.into())
+                } else {
+                    Err(QuestError::QuestNotActivable)
                 }
-            } else {
-                Err(QuestError::NotQuestCreator)
             }
-        }
+            Err(err) => Err(err.into()),
+        },
         Err(err) => Err(err.into()),
     }
 }

@@ -85,9 +85,12 @@ async fn get_quest_rewards_controller<DB: QuestsDatabase>(
     mut with_hook: bool,
 ) -> Result<Rewards, QuestError> {
     if let Some(user_address) = user {
-        let quest = db.get_quest(quest_id).await.map_err(QuestError::from)?;
+        let is_creator = db
+            .is_quest_creator(quest_id, &user_address)
+            .await
+            .map_err(QuestError::from)?;
 
-        if !user_address.eq_ignore_ascii_case(&quest.creator_address) {
+        if !is_creator {
             with_hook = false
         }
     } else {

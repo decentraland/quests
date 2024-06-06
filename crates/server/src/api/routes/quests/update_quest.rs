@@ -51,7 +51,7 @@ pub async fn update_quest(
 
     let RequiredAuthUser { address } = auth_user;
 
-    match update_quest_controller(db, quest_id, &quest, &address).await {
+    match update_quest_controller(db, &quest_id, &quest, &address).await {
         Ok(quest_id) => HttpResponse::Ok().json(UpdateQuestResponse { quest_id }),
         Err(error) => HttpResponse::from_error(error),
     }
@@ -59,34 +59,24 @@ pub async fn update_quest(
 
 async fn update_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
-    id: String,
+    id: &str,
     quest: &CreateQuestRequest,
     creator_address: &str,
 ) -> Result<String, QuestError> {
     quest.is_valid()?;
 
-    match db.get_quest(&id).await {
-        Ok(stored_quest) => {
-            if stored_quest
-                .creator_address
-                .eq_ignore_ascii_case(creator_address)
-            {
-                if !db.is_updatable(&id).await? {
-                    return Err(QuestError::QuestIsNotUpdatable);
-                }
-                db.update_quest(
-                    &id,
-                    &quest.to_create_quest()?,
-                    &stored_quest.creator_address,
-                )
+    match db.is_quest_creator(id, creator_address).await {
+        Ok(is_creator) if !is_creator => Err(QuestError::NotQuestCreator),
+        Ok(_) => {
+            if !db.is_updatable(id).await? {
+                return Err(QuestError::QuestIsNotUpdatable);
+            }
+            db.update_quest(id, &quest.to_create_quest()?, creator_address)
                 .await
                 .map_err(|error| {
                     log::error!("Couldn't update quest: {error}");
                     error.into()
                 })
-            } else {
-                Err(QuestError::NotQuestCreator)
-            }
         }
         Err(err) => Err(err.into()),
     }

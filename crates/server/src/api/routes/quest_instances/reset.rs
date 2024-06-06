@@ -1,6 +1,7 @@
-use crate::{api::middlewares::RequiredAuthUser, domain::quests};
+use crate::{api::middlewares::RequiredAuthUser, domain::quests::QuestError};
 use actix_web::{patch, web, HttpResponse};
-use quests_db::Database;
+use quests_db::{core::definitions::QuestsDatabase, Database};
+use std::sync::Arc;
 
 /// Reset a User's Quest Instance. It can only be executed by the Quest Creator
 #[utoipa::path(
@@ -25,8 +26,49 @@ pub async fn reset_quest_instance(
 
     let RequiredAuthUser { address } = auth_user;
 
-    match quests::reset_quest_instance(db, &address, &quest_instance).await {
+    match reset_quest_instance_controller(db, &address, &quest_instance).await {
         Ok(_) => HttpResponse::NoContent().finish(),
         Err(err) => HttpResponse::from_error(err),
+    }
+}
+
+async fn reset_quest_instance_controller(
+    db: Arc<impl QuestsDatabase>,
+    auth_user_address: &str,
+    quest_instance_id: &str,
+) -> Result<(), QuestError> {
+    match db.get_quest_instance(quest_instance_id).await {
+        Ok(instance) => match db.get_quest(&instance.quest_id).await {
+            Ok(quest) => {
+                if !auth_user_address.eq_ignore_ascii_case(&quest.creator_address) {
+                    return Err(QuestError::ResetQuestInstanceNotAllowed);
+                }
+
+                // remove events to reset quest instance state
+                db.remove_events(quest_instance_id).await.map_err(|err| {
+                    let err: QuestError = err.into();
+                    err
+                })?;
+
+                db.remove_instance_from_completed_instances(quest_instance_id)
+                    .await
+                    .map_err(|err| {
+                        let err: QuestError = err.into();
+                        err
+                    })?;
+
+                Ok(())
+            }
+            Err(err) => {
+                log::error!("Error getting quest: {:?}", err);
+                let err: QuestError = err.into();
+                Err(err)
+            }
+        },
+        Err(err) => {
+            log::error!("Error getting quest instance: {:?}", err);
+            let err: QuestError = err.into();
+            Err(err)
+        }
     }
 }

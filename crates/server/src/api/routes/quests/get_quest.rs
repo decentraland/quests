@@ -33,7 +33,7 @@ pub async fn get_quest(
 
     let quest_id = quest_id.into_inner();
 
-    match quests_system::quests::get_quest(db, &quest_id).await {
+    match quests_system::quests::get_quest_with_decoded_definition(db, &quest_id).await {
         Ok(quest) => HttpResponse::Ok().json(GetQuestResponse {
             quest: Quest {
                 definition: if let Some(address) = &auth_user.address {

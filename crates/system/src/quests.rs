@@ -14,7 +14,7 @@ pub enum QuestStateCalculationError {
     StateError,
 }
 
-pub async fn get_quest(
+pub async fn get_quest_with_decoded_definition(
     database: Arc<impl QuestsDatabase>,
     quest_id: &str,
 ) -> Result<Quest, QuestStateCalculationError> {
@@ -78,7 +78,7 @@ pub async fn get_instance_state(
     quest_id: &str,
     quest_instance: &str,
 ) -> Result<(Quest, QuestState), QuestStateCalculationError> {
-    let quest = get_quest(database.clone(), quest_id).await?;
+    let quest = get_quest_with_decoded_definition(database.clone(), quest_id).await?;
     let stored_events = database
         .get_events(quest_instance)
         .await

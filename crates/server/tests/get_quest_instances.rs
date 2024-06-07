@@ -1,13 +1,14 @@
 mod common;
 use actix_web::http::StatusCode;
-use actix_web::test::{call_service, init_service, TestRequest};
+use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 pub use common::*;
-use quests_db::core::definitions::{AddEvent, CreateQuest, QuestsDatabase};
+use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
 use quests_protocol::definitions::*;
+use quests_server::api::routes::quests::GetQuestInstancesResponse;
 
 #[actix_web::test]
-async fn reset_quest_instance_should_be_204() {
+async fn get_quest_instances_should_be_200() {
     let config = get_configuration().await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
@@ -30,29 +31,12 @@ async fn reset_quest_instance_should_be_204() {
         .unwrap();
 
     let quest_instance_id = db.start_quest(&id, "0xA").await.unwrap();
-    db.add_event(
-        &AddEvent {
-            id: uuid::Uuid::new_v4().to_string(),
-            user_address: "0xA",
-            event: vec![0],
-        },
-        &quest_instance_id,
-    )
-    .await
-    .unwrap();
-    db.complete_quest_instance(&quest_instance_id)
-        .await
-        .unwrap();
-    let is_instance_completed = db.is_completed_instance(&quest_instance_id).await.unwrap();
-    assert!(is_instance_completed);
-    let events = db.get_events(&quest_instance_id).await.unwrap();
-    assert_eq!(events.len(), 1);
 
-    let path = format!("/api/instances/{}/reset", quest_instance_id);
+    let path = format!("/api/quests/{}/instances", id);
 
-    let headers = get_signed_headers(create_test_identity(), "patch", &path, "");
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "");
 
-    let req = TestRequest::patch()
+    let req = TestRequest::get()
         .uri(&path)
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
@@ -62,16 +46,16 @@ async fn reset_quest_instance_should_be_204() {
         .to_request();
 
     let response = call_service(&app, req).await;
-    assert_eq!(response.status().as_u16(), StatusCode::NO_CONTENT);
+    assert_eq!(response.status().as_u16(), StatusCode::OK);
 
-    let is_instance_still_completed = db.is_completed_instance(&quest_instance_id).await.unwrap();
-    assert!(!is_instance_still_completed);
-    let events = db.get_events(&quest_instance_id).await.unwrap();
-    assert_eq!(events.len(), 0)
+    let json: GetQuestInstancesResponse = read_body_json(response).await;
+
+    assert_eq!(json.instances.len(), 1);
+    assert_eq!(json.instances.first().unwrap().id, quest_instance_id);
 }
 
 #[actix_web::test]
-async fn reset_quest_instance_should_be_403() {
+async fn get_quest_instances_should_be_403() {
     let config = get_configuration().await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
@@ -89,17 +73,17 @@ async fn reset_quest_instance_should_be_403() {
     };
 
     let id = db
-        .create_quest(&create_quest, "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1ba5")
+        .create_quest(&create_quest, "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1ba5") // it's not the address returned by create_test_identity()
         .await
         .unwrap();
 
     let quest_instance_id = db.start_quest(&id, "0xA").await.unwrap();
 
-    let path = format!("/api/instances/{}/reset", quest_instance_id);
+    let path = format!("/api/quests/{}/instances", quest_instance_id);
 
-    let headers = get_signed_headers(create_test_identity(), "patch", &path, "");
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "");
 
-    let req = TestRequest::patch()
+    let req = TestRequest::get()
         .uri(&path)
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())

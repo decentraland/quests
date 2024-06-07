@@ -138,6 +138,13 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert_eq!(get_quest_instance.user_address, "0xA");
     assert_eq!(get_quest_instance.quest_id, quest_id);
 
+    let quest_instances = db
+        .get_active_quest_instances_by_quest_id(&quest_id, 0, 50)
+        .await
+        .unwrap();
+
+    assert_eq!(quest_instances.len(), 1);
+
     let instances_by_quest_id = db
         .get_all_quest_instances_by_quest_id(&quest_id)
         .await

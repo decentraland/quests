@@ -611,13 +611,12 @@ impl QuestsDatabase for Database {
             "SELECT * FROM quest_instances 
             WHERE quest_id = $1 
             AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quest_instances) 
-            OFFSET $2
-            LIMIT $3",
+            OFFSET $2 LIMIT $3",
         )
-        .bind(quest_id)
+        .bind(parse_str_to_uuid(quest_id)?)
         .bind(offset)
         .bind(limit)
-        .fetch_all(&self.pool) // it could be replaced by fetch_many that returns a stream
+        .fetch_all(&self.pool)
         .await
         .map_err(|err| {
             DBError::GetQuestInstancesByQuestIdFailed(quest_id.to_string(), Box::new(err))

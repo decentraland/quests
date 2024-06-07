@@ -92,7 +92,7 @@ pub struct AddEvent<'a> {
     pub event: Vec<u8>,
 }
 
-#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct Event {
     pub id: String,
     pub user_address: String,
@@ -101,7 +101,7 @@ pub struct Event {
     pub event: Vec<u8>,
 }
 
-#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct QuestInstance {
     pub id: String,
     pub quest_id: String,

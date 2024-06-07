@@ -14,7 +14,7 @@ pub struct GetQuestInstancesQuery {
 }
 
 #[derive(Deserialize, Serialize, ToSchema)]
-pub struct GetQuestInstacesResponse {
+pub struct GetQuestInstancesResponse {
     pub instances: Vec<QuestInstance>,
 }
 
@@ -53,7 +53,7 @@ pub async fn get_quest_instances(
             )
             .await
         {
-            Ok(instances) => HttpResponse::Ok().json(GetQuestInstacesResponse { instances }),
+            Ok(instances) => HttpResponse::Ok().json(GetQuestInstancesResponse { instances }),
             Err(err) => {
                 log::error!("error on getting quest instances {err} for {quest_id}");
                 HttpResponse::from_error(QuestError::from(err))

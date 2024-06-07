@@ -60,7 +60,7 @@ use utoipa_redoc::Servable;
                         quests_db::core::definitions::Event,
                         quests_db::core::definitions::QuestInstance,
                         quest_instances::state::GetInstanceStateResponse,
-                        quests::get_instances::GetQuestInstacesResponse,
+                        quests::get_instances::GetQuestInstancesResponse,
                         quests::get_instances::GetQuestInstancesQuery
                 )
         ),

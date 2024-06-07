@@ -1,6 +1,7 @@
 pub mod activate_quest;
 pub mod create_quest;
 pub mod delete_quest;
+pub mod get_instances;
 pub mod get_quest;
 pub mod get_quest_reward;
 pub mod get_quest_stats;
@@ -14,6 +15,7 @@ use actix_web::{HttpMessage, HttpRequest, HttpResponse, Scope};
 pub use create_quest::*;
 use dcl_crypto::Address;
 pub use delete_quest::*;
+pub use get_instances::*;
 pub use get_quest::*;
 pub use get_quest_reward::*;
 pub use get_quest_stats::*;
@@ -33,6 +35,7 @@ pub fn services(api_scope: Scope) -> Scope {
         .service(get_quest_stats)
         .service(activate_quest)
         .service(get_quest_updates)
+        .service(get_quest_instances)
 }
 
 pub fn get_user_address_from_request(req: &HttpRequest) -> Result<String, HttpResponse> {

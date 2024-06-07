@@ -44,7 +44,7 @@ pub async fn abandon_quest(
         return Err(QuestError::NotInstanceOwner);
     }
 
-    let (_, quest_state) =
+    let (_, quest_state, _) =
         get_instance_state(db.clone(), &quest_instance.quest_id, &quest_instance.id).await?;
     if quest_state.is_completed() {
         return Err(QuestError::QuestAlreadyCompleted);

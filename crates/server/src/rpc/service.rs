@@ -64,7 +64,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                 )
                 .await
                 {
-                    Ok((quest, quest_state)) => {
+                    Ok((quest, quest_state, _)) => {
                         transport_context
                             .quest_instance_ids
                             .lock()

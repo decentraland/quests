@@ -48,7 +48,7 @@ pub async fn get_quests_by_creator_id(
 
     match db
         .get_quests_by_creator_id(
-            &user_address.to_lowercase(),
+            &user_address.to_ascii_lowercase(),
             query.offset.unwrap_or(0),
             query.limit.unwrap_or(50),
         )

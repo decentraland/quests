@@ -17,5 +17,5 @@ async fn verification(
 
     verify(method, path, headers, VerificationOptions::default())
         .await
-        .map(|address| address.to_string())
+        .map(|address| address.to_string().to_ascii_lowercase())
 }

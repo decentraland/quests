@@ -106,23 +106,31 @@ fn build_graph_from_quest_definition(quest: &Quest) -> Dag<String, u32> {
     let Some(definition) = &quest.definition else {
         return dag;
     };
-    for Connection {
-        ref step_from,
-        ref step_to,
-    } in &definition.connections
-    {
-        // Validate if steps are in defined in the quest
-        if quest.contains_step(step_from) && quest.contains_step(step_to) {
-            if let Some(node_from) = nodes.get(step_from) {
-                let (_, node_to) =
-                    dag.add_child(*node_from, node_from.index() as u32, step_to.clone());
-                nodes.insert(step_to.clone(), node_to);
-            } else {
-                let node_from = dag.add_node(step_from.clone());
-                nodes.insert(step_from.clone(), node_from);
-                let (_, node_to) =
-                    dag.add_child(node_from, node_from.index() as u32, step_to.clone());
-                nodes.insert(step_to.clone(), node_to);
+
+    if definition.connections.is_empty() {
+        for step in &definition.steps {
+            let node = dag.add_node(step.id.clone());
+            nodes.insert(step.id.clone(), node);
+        }
+    } else {
+        for Connection {
+            ref step_from,
+            ref step_to,
+        } in &definition.connections
+        {
+            // Validate if steps are in defined in the quest
+            if quest.contains_step(step_from) && quest.contains_step(step_to) {
+                if let Some(node_from) = nodes.get(step_from) {
+                    let (_, node_to) =
+                        dag.add_child(*node_from, node_from.index() as u32, step_to.clone());
+                    nodes.insert(step_to.clone(), node_to);
+                } else {
+                    let node_from = dag.add_node(step_from.clone());
+                    nodes.insert(step_from.clone(), node_from);
+                    let (_, node_to) =
+                        dag.add_child(node_from, node_from.index() as u32, step_to.clone());
+                    nodes.insert(step_to.clone(), node_to);
+                }
             }
         }
     }
@@ -635,5 +643,34 @@ mod tests {
         other_action.r#type = EMOTE.to_string().to_lowercase();
         let result = matches_action(&Action::emote(Coordinates::new(1, 2), "ID"), &other_action);
         assert!(result);
+    }
+
+    #[test]
+    fn quest_with_single_step_works_properly() {
+        let quest = Quest {
+            id: "1e9a8bbf-2223-4f51-b7e5-660d35cedef4".to_string(),
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            creator_address: "0xB".to_string(),
+            definition: Some(QuestDefinition {
+                connections: vec![],
+                steps: vec![Step {
+                    id: "A".to_string(),
+                    description: "".to_string(),
+                    tasks: vec![Task {
+                        id: "A_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![],
+                    }],
+                }],
+            }),
+            ..Default::default()
+        };
+
+        let graph: QuestGraph = (&quest).into();
+
+        let next = graph.next(START_STEP_ID).unwrap();
+        assert_eq!(next.len(), 1);
+        assert_eq!(next[0], "A");
     }
 }

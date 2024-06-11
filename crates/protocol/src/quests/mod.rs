@@ -455,6 +455,8 @@ mod tests {
             .build();
 
         assert!(quest.is_valid().is_ok());
+        assert!(quest.get_steps_without_from().contains("A"));
+        assert!(quest.get_steps_without_to().contains("A"))
     }
 
     #[test]

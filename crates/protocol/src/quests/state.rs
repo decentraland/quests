@@ -704,4 +704,117 @@ mod tests {
         assert_eq!(state.current_steps.len(), 0);
         assert!(state.is_completed())
     }
+
+    #[test]
+    fn quest_graph_single_step_apply_event_works() {
+        let quest = Quest {
+            id: "".to_string(),
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            creator_address: "0xB".to_string(),
+            definition: Some(QuestDefinition {
+                connections: vec![],
+                steps: vec![Step {
+                    id: "A1".to_string(),
+                    description: "".to_string(),
+                    tasks: vec![Task {
+                        id: "A1_1".to_string(),
+                        description: "".to_string(),
+                        action_items: vec![Action::custom("A1_1_ID")],
+                    }],
+                }],
+            }),
+            ..Default::default()
+        };
+        let quest_graph = QuestGraph::from(&quest);
+        let mut events = vec![Event {
+            // A1_1
+            id: uuid::Uuid::new_v4().to_string(),
+            address: "0xA".to_string(),
+            action: Some(Action::custom("A1_1_ID")),
+        }];
+
+        let mut state = QuestState::from(&quest_graph);
+        assert!(state.current_steps.contains_key("A1")); // branch 1
+        assert_eq!(state.current_steps.len(), 1);
+        assert!(state.steps_completed.is_empty());
+        assert_eq!(state.steps_left, 1);
+        assert!(state.required_steps.contains(&"A1".to_string()));
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert!(state.current_steps.is_empty());
+        assert!(state.steps_completed.contains(&"A1".to_string()));
+        assert_eq!(state.steps_left, 0);
+        assert!(state.is_completed());
+    }
+
+    #[test]
+    fn quest_graph_multiple_starting_points_as_single_steps_apply_event_works() {
+        let quest = Quest {
+            id: "".to_string(),
+            name: "CUSTOM_QUEST".to_string(),
+            description: "".to_string(),
+            creator_address: "0xB".to_string(),
+            definition: Some(QuestDefinition {
+                connections: vec![],
+                steps: vec![
+                    Step {
+                        id: "A1".to_string(),
+                        description: "".to_string(),
+                        tasks: vec![Task {
+                            id: "A1_1".to_string(),
+                            description: "".to_string(),
+                            action_items: vec![Action::custom("A1_1_ID")],
+                        }],
+                    },
+                    Step {
+                        id: "B1".to_string(),
+                        description: "".to_string(),
+                        tasks: vec![Task {
+                            id: "B1_1".to_string(),
+                            description: "".to_string(),
+                            action_items: vec![Action::custom("B1_1_ID")],
+                        }],
+                    },
+                ],
+            }),
+            ..Default::default()
+        };
+        let quest_graph = QuestGraph::from(&quest);
+        let mut events = vec![
+            Event {
+                // A1_1
+                id: uuid::Uuid::new_v4().to_string(),
+                address: "0xA".to_string(),
+                action: Some(Action::custom("A1_1_ID")),
+            },
+            Event {
+                // A1_1
+                id: uuid::Uuid::new_v4().to_string(),
+                address: "0xA".to_string(),
+                action: Some(Action::custom("B1_1_ID")),
+            },
+        ];
+
+        let mut state = QuestState::from(&quest_graph);
+        assert!(state.current_steps.contains_key("A1")); // branch 1
+        assert!(state.current_steps.contains_key("B1")); // branch 2
+        assert_eq!(state.current_steps.len(), 2);
+        assert!(state.steps_completed.is_empty());
+        assert_eq!(state.steps_left, 2);
+        assert!(state.required_steps.contains(&"A1".to_string()));
+        assert!(state.required_steps.contains(&"B1".to_string()));
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert_eq!(state.current_steps.len(), 1);
+        assert!(state.current_steps.contains_key("B1"));
+        assert!(state.steps_completed.contains(&"A1".to_string()));
+        assert_eq!(state.steps_left, 1);
+
+        state = state.apply_event(&quest_graph, &events.remove(0));
+        assert_eq!(state.current_steps.len(), 0);
+        assert!(state.steps_completed.contains(&"A1".to_string()));
+        assert!(state.steps_completed.contains(&"B1".to_string()));
+        assert!(state.is_completed())
+    }
 }

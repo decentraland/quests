@@ -1,9 +1,8 @@
 use crate::{
-    api::routes::quests::get_user_address_from_request,
+    api::middlewares::OptionalAuthUser,
     domain::{quests::QuestError, types::ToQuest},
 };
-
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use actix_web::{get, web, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
 use quests_protocol::definitions::Quest;
 use serde::{Deserialize, Serialize};
@@ -34,16 +33,14 @@ pub struct GetCreatorQuestsResponse {
 )]
 #[get("/creators/{user_address}/quests")]
 pub async fn get_quests_by_creator_id(
-    req: HttpRequest,
     data: web::Data<Database>,
     user_address: web::Path<String>,
     query: web::Query<GetQuestsQuery>,
+    auth_user: OptionalAuthUser,
 ) -> HttpResponse {
     let db = data.into_inner();
 
-    let user = get_user_address_from_request(&req).ok();
-
-    let is_owner = if let Some(address) = user {
+    let is_owner = if let Some(address) = auth_user.address {
         address.eq_ignore_ascii_case(&user_address)
     } else {
         false
@@ -51,7 +48,7 @@ pub async fn get_quests_by_creator_id(
 
     match db
         .get_quests_by_creator_id(
-            &user_address.to_lowercase(),
+            &user_address.to_ascii_lowercase(),
             query.offset.unwrap_or(0),
             query.limit.unwrap_or(50),
         )
@@ -69,8 +66,7 @@ pub async fn get_quests_by_creator_id(
         }
         Err(err) => {
             log::error!("Error getting quests: {:?}", err);
-            let err: QuestError = err.into();
-            HttpResponse::from_error(err)
+            HttpResponse::from_error(QuestError::from(err))
         }
     }
 }

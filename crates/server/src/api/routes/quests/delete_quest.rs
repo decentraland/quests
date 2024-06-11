@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use crate::{api::routes::quests::get_user_address_from_request, domain::quests::QuestError};
-use actix_web::{delete, web, HttpRequest, HttpResponse};
+use crate::{api::middlewares::RequiredAuthUser, domain::quests::QuestError};
+use actix_web::{delete, web, HttpResponse};
 use quests_db::{core::definitions::QuestsDatabase, Database};
 
 /// Deactivate a quest
@@ -19,18 +19,15 @@ use quests_db::{core::definitions::QuestsDatabase, Database};
 )]
 #[delete("/quests/{quest_id}")]
 pub async fn delete_quest(
-    req: HttpRequest,
     data: web::Data<Database>,
     quest_id: web::Path<String>,
+    auth_user: RequiredAuthUser,
 ) -> HttpResponse {
     let db = data.into_inner();
 
-    let user = match get_user_address_from_request(&req) {
-        Ok(address) => address,
-        Err(bad_request_response) => return bad_request_response,
-    };
+    let RequiredAuthUser { address } = auth_user;
 
-    match delete_quest_controller(db, quest_id.into_inner(), &user).await {
+    match delete_quest_controller(db, &quest_id.into_inner(), &address).await {
         Ok(()) => HttpResponse::Accepted().finish(),
         Err(err) => HttpResponse::from_error(err),
     }
@@ -38,32 +35,24 @@ pub async fn delete_quest(
 
 async fn delete_quest_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
-    id: String,
+    id: &str,
     creator_address: &str,
 ) -> Result<(), QuestError> {
-    match db.get_quest(&id).await {
-        Ok(stored_quest) => {
-            if stored_quest
-                .creator_address
-                .eq_ignore_ascii_case(creator_address)
-            {
-                match db.is_active_quest(&id).await {
-                    Ok(result) => {
-                        if result {
-                            db.deactivate_quest(&id)
-                                .await
-                                .map(|_| ())
-                                .map_err(|error| error.into())
-                        } else {
-                            Err(QuestError::QuestIsCurrentlyDeactivated)
-                        }
-                    }
-                    Err(err) => Err(err.into()),
+    match db.is_quest_creator(id, creator_address).await {
+        Ok(is_creator) if !is_creator => Err(QuestError::NotQuestCreator),
+        Ok(_) => match db.is_active_quest(id).await {
+            Ok(result) => {
+                if result {
+                    db.deactivate_quest(id)
+                        .await
+                        .map(|_| ())
+                        .map_err(|error| error.into())
+                } else {
+                    Err(QuestError::QuestIsCurrentlyDeactivated)
                 }
-            } else {
-                Err(QuestError::NotQuestCreator)
             }
-        }
+            Err(err) => Err(err.into()),
+        },
         Err(err) => Err(err.into()),
     }
 }

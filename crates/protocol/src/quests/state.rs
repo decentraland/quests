@@ -104,7 +104,7 @@ impl From<&QuestGraph> for QuestState {
     }
 }
 
-pub fn get_state(quest: &Quest, events: Vec<Event>) -> QuestState {
+pub fn get_state(quest: &Quest, events: &[Event]) -> QuestState {
     let quest_graph = QuestGraph::from(quest);
     let initial_state = (&quest_graph).into();
     events.iter().fold(initial_state, |state, event| {

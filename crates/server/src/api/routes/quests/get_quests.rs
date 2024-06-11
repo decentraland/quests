@@ -41,7 +41,7 @@ pub async fn get_quests(
 
     match get_quests_controller(db, query.offset.unwrap_or(0), query.limit.unwrap_or(50)).await {
         Ok(quests) => HttpResponse::Ok().json(GetQuestsResponse { quests }),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+        Err(err) => HttpResponse::from_error(err),
     }
 }
 

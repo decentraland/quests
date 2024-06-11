@@ -560,7 +560,7 @@ impl QuestsDatabase for Database {
         self.do_get_quest_reward_items(quest_id, None).await
     }
 
-    async fn get_quest_instances_by_quest_id(
+    async fn get_all_quest_instances_by_quest_id(
         &self,
         quest_id: &str,
     ) -> DBResult<(Vec<QuestInstance>, Vec<QuestInstance>)> {
@@ -599,6 +599,49 @@ impl QuestsDatabase for Database {
         }
 
         Ok((actives, not_actives))
+    }
+
+    async fn get_active_quest_instances_by_quest_id(
+        &self,
+        quest_id: &str,
+        offset: i64,
+        limit: i64,
+    ) -> DBResult<Vec<QuestInstance>> {
+        let instances = sqlx::query(
+            "SELECT * FROM quest_instances 
+            WHERE quest_id = $1 
+            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quest_instances) 
+            OFFSET $2 LIMIT $3",
+        )
+        .bind(parse_str_to_uuid(quest_id)?)
+        .bind(offset)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|err| {
+            DBError::GetQuestInstancesByQuestIdFailed(quest_id.to_string(), Box::new(err))
+        })?;
+
+        let result: Result<Vec<_>, _> =
+            instances.into_iter().map(QuestInstance::try_from).collect();
+
+        result.map_err(|err| DBError::RowCorrupted(Box::new(err)))
+    }
+
+    async fn is_quest_creator(&self, quest_id: &str, creator_address: &str) -> DBResult<bool> {
+        let quest_exists: bool = sqlx::query_scalar(
+            "
+                SELECT EXISTS (SELECT 1 FROM quests
+                WHERE id = $1 AND creator_address = $2)
+            ",
+        )
+        .bind(parse_str_to_uuid(quest_id)?)
+        .bind(creator_address)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::CanActivateQuestFailed(Box::new(err)))?;
+
+        Ok(quest_exists)
     }
 
     async fn can_activate_quest(&self, quest_id: &str) -> DBResult<bool> {

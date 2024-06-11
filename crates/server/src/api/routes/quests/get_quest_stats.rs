@@ -1,7 +1,6 @@
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use actix_web::{get, web, HttpResponse};
 use futures_util::{stream::FuturesUnordered, StreamExt};
 use quests_db::{core::definitions::QuestsDatabase, Database};
-use quests_system::get_instance_state;
 use serde::{Deserialize, Serialize};
 use std::{
     sync::Arc,
@@ -9,7 +8,7 @@ use std::{
 };
 use utoipa::ToSchema;
 
-use crate::{api::routes::quests::get_user_address_from_request, domain::quests::QuestError};
+use crate::{api::middlewares::RequiredAuthUser, domain::quests::QuestError};
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestStatsResponse {
@@ -35,19 +34,16 @@ pub struct GetQuestStatsResponse {
 )]
 #[get("/quests/{quest_id}/stats")]
 pub async fn get_quest_stats(
-    req: HttpRequest,
     db: web::Data<Database>,
     quest_id: web::Path<String>,
+    auth_user: RequiredAuthUser,
 ) -> HttpResponse {
     let db = db.into_inner();
     let quest_id = quest_id.into_inner();
 
-    let user = match get_user_address_from_request(&req) {
-        Ok(address) => address,
-        Err(bad_request_response) => return bad_request_response,
-    };
+    let RequiredAuthUser { address } = auth_user;
 
-    match get_quest_stats_controller(db, &quest_id, &user).await {
+    match get_quest_stats_controller(db, &quest_id, &address).await {
         Ok(quest_stats) => HttpResponse::Ok().json(quest_stats),
         Err(err) => HttpResponse::from_error(err),
     }
@@ -60,51 +56,44 @@ async fn get_quest_stats_controller<DB: QuestsDatabase>(
 ) -> Result<GetQuestStatsResponse, QuestError> {
     let mut futs = FuturesUnordered::new();
 
-    match db.get_quest(quest_id).await {
-        Ok(quest) => {
-            if quest.creator_address.eq_ignore_ascii_case(user_address) {
-                match db.get_quest_instances_by_quest_id(quest_id).await {
-                    Ok((actives, abandoned)) => {
-                        let mut stats = GetQuestStatsResponse {
-                            active_players: actives.len(),
-                            abandoned: abandoned.len(),
-                            completed: 0,
-                            started_in_last_24_hours: 0,
-                        };
+    match db.is_quest_creator(quest_id, user_address).await {
+        Ok(is_creator) if !is_creator => Err(QuestError::NotQuestCreator),
+        Ok(_) => match db.get_all_quest_instances_by_quest_id(quest_id).await {
+            Ok((actives, abandoned)) => {
+                let mut stats = GetQuestStatsResponse {
+                    active_players: actives.len(),
+                    abandoned: abandoned.len(),
+                    completed: 0,
+                    started_in_last_24_hours: 0,
+                };
 
-                        // TODO: All computation should be replaced by a cronjob and not done on demand
-                        for active in &actives {
-                            let db_clone = db.clone();
-                            let instance_id: String = active.id.clone();
-                            if is_within_24_hours(active.start_timestamp) {
-                                stats.started_in_last_24_hours += 1;
-                            }
-                            futs.push(async move {
-                                get_instance_state(db_clone, quest_id, &instance_id).await
-                            });
-                        }
-
-                        while let Some(Ok((_, state))) = futs.next().await {
-                            if state.is_completed() {
-                                stats.completed += 1;
-                            }
-                        }
-
-                        Ok(stats)
+                // TODO: All computation should be replaced by a cronjob and not done on demand
+                for active in &actives {
+                    let db_clone = db.clone();
+                    let instance_id: String = active.id.clone();
+                    if is_within_24_hours(active.start_timestamp) {
+                        stats.started_in_last_24_hours += 1;
                     }
-                    Err(err) => {
-                        log::error!(
-                            "> get_quest_stats_controller > Failed to get quest stats: {}",
-                            err
-                        );
-                        Err(QuestError::from(err))
+                    futs.push(async move { db_clone.is_completed_instance(&instance_id).await });
+                }
+
+                while let Some(Ok(is_completed)) = futs.next().await {
+                    if is_completed {
+                        stats.completed += 1;
                     }
                 }
-            } else {
-                Err(QuestError::NotQuestCreator)
+
+                Ok(stats)
             }
-        }
-        Err(err) => Err(QuestError::from(err)),
+            Err(err) => {
+                log::error!(
+                    "> get_quest_stats_controller > Failed to get quest stats: {}",
+                    err
+                );
+                Err(QuestError::from(err))
+            }
+        },
+        Err(err) => Err(err.into()),
     }
 }
 

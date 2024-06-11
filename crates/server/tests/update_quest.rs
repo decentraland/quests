@@ -1,5 +1,5 @@
 mod common;
-use actix_web::test::{call_service, init_service, read_body_json, try_call_service, TestRequest};
+use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 use actix_web_lab::__reexports::serde_json;
 pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
@@ -323,13 +323,9 @@ async fn update_quest_should_be_401() {
         .set_json(&quest_update)
         .to_request();
 
-    match try_call_service(&app, req).await {
-        Ok(_) => panic!("should fail"),
-        Err(err) => {
-            let response = err.error_response();
-            assert_eq!(response.status(), 401);
-        }
-    }
+    let response = call_service(&app, req).await;
+
+    assert_eq!(response.status(), 401)
 }
 
 #[actix_web::test]

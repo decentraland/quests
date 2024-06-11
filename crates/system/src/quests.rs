@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use futures_util::future::join_all;
-use quests_db::core::{definitions::QuestsDatabase, errors::DBError};
+use quests_db::core::{
+    definitions::{Event as StoredEvent, QuestsDatabase},
+    errors::DBError,
+};
 use quests_protocol::{
     definitions::{Event, ProtocolMessage, Quest, QuestDefinition, QuestState},
     quests::get_state,
@@ -14,7 +17,7 @@ pub enum QuestStateCalculationError {
     StateError,
 }
 
-pub async fn get_quest(
+pub async fn get_quest_with_decoded_definition(
     database: Arc<impl QuestsDatabase>,
     quest_id: &str,
 ) -> Result<Quest, QuestStateCalculationError> {
@@ -64,7 +67,7 @@ pub async fn get_all_quest_states_by_user_address(
     for join_result in join_results {
         match join_result {
             Ok((id, state_result)) => match state_result {
-                Ok(state) => states.push((id, state)),
+                Ok((quest, state, _)) => states.push((id, (quest, state))),
                 Err(quest_error) => return Err(quest_error),
             },
             Err(_) => return Err(QuestStateCalculationError::StateError),
@@ -77,8 +80,8 @@ pub async fn get_instance_state(
     database: Arc<impl QuestsDatabase>,
     quest_id: &str,
     quest_instance: &str,
-) -> Result<(Quest, QuestState), QuestStateCalculationError> {
-    let quest = get_quest(database.clone(), quest_id).await?;
+) -> Result<(Quest, QuestState, Vec<StoredEvent>), QuestStateCalculationError> {
+    let quest = get_quest_with_decoded_definition(database.clone(), quest_id).await?;
     let stored_events = database
         .get_events(quest_instance)
         .await
@@ -90,7 +93,7 @@ pub async fn get_instance_state(
         .collect::<Result<Vec<_>, _>>()
         .map_err(|_| QuestStateCalculationError::DefinitionError)?;
 
-    let state = get_state(&quest, events);
+    let state = get_state(&quest, &events);
 
-    Ok((quest, state))
+    Ok((quest, state, stored_events))
 }

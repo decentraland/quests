@@ -30,6 +30,7 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn is_active_quest(&self, quest_id: &str) -> DBResult<bool>;
     async fn has_active_quest_instance(&self, user_address: &str, quest_id: &str)
         -> DBResult<bool>;
+    async fn is_quest_creator(&self, quest_id: &str, creator_address: &str) -> DBResult<bool>;
 
     async fn start_quest(&self, quest_id: &str, user_address: &str) -> DBResult<String>;
     async fn abandon_quest_instance(&self, quest_instance_id: &str) -> DBResult<String>;
@@ -48,10 +49,16 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
         user_address: &str,
     ) -> DBResult<Vec<QuestInstance>>;
 
-    async fn get_quest_instances_by_quest_id(
+    async fn get_all_quest_instances_by_quest_id(
         &self,
         quest_id: &str,
     ) -> DBResult<(Vec<QuestInstance>, Vec<QuestInstance>)>;
+    async fn get_active_quest_instances_by_quest_id(
+        &self,
+        quest_id: &str,
+        offset: i64,
+        limit: i64,
+    ) -> DBResult<Vec<QuestInstance>>;
 
     async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()>;
     async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>>;
@@ -85,7 +92,7 @@ pub struct AddEvent<'a> {
     pub event: Vec<u8>,
 }
 
-#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct Event {
     pub id: String,
     pub user_address: String,
@@ -94,7 +101,7 @@ pub struct Event {
     pub event: Vec<u8>,
 }
 
-#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, PartialEq, Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct QuestInstance {
     pub id: String,
     pub quest_id: String,

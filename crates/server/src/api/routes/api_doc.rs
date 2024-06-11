@@ -1,5 +1,6 @@
 use super::creators;
 use super::health;
+use super::quest_instances;
 use super::quests;
 use actix_web::web::ServiceConfig;
 use actix_web_lab::__reexports::serde_json::{json, to_value};
@@ -26,7 +27,10 @@ use utoipa_redoc::Servable;
                 quests::get_quest_stats,
                 quests::activate_quest,
                 quests::get_quest_updates,
+                quests::get_quest_instances,
                 creators::get_quests_by_creator_id,
+                quest_instances::reset_quest_instance,
+                quest_instances::get_quest_instance_state
         ),
         components(
                 schemas(
@@ -47,14 +51,23 @@ use utoipa_redoc::Servable;
                         quests_protocol::definitions::Task,
                         quests_protocol::definitions::Action,
                         quests_protocol::definitions::Connection,
+                        quests_protocol::definitions::QuestState,
+                        quests_protocol::definitions::StepContent,
+                        quests_protocol::definitions::Task,
                         quests_db::core::definitions::QuestReward,
                         quests_db::core::definitions::QuestRewardHook,
                         quests_db::core::definitions::QuestRewardItem,
+                        quests_db::core::definitions::Event,
+                        quests_db::core::definitions::QuestInstance,
+                        quest_instances::state::GetInstanceStateResponse,
+                        quests::get_instances::GetQuestInstancesResponse,
+                        quests::get_instances::GetQuestInstancesQuery
                 )
         ),
         tags(
             (name = "quests", description = "Quests endpoints."),
-            (name = "creators", description = "Creators endpoints.")
+            (name = "creators", description = "Creators endpoints."),
+            (name = "quest_instances", description = "Quest Instances endpoints.")
         ),
 )]
 struct ApiDoc;

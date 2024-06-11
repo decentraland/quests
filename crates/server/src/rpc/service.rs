@@ -13,7 +13,7 @@ use dcl_rpc::{
 use log::error;
 use quests_message_broker::channel::{ChannelPublisher, ChannelSubscriber};
 use quests_protocol::definitions::*;
-use quests_system::{get_all_quest_states_by_user_address, get_quest};
+use quests_system::{get_all_quest_states_by_user_address, get_quest_with_decoded_definition};
 use quests_system::{get_instance_state, QUESTS_CHANNEL_NAME};
 use tokio::time::Instant;
 
@@ -64,7 +64,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                 )
                 .await
                 {
-                    Ok((quest, quest_state)) => {
+                    Ok((quest, quest_state, _)) => {
                         transport_context
                             .quest_instance_ids
                             .lock()
@@ -658,7 +658,12 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
             .metrics_collector
             .record_procedure_call_duration(Procedure::GetQuestDefinition);
 
-        match get_quest(context.server_context.db.clone(), &request.quest_id).await {
+        match get_quest_with_decoded_definition(
+            context.server_context.db.clone(),
+            &request.quest_id,
+        )
+        .await
+        {
             Ok(mut quest) => {
                 context
                     .server_context

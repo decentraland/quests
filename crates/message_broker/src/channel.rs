@@ -20,11 +20,10 @@ impl RedisChannelSubscriber {
         redis: Arc<Redis>,
         channel_name: &str,
     ) -> Result<Self, RedisChannelSubscriberError> {
-        let connection = if let Some(conn) = redis.get_async_connection().await {
-            conn
-        } else {
-            return Err(RedisChannelSubscriberError::NoConnectionAvailable);
-        };
+        let connection = redis
+            .get_async_connection()
+            .await
+            .ok_or(RedisChannelSubscriberError::NoConnectionAvailable)?;
 
         let connection = deadpool_redis::Connection::take(connection);
         let mut pubsub = connection.into_pubsub();

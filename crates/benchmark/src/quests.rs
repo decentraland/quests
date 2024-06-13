@@ -16,10 +16,12 @@ fn random_action() -> Action {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateQuestRequest {
     name: String,
     description: String,
     definition: QuestDefinition,
+    image_url: String,
 }
 
 pub fn random_quest() -> CreateQuestRequest {
@@ -64,6 +66,7 @@ pub fn random_quest() -> CreateQuestRequest {
         name: create_random_string(10),
         description: create_random_string(100),
         definition: QuestDefinition { connections, steps },
+        image_url: "http://google.com".to_string(),
     }
 }
 
@@ -171,6 +174,7 @@ pub fn grab_some_pies() -> CreateQuestRequest {
                 },
             ],
         },
+        image_url: "http://google.com".to_string(),
     }
 }
 

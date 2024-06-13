@@ -36,7 +36,7 @@ pub struct Args {
     #[arg(short, long, default_value_t = 60, help = "Request timeout")]
     pub timeout: u8,
 
-    #[arg(short, long, default_value_t = true, help = "Authenticate WebSocket")]
+    #[arg(long, default_value_t = true, help = "Authenticate WebSocket")]
     pub authenticate: bool,
 
     #[arg(short, long, default_value_t = 10, help = "Amount of quests to create")]

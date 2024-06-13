@@ -9,6 +9,7 @@ use dcl_crypto_middleware_rs::ws_signed_headers::{
 };
 use dcl_rpc::{
     server::RpcServer,
+    stream_protocol::GeneratorYielder,
     transports::web_sockets::{warp::WarpWebSocket, Message, WebSocket, WebSocketTransport},
 };
 use futures_util::lock::Mutex;
@@ -34,26 +35,26 @@ pub struct QuestsRpcServerContext {
     pub config: Arc<Config>,
     pub db: Arc<Database>,
     pub redis_events_queue: Arc<RedisMessagesQueue>,
-    pub redis_channel_subscriber: RedisChannelSubscriber,
     pub redis_channel_publisher: Arc<RedisChannelPublisher>,
     pub transport_contexts: Arc<RwLock<HashMap<u32, TransportContext>>>,
     pub metrics_collector: Arc<MetricsCollector>,
 }
 
 pub struct TransportContext {
-    pub subscription_handle: Option<(JoinHandle<()>, Instant)>,
+    pub yielder: Option<GeneratorYielder<UserUpdate>>,
+    pub subscription_ts: Option<Instant>,
     pub quest_instance_ids: Arc<Mutex<Vec<String>>>,
     pub user_address: Address,
     pub connection_ts: Instant,
 }
 
 pub async fn run_rpc_server(
-    (config, db, redis_events_queue, redis_channel_subscriber, redis_channel_publisher): (
+    (config, db, redis_events_queue, redis_channel_publisher, mut redis_channel_subscriber): (
         Arc<Config>,
         Arc<Database>,
         Arc<RedisMessagesQueue>,
-        RedisChannelSubscriber,
         Arc<RedisChannelPublisher>,
+        RedisChannelSubscriber,
     ),
 ) -> (JoinHandle<()>, JoinHandle<()>) {
     let ws_server_address = (
@@ -68,14 +69,13 @@ pub async fn run_rpc_server(
         config,
         db,
         redis_events_queue,
-        redis_channel_subscriber,
         redis_channel_publisher,
         transport_contexts: Arc::new(RwLock::new(HashMap::new())),
         metrics_collector: metrics_collector.clone(),
     };
 
-    let transport_contexts: Arc<RwLock<HashMap<u32, TransportContext>>> =
-        ctx.transport_contexts.clone();
+    let transport_contexts = ctx.transport_contexts.clone();
+    let transport_by_user_address = Arc::new(RwLock::new(HashMap::new()));
 
     let mut rpc_server = RpcServer::create(ctx);
 
@@ -121,7 +121,7 @@ pub async fn run_rpc_server(
         .and(warp::path::end())
         .map(|| "\"alive\"".to_string());
 
-    let metrics_collector_cloned = Arc::clone(&metrics_collector);
+    let metrics_collector_cloned = metrics_collector.clone();
     let metrics_route = warp::get()
         .and(warp::path("metrics"))
         .and(warp::path::end())
@@ -149,9 +149,12 @@ pub async fn run_rpc_server(
     });
 
     let cloned_transport_contexts_closes = transport_contexts.clone();
-    let metrics_collector_cloned = Arc::clone(&metrics_collector);
+    let cloned_transport_by_user_address = transport_by_user_address.clone();
+    let metrics_collector_cloned = metrics_collector.clone();
+
     rpc_server.set_on_transport_closes_handler(move |_, transport_id| {
         let transport_contexts = cloned_transport_contexts_closes.clone();
+        let transport_by_user_address = cloned_transport_by_user_address.clone();
         metrics_collector_cloned.client_disconnected();
 
         let metrics_collector = metrics_collector_cloned.clone();
@@ -159,30 +162,73 @@ pub async fn run_rpc_server(
         tokio::spawn(async move {
             let transport = transport_contexts.write().await.remove(&transport_id);
             if let Some(transport) = transport {
+                transport_by_user_address
+                    .write()
+                    .await
+                    .remove(&transport.user_address.to_string().to_ascii_lowercase());
                 metrics_collector
                     .record_client_duration(transport.connection_ts.elapsed().as_secs_f64());
-                if let Some((_, instant)) = transport.subscription_handle {
+                if let Some(instant) = transport.subscription_ts {
                     metrics_collector.record_subscribe_duration(instant.elapsed().as_secs_f64())
                 }
             }
         });
     });
 
+    let cloned_transport_contexts = transport_contexts.clone();
+    let cloned_transport_by_user_address = transport_by_user_address.clone();
     rpc_server.set_on_transport_connected_handler(move |transport, transport_id| {
-        let transport_contexts = transport_contexts.clone();
+        let transport_contexts = cloned_transport_contexts.clone();
+        let transport_by_user_address = cloned_transport_by_user_address.clone();
         metrics_collector.client_connected();
         tokio::spawn(async move {
             debug!("> OnConnected > Address: {:?}", transport.context);
+            transport_by_user_address.write().await.insert(
+                transport.context.to_string().to_ascii_lowercase(),
+                transport_id,
+            );
             transport_contexts.write().await.insert(
                 transport_id,
                 TransportContext {
-                    subscription_handle: None,
+                    yielder: None,
+                    subscription_ts: None,
                     quest_instance_ids: Arc::new(Mutex::new(vec![])),
                     user_address: transport.context,
                     connection_ts: Instant::now(),
                 },
             );
         });
+    });
+
+    tokio::spawn(async move {
+        redis_channel_subscriber
+            .on_new_message(move |user_update: UserUpdate| {
+                let cloned_transport_by_user_address = transport_by_user_address.clone();
+                let cloned_transports_ctx = transport_contexts.clone();
+                async move {
+                    info!("> update received: {:?}", user_update);
+                    if let Some(transport_id) = cloned_transport_by_user_address
+                        .read()
+                        .await
+                        .get(&user_update.user_address)
+                    {
+                        if let Some(ctx) = cloned_transports_ctx.read().await.get(transport_id) {
+                            info!(
+                                "> transport found for user: {} - TID: {}",
+                                user_update.user_address, transport_id
+                            );
+                            if let Some(yielder) = &ctx.yielder {
+                                if yielder.r#yield(user_update).await.is_err() {
+                                    error!(
+                                    "User Update received > Couldn't send update to subscriptors"
+                                );
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+            .await
     });
 
     let rpc_server_handle = tokio::spawn(async move {

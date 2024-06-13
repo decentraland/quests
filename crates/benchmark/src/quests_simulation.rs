@@ -1,5 +1,11 @@
 use std::{fmt::Display, time::Duration};
 
+use crate::{
+    args::Args,
+    client::{create_test_identity, get_signed_headers, TestWebSocketTransport},
+    quests::{create_random_string, random_quest},
+    simulation::{Client, Context},
+};
 use async_trait::async_trait;
 use dcl_rpc::{client::RpcClient, stream_protocol::Generator};
 use log::{debug, error, info};
@@ -7,13 +13,6 @@ use quests_protocol::definitions::*;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::Deserialize;
 use tokio::time::timeout;
-
-use crate::{
-    args::Args,
-    client::{create_test_identity, get_signed_headers, TestWebSocketTransport},
-    quests::{create_random_string, random_quest},
-    simulation::{Client, Context},
-};
 
 #[derive(Deserialize)]
 struct CreateQuestResponse {
@@ -31,14 +30,14 @@ impl TestContext {
         let headers = get_signed_headers(
             create_test_identity(),
             "post",
-            "/quests",
+            "/api/quests",
             serde_json::to_string(&quest).unwrap().as_str(),
         );
 
         let client = reqwest::Client::new();
 
         let res = client
-            .post(format!("{api_host}/quests"))
+            .post(format!("{api_host}/api/quests"))
             .header(headers[0].0.clone(), headers[0].1.clone())
             .header(headers[1].0.clone(), headers[1].1.clone())
             .header(headers[2].0.clone(), headers[2].1.clone())
@@ -155,9 +154,7 @@ impl ClientState {
                     .await;
                 debug!(
                     "User {} > StartQuestRequest: id {} > Response: {:?}",
-                    quest_id,
-                    &user_address[..4],
-                    response
+                    quest_id, &user_address, response
                 );
                 match response {
                     Ok(StartQuestResponse {
@@ -174,7 +171,7 @@ impl ClientState {
                 let Ok(quest_updates) = act else {
                     error!(
                         "User {} > Timeout while fetching started quest state",
-                        &user_address[..4]
+                        &user_address
                     );
                     return ClientState::StartQuestRequested { updates, quest_id };
                 };
@@ -193,11 +190,15 @@ impl ClientState {
                         quest_instance_id: id,
                         quest_state: state,
                     },
-                    _ => {
+                    Some(other) => {
                         error!(
-                            "User {} > Start Quest > Received update is not the quest state",
-                            &user_address[..4]
+                            "User {} > Start Quest > Received update is not the quest state > {other:?}",
+                            &user_address
                         );
+                        ClientState::StartQuestRequested { updates, quest_id }
+                    }
+                    None => {
+                        error!("No update. Decoding error");
                         ClientState::StartQuestRequested { updates, quest_id }
                     }
                 }
@@ -232,7 +233,7 @@ impl ClientState {
                     _ => {
                         error!(
                             "> User {} > Make Quest Progress > event not accepted, retrying",
-                            &user_address[..4]
+                            &user_address
                         );
                         ClientState::MakeQuestProgress {
                             updates,
@@ -247,12 +248,12 @@ impl ClientState {
                 quest_instance_id,
                 quest_state,
             } => {
-                debug!("User {} > Fetch next event > Next.", &user_address[..4]);
+                debug!("User {} > Fetch next event > Next.", &user_address);
                 let act = timeout(context.timeout, updates.next()).await;
                 let Ok(quest_update) = act else {
                     error!(
                         "User {} > Timeout while fetching next event!",
-                        &user_address[..4]
+                        &user_address
                     );
                     return ClientState::FetchQuestUpdate {
                         updates,
@@ -260,11 +261,11 @@ impl ClientState {
                         quest_state,
                     };
                 };
-                debug!("User {} > Fetch next event > Done.", &user_address[..4]);
+                debug!("User {} > Fetch next event > Done.", &user_address);
 
                 debug!(
                     "User {} > quest_update received > {quest_update:?}",
-                    &user_address[..4]
+                    &user_address
                 );
 
                 match quest_update {
@@ -286,7 +287,7 @@ impl ClientState {
                             }
                         }
                         Some(user_update::Message::EventIgnored(_)) => {
-                            error!("User {} > Event ignored", &user_address[..4]);
+                            error!("User {} > Event ignored", &user_address);
                             ClientState::MakeQuestProgress {
                                 updates,
                                 quest_instance_id,
@@ -299,7 +300,7 @@ impl ClientState {
                         })) => {
                             debug!(
                                 "User {} > QuestStateUpdate received for wrong quest instance {}, expected instance was {}",
-                                &user_address[..4],
+                                &user_address,
                                 instance_id,
                                 quest_instance_id
                             );
@@ -321,9 +322,9 @@ impl ClientState {
         };
 
         if std::mem::discriminant(&state) == current_state_discriminant {
-            info!("User {} > State didn't change", &user_address[..4]);
+            info!("User {} > State didn't change", &user_address);
         } else {
-            info!("User {} > {state}", &user_address[..4]);
+            info!("User {} > {state}", &user_address);
         }
         state
     }
@@ -337,7 +338,7 @@ impl Context for TestContext {
         for _ in 0..args.quests {
             match Self::create_random_quest(&args.api_host).await {
                 Ok(quest_id) => quest_ids.push(quest_id),
-                Err(reason) => debug!("Quest Creation > Couldn't POST quest: {reason}"),
+                Err(reason) => error!("Quest Creation > Couldn't POST quest: {reason}"),
             }
         }
         Self {

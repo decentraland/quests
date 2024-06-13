@@ -11,10 +11,9 @@ use dcl_rpc::{
     stream_protocol::Generator,
 };
 use log::error;
-use quests_message_broker::channel::{ChannelPublisher, ChannelSubscriber};
 use quests_protocol::definitions::*;
+use quests_system::get_instance_state;
 use quests_system::{get_all_quest_states_by_user_address, get_quest_with_decoded_definition};
-use quests_system::{get_instance_state, QUESTS_CHANNEL_NAME};
 use tokio::time::Instant;
 
 pub struct QuestsServiceImplementation;
@@ -64,12 +63,14 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
                 )
                 .await
                 {
-                    Ok((quest, quest_state, _)) => {
+                    Ok((quest, mut quest_state, _)) => {
                         transport_context
                             .quest_instance_ids
                             .lock()
                             .await
                             .push(new_quest_instance_id.clone());
+
+                        quest_state.hide_actions();
 
                         let user_update = UserUpdate {
                             message: Some(user_update::Message::NewQuestStarted(QuestInstance {
@@ -490,41 +491,6 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
         drop(transport_contexts);
         let (generator, generator_yielder) = Generator::create();
 
-        let moved_user_address = user_address.clone();
-        let yielder = generator_yielder.clone();
-        let metrics_collector = context.server_context.metrics_collector.clone();
-
-        let subscription_join_handle = context.server_context.redis_channel_subscriber.subscribe(
-            QUESTS_CHANNEL_NAME,
-            move |user_update: UserUpdate| {
-                let generator_yielder = yielder.clone();
-                let user_address = moved_user_address.clone();
-                let metrics_collector = metrics_collector.clone();
-                // Just return false on failure
-                async move {
-                    match user_address.eq_ignore_ascii_case(&user_update.user_address) {
-                        true => {
-                            let bytes = user_update.encoded_len();
-                            if generator_yielder.r#yield(user_update).await.is_err() {
-                                error!(
-                                    "User Update received > Couldn't send update to subscriptors"
-                                );
-                                false
-                            } else {
-                                metrics_collector.record_out_procedure_call_size(
-                                    Procedure::Subscribe,
-                                    Status::Stream,
-                                    bytes,
-                                );
-                                true
-                            }
-                        }
-                        false => true,
-                    }
-                }
-            },
-        );
-
         let accepted_response = UserUpdate {
             message: Some(user_update::Message::Subscribed(true)),
             user_address: user_address.clone(),
@@ -552,8 +518,8 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
             .await
             .entry(context.transport_id)
             .and_modify(|current_context| {
-                current_context.subscription_handle =
-                    Some((subscription_join_handle, Instant::now()));
+                current_context.yielder = Some(generator_yielder);
+                current_context.subscription_ts = Some(Instant::now());
             });
 
         context
@@ -595,7 +561,7 @@ impl QuestsServiceServer<QuestsRpcServerContext, ServiceError> for QuestsService
             Ok(mut quest_states) => {
                 let mut quests = Vec::new();
                 for (instance_id, (ref mut quest, state)) in quest_states.iter_mut() {
-                    quest.hide_actions();
+                    // quest.hide_actions();
                     let quest_definition_and_state = QuestInstance {
                         id: instance_id.to_string(),
                         quest: Some(quest.clone()),
@@ -767,7 +733,7 @@ enum Status {
     NotFound,
     QuestAlreadyStarted,
     Ignored,
-    Stream,
+    // Stream,
 }
 
 impl<'a> From<Status> for &'a str {
@@ -781,7 +747,7 @@ impl<'a> From<Status> for &'a str {
             Status::QuestAlreadyStarted => "QUEST_ALREADY_STARTED",
             Status::NotExistsTransportID => "NOT_EXISTS_TRANSPORT_ID",
             Status::Ignored => "IGNORED",
-            Status::Stream => "STREAM",
+            // Status::Stream => "STREAM",
         }
     }
 }

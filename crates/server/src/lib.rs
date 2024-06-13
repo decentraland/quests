@@ -43,7 +43,9 @@ pub async fn run_app() {
         redis.clone(),
         QUESTS_CHANNEL_NAME,
     ));
-    let quests_channel_subscriber = RedisChannelSubscriber::new(redis.clone());
+    let quests_channel_subscriber = RedisChannelSubscriber::new(redis.clone(), QUESTS_CHANNEL_NAME)
+        .await
+        .expect("> run_app > Couldn't initialize subscriber");
 
     let http_metrics_collector = Arc::new(HttpMetricsCollectorBuilder::default().build());
 
@@ -51,15 +53,15 @@ pub async fn run_app() {
         config.clone(),
         database.clone(),
         events_queue.clone(),
-        quests_channel_subscriber,
         quests_channel_publisher.clone(),
+        quests_channel_subscriber,
     ))
     .await;
 
     let event_processing = event_processing::run_event_processor(
         database.clone(),
         events_queue.clone(),
-        quests_channel_publisher.clone(),
+        quests_channel_publisher,
     );
 
     let actix_rest_api_server = api::run_server(

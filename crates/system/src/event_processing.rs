@@ -8,7 +8,7 @@ use quests_db::{
     create_quests_db_component, Database,
 };
 use quests_message_broker::{
-    channel::{ChannelPublisher, RedisChannelPublisher},
+    channel::RedisChannelPublisher,
     messages_queue::{MessagesQueue, RedisMessagesQueue},
     redis::Redis,
 };

@@ -30,7 +30,10 @@ use utoipa_redoc::Servable;
                 quests::get_quest_instances,
                 creators::get_quests_by_creator_id,
                 quest_instances::reset_quest_instance,
-                quest_instances::get_quest_instance_state
+                quest_instances::get_quest_instance_state,
+                quest_instances::add_event_to_instance,
+                quest_instances::get_quest_instance,
+                quest_instances::remove_event_from_instance,
         ),
         components(
                 schemas(
@@ -61,7 +64,10 @@ use utoipa_redoc::Servable;
                         quests_db::core::definitions::QuestInstance,
                         quest_instances::state::GetInstanceStateResponse,
                         quests::get_instances::GetQuestInstancesResponse,
-                        quests::get_instances::GetQuestInstancesQuery
+                        quests::get_instances::GetQuestInstancesQuery,
+                        quest_instances::add_event::AddEventToInstancePayload,
+                        quest_instances::add_event::AddEventToInstanceResponse,
+                        quest_instances::get::GetQuestInstanceResponse,
                 )
         ),
         tags(

@@ -134,7 +134,7 @@ impl QuestsDatabase for Database {
         Ok(quests)
     }
 
-    async fn get_quests_by_creator_id(
+    async fn get_quests_by_creator_address(
         &self,
         creator_address: &str,
         offset: i64,
@@ -194,6 +194,22 @@ impl QuestsDatabase for Database {
         }
 
         Ok(quests)
+    }
+
+    async fn count_quests_by_creator_address(&self, creator_address: &str) -> DBResult<i64> {
+        let count: i64 = sqlx::query_scalar(
+            "SELECT count(q.id)
+                FROM quests q
+                LEFT JOIN deactivated_quests dq ON q.id = dq.quest_id
+                LEFT JOIN quest_updates uq ON q.id = uq.previous_quest_id
+                WHERE q.creator_address = $1 AND uq.id IS NULL",
+        )
+        .bind(creator_address)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::UnableToCountActiveQuestInstances(Box::new(err)))?;
+
+        Ok(count)
     }
 
     async fn create_quest(&self, quest: &CreateQuest, creator_address: &str) -> DBResult<String> {
@@ -536,6 +552,16 @@ impl QuestsDatabase for Database {
         Ok(())
     }
 
+    async fn remove_event(&self, event_id: &str) -> DBResult<()> {
+        sqlx::query("DELETE FROM events WHERE id = $1")
+            .bind(parse_str_to_uuid(event_id)?)
+            .execute(&self.pool)
+            .await
+            .map_err(|err| DBError::GetQuestEventsFailed(Box::new(err)))?;
+
+        Ok(())
+    }
+
     async fn add_reward_hook_to_quest(
         &self,
         quest_id: &str,
@@ -619,13 +645,27 @@ impl QuestsDatabase for Database {
         .fetch_all(&self.pool)
         .await
         .map_err(|err| {
-            DBError::GetQuestInstancesByQuestIdFailed(quest_id.to_string(), Box::new(err))
+            DBError::GetActiveQuestInstancesByQuestIdFailed(quest_id.to_string(), Box::new(err))
         })?;
 
         let result: Result<Vec<_>, _> =
             instances.into_iter().map(QuestInstance::try_from).collect();
 
         result.map_err(|err| DBError::RowCorrupted(Box::new(err)))
+    }
+
+    async fn count_active_quest_instances_by_quest_id(&self, quest_id: &str) -> DBResult<i64> {
+        let count: i64 = sqlx::query_scalar(
+            "SELECT count(id) FROM quest_instances 
+            WHERE quest_id = $1 
+            AND id NOT IN (SELECT quest_instance_id as id FROM abandoned_quest_instances)",
+        )
+        .bind(parse_str_to_uuid(quest_id)?)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::UnableToCountActiveQuestInstances(Box::new(err)))?;
+
+        Ok(count)
     }
 
     async fn is_quest_creator(&self, quest_id: &str, creator_address: &str) -> DBResult<bool> {
@@ -639,7 +679,7 @@ impl QuestsDatabase for Database {
         .bind(creator_address)
         .fetch_one(&self.pool)
         .await
-        .map_err(|err| DBError::CanActivateQuestFailed(Box::new(err)))?;
+        .map_err(|err| DBError::UnableToCheckQuestCreator(Box::new(err)))?;
 
         Ok(quest_exists)
     }

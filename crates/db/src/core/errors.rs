@@ -58,6 +58,9 @@ pub enum DBError {
     #[error("Unable to retrieve all instances related to Quest ID {0}: {1}")]
     GetQuestInstancesByQuestIdFailed(String, BoxDynError),
 
+    #[error("Unable to retrieve all active instances related to Quest ID {0}: {1}")]
+    GetActiveQuestInstancesByQuestIdFailed(String, BoxDynError),
+
     #[error("Unable to check if a quest instance is still active: {0}")]
     GetActiveQuestInstanceFailed(BoxDynError),
 
@@ -86,6 +89,12 @@ pub enum DBError {
 
     #[error("Unable to check if a quest instance is completed: {0}")]
     IsCompletedInstanceFailed(BoxDynError),
+
+    #[error("Unable to count active quest instances: {0}")]
+    UnableToCountActiveQuestInstances(BoxDynError),
+
+    #[error("Unable to check quest creator: {0}")]
+    UnableToCheckQuestCreator(BoxDynError),
 
     #[error("Row has incorrect data: {0}")]
     RowCorrupted(BoxDynError),

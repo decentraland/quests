@@ -89,10 +89,17 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert!(!db.can_activate_quest(&quest_id).await.unwrap());
 
     // creators quests should be ONE because query returns current versions (activated and deactivated) and not old versions
-    let quests_by_creator = db.get_quests_by_creator_id("0xA", 0, 50).await.unwrap();
+    let quests_by_creator = db
+        .get_quests_by_creator_address("0xA", 0, 50)
+        .await
+        .unwrap();
     assert_eq!(quests_by_creator.len(), 1);
     assert_eq!(quests_by_creator.first().unwrap().id, new_quest_id);
     assert!(quests_by_creator.first().unwrap().active);
+
+    let count_quest_by_creator = db.count_quests_by_creator_address("0xA").await.unwrap();
+    assert_eq!(count_quest_by_creator, 1);
+
     let create_deactivated_quest = CreateQuest {
         name: "DEACTIVATED_CREATOR_QUEST",
         description: quest.description,
@@ -100,13 +107,17 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         image_url: quest.image_url,
         reward: None,
     };
+
     let deactivated_quest = db
         .create_quest(&create_deactivated_quest, "0xA")
         .await
         .unwrap();
     db.deactivate_quest(&deactivated_quest).await.unwrap();
     // creators quests should be TWO because query returns current versions (activated and deactivated) and not old versions
-    let quests_by_creator = db.get_quests_by_creator_id("0xA", 0, 50).await.unwrap();
+    let quests_by_creator = db
+        .get_quests_by_creator_address("0xA", 0, 50)
+        .await
+        .unwrap();
     assert_eq!(quests_by_creator.len(), 2);
     // order by desc
     assert_eq!(quests_by_creator.first().unwrap().id, deactivated_quest);
@@ -144,6 +155,12 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
         .unwrap();
 
     assert_eq!(quest_instances.len(), 1);
+
+    let count_quest_instances = db
+        .count_active_quest_instances_by_quest_id(&quest_id)
+        .await
+        .unwrap();
+    assert_eq!(count_quest_instances, 1);
 
     let instances_by_quest_id = db
         .get_all_quest_instances_by_quest_id(&quest_id)
@@ -284,6 +301,27 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     db.remove_events(&new_quest_instance_id).await.unwrap();
     let events = db.get_events(&new_quest_instance_id).await.unwrap();
     assert_eq!(events.len(), 0);
+
+    let event_id = uuid::Uuid::new_v4().to_string();
+    db.add_event(
+        &AddEvent {
+            id: event_id.clone(),
+            user_address: "0xD",
+            event: vec![0],
+        },
+        &new_quest_instance_id,
+    )
+    .await
+    .unwrap();
+
+    let events = db.get_events(&new_quest_instance_id).await.unwrap();
+    assert_eq!(events.len(), 1);
+
+    db.remove_event(&event_id).await.unwrap();
+
+    let events = db.get_events(&new_quest_instance_id).await.unwrap();
+    assert_eq!(events.len(), 0);
+
     // test remove from completed quest instances
     db.remove_instance_from_completed_instances(&new_quest_instance_id)
         .await

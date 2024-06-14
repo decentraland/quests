@@ -16,13 +16,14 @@ pub struct GetQuestInstancesQuery {
 #[derive(Deserialize, Serialize, ToSchema)]
 pub struct GetQuestInstancesResponse {
     pub instances: Vec<QuestInstance>,
+    pub total: i64,
 }
 
 /// Get all quest instances. Only the Quest Creator is allowed to see the Quest Instances
 #[utoipa::path(
     params(
         ("query" = GetQuestsQuery, Query, description = "Offset and limit params"),
-        ("quest_id" = String, description = "Quest ID")
+        ("quest_id" = String, description = "Quest UUID")
     ),
     responses(
         (status = 200, description = "Quest's Instances", body = GetQuestInstacesResponse),
@@ -53,7 +54,15 @@ pub async fn get_quest_instances(
             )
             .await
         {
-            Ok(instances) => HttpResponse::Ok().json(GetQuestInstancesResponse { instances }),
+            Ok(instances) => match db.count_active_quest_instances_by_quest_id(&quest_id).await {
+                Ok(total) => {
+                    HttpResponse::Ok().json(GetQuestInstancesResponse { instances, total })
+                }
+                Err(err) => {
+                    log::error!("error on counting quest instances {err} for {quest_id}");
+                    HttpResponse::from_error(QuestError::from(err))
+                }
+            },
             Err(err) => {
                 log::error!("error on getting quest instances {err} for {quest_id}");
                 HttpResponse::from_error(QuestError::from(err))

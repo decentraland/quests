@@ -26,7 +26,7 @@ pub struct UpdateQuestResponse {
 #[utoipa::path(
     request_body = UpdateQuestRequest,
     params(
-        ("quest_id" = String, Path, description = "Quest ID")
+        ("quest_id" = String, Path, description = "Quest UUID")
     ),
     responses(
         (status = 200, description = "Quest updated", body = UpdateQuestResponse),

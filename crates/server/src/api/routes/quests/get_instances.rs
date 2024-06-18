@@ -26,7 +26,7 @@ pub struct GetQuestInstancesResponse {
         ("quest_id" = String, description = "Quest UUID")
     ),
     responses(
-        (status = 200, description = "Quest's Instances", body = GetQuestInstacesResponse),
+        (status = 200, description = "Quest's Instances", body = GetQuestInstancesResponse),
         (status = 401, description = "Unathorized"),
         (status = 403, description = "Forbidden"),
         (status = 500, description = "Internal Server Error")

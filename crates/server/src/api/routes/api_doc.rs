@@ -56,6 +56,7 @@ use utoipa_redoc::Servable;
                         quests_protocol::definitions::Connection,
                         quests_protocol::definitions::QuestState,
                         quests_protocol::definitions::StepContent,
+                        quests_protocol::definitions::EventRequest,
                         quests_protocol::definitions::Task,
                         quests_db::core::definitions::QuestReward,
                         quests_db::core::definitions::QuestRewardHook,

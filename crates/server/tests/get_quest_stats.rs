@@ -11,7 +11,7 @@ use quests_server::api::routes::quests::GetQuestStatsResponse;
 
 #[actix_web::test]
 async fn get_quest_stats_should_be_200() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -74,7 +74,7 @@ async fn get_quest_stats_should_be_200() {
 
 #[actix_web::test]
 async fn get_quest_stats_should_be_403() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -126,7 +126,7 @@ async fn get_quest_stats_should_be_403() {
 
 #[actix_web::test]
 async fn get_quest_stats_should_be_401() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();

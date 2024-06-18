@@ -9,6 +9,10 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert!(db.ping().await);
     let quest_id = db.create_quest(&quest, "0xA").await.unwrap();
 
+    let count_active_quest = db.count_active_quests().await.unwrap();
+
+    assert_eq!(count_active_quest, 1);
+
     let is_creator = db.is_quest_creator(&quest_id, "0xA").await.unwrap();
     assert!(is_creator);
 
@@ -298,7 +302,9 @@ pub async fn quest_database_works<DB: QuestsDatabase>(db: &DB, quest: CreateQues
     assert!(is_completed);
 
     // test remove events
-    db.remove_events(&new_quest_instance_id).await.unwrap();
+    db.remove_events_from_quest_instance(&new_quest_instance_id)
+        .await
+        .unwrap();
     let events = db.get_events(&new_quest_instance_id).await.unwrap();
     assert_eq!(events.len(), 0);
 

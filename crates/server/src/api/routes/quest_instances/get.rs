@@ -21,6 +21,7 @@ pub struct GetQuestInstanceResponse {
         (status = 200, description = "Quest Instance", body = GetQuestInstanceResponse),
         (status = 401, description = "Unathorized"),
         (status = 403, description = "Forbidden"),
+        (status = 404, description = "Not Found"),
         (status = 500, description = "Internal Server Error")
     )
 )]

@@ -16,6 +16,7 @@ pub struct GetQuestsQuery {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GetQuestsResponse {
     pub quests: Vec<Quest>,
+    pub total: i64,
 }
 
 /// Get quests.
@@ -40,7 +41,7 @@ pub async fn get_quests(
     let db = db.into_inner();
 
     match get_quests_controller(db, query.offset.unwrap_or(0), query.limit.unwrap_or(50)).await {
-        Ok(quests) => HttpResponse::Ok().json(GetQuestsResponse { quests }),
+        Ok((quests, total)) => HttpResponse::Ok().json(GetQuestsResponse { quests, total }),
         Err(err) => HttpResponse::from_error(err),
     }
 }
@@ -49,18 +50,21 @@ async fn get_quests_controller<DB: QuestsDatabase>(
     db: Arc<DB>,
     offset: i64,
     limit: i64,
-) -> Result<Vec<Quest>, QuestError> {
+) -> Result<(Vec<Quest>, i64), QuestError> {
     match db.get_active_quests(offset, limit).await {
-        Ok(stored_quests) => {
-            let mut quests = vec![];
-            for stored_quest in stored_quests {
-                match stored_quest.to_quest(false) {
-                    Ok(quest) => quests.push(quest),
-                    Err(err) => return Err(err),
+        Ok(stored_quests) => match db.count_active_quests().await {
+            Ok(total) => {
+                let mut quests = vec![];
+                for stored_quest in stored_quests {
+                    match stored_quest.to_quest(false) {
+                        Ok(quest) => quests.push(quest),
+                        Err(err) => return Err(err),
+                    }
                 }
+                Ok((quests, total))
             }
-            Ok(quests)
-        }
+            Err(err) => Err(err.into()),
+        },
         Err(err) => Err(err.into()),
     }
 }

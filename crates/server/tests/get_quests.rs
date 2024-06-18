@@ -10,7 +10,7 @@ use quests_server::api::routes::{quests::GetQuestsResponse, ErrorResponse};
 
 #[actix_web::test]
 async fn get_quests_should_be_200() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
@@ -39,12 +39,13 @@ async fn get_quests_should_be_200() {
     let body: GetQuestsResponse = read_body_json(response).await;
 
     assert_eq!(body.quests.len(), 1);
+    assert_eq!(body.total, 1);
     assert_eq!(body.quests[0].name, quest_definition.name)
 }
 
 #[actix_web::test]
 async fn get_quests_should_be_400() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let req = TestRequest::get()
         .uri("/api/quests?offset=0aa")

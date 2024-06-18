@@ -21,6 +21,7 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
     async fn deactivate_quest(&self, id: &str) -> DBResult<String>;
     async fn get_quest(&self, id: &str) -> DBResult<StoredQuest>;
     async fn get_active_quests(&self, offset: i64, limit: i64) -> DBResult<Vec<StoredQuest>>;
+    async fn count_active_quests(&self) -> DBResult<i64>;
     async fn get_quests_by_creator_address(
         &self,
         creator_address: &str,
@@ -64,7 +65,7 @@ pub trait QuestsDatabase: Send + Sync + CloneDatabase {
 
     async fn add_event(&self, event: &AddEvent, quest_instance_id: &str) -> DBResult<()>;
     async fn get_events(&self, quest_instance_id: &str) -> DBResult<Vec<Event>>;
-    async fn remove_events(&self, quest_instance_id: &str) -> DBResult<()>;
+    async fn remove_events_from_quest_instance(&self, quest_instance_id: &str) -> DBResult<()>;
     async fn remove_event(&self, event_id: &str) -> DBResult<()>;
 
     async fn add_reward_hook_to_quest(

@@ -11,7 +11,7 @@ responses(
     (status = 204, description = "Event removed"),
     (status = 401, description = "Unauthorized"),
     (status = 403, description = "Forbidden"),
-    (status = 404, description = "Quest Instance not found"),
+    (status = 404, description = "Quest Instance or Event not found"),
     (status = 500, description = "Internal Server Error")
 )
 )]

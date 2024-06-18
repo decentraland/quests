@@ -5,11 +5,13 @@ pub use common::*;
 use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
 use quests_protocol::definitions::*;
-use quests_server::api::routes::quests::GetQuestInstancesResponse;
+use quests_server::api::routes::quest_instances::{
+    AddEventToInstancePayload, AddEventToInstanceResponse,
+};
 
 #[actix_web::test]
-async fn get_quest_instances_should_be_200() {
-    let config = get_configuration(None).await;
+async fn add_event_to_instance_should_be_200() {
+    let config = get_configuration(Some(5)).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -32,31 +34,52 @@ async fn get_quest_instances_should_be_200() {
 
     let quest_instance_id = db.start_quest(&id, "0xA").await.unwrap();
 
-    let path = format!("/api/quests/{}/instances", id);
+    let path = format!("/api/instances/{}/events", quest_instance_id);
 
-    let headers = get_signed_headers(create_test_identity(), "get", &path, "");
+    let body = AddEventToInstancePayload {
+        event: EventRequest {
+            action: Some(Action {
+                r#type: "CUSTOM".to_string(),
+                parameters: quest
+                    .definition
+                    .as_ref()
+                    .unwrap()
+                    .steps
+                    .first()
+                    .unwrap()
+                    .tasks
+                    .first()
+                    .unwrap()
+                    .action_items
+                    .first()
+                    .unwrap()
+                    .parameters
+                    .clone(),
+            }),
+        },
+    };
 
-    let req = TestRequest::get()
+    let headers = get_signed_headers(create_test_identity(), "post", &path, "");
+
+    let req = TestRequest::post()
         .uri(&path)
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
         .append_header(headers[3].clone())
         .append_header(headers[4].clone())
+        .set_json(body)
         .to_request();
 
     let response = call_service(&app, req).await;
     assert_eq!(response.status().as_u16(), StatusCode::OK);
 
-    let json: GetQuestInstancesResponse = read_body_json(response).await;
-
-    assert_eq!(json.instances.len(), 1);
-    assert_eq!(json.total, 1);
-    assert_eq!(json.instances.first().unwrap().id, quest_instance_id);
+    let json: AddEventToInstanceResponse = read_body_json(response).await;
+    assert!(json.accepted)
 }
 
 #[actix_web::test]
-async fn get_quest_instances_should_be_403() {
+async fn add_event_to_instance_should_be_403() {
     let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
@@ -74,23 +97,47 @@ async fn get_quest_instances_should_be_403() {
     };
 
     let id = db
-        .create_quest(&create_quest, "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1ba5") // it's not the address returned by create_test_identity()
+        .create_quest(&create_quest, "0x7949f9f239d1a0816ce5eb364a1f588ae9cc1ba5")
         .await
         .unwrap();
 
     let quest_instance_id = db.start_quest(&id, "0xA").await.unwrap();
 
-    let path = format!("/api/quests/{}/instances", quest_instance_id);
+    let path = format!("/api/instances/{}/events", quest_instance_id);
 
-    let headers = get_signed_headers(create_test_identity(), "get", &path, "");
+    let headers = get_signed_headers(create_test_identity(), "post", &path, "");
 
-    let req = TestRequest::get()
+    let body = AddEventToInstancePayload {
+        event: EventRequest {
+            action: Some(Action {
+                r#type: "CUSTOM".to_string(),
+                parameters: quest
+                    .definition
+                    .as_ref()
+                    .unwrap()
+                    .steps
+                    .first()
+                    .unwrap()
+                    .tasks
+                    .first()
+                    .unwrap()
+                    .action_items
+                    .first()
+                    .unwrap()
+                    .parameters
+                    .clone(),
+            }),
+        },
+    };
+
+    let req = TestRequest::post()
         .uri(&path)
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
         .append_header(headers[2].clone())
         .append_header(headers[3].clone())
         .append_header(headers[4].clone())
+        .set_json(body)
         .to_request();
 
     let response = call_service(&app, req).await;

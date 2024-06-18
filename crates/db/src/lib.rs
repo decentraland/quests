@@ -134,6 +134,21 @@ impl QuestsDatabase for Database {
         Ok(quests)
     }
 
+    async fn count_active_quests(&self) -> DBResult<i64> {
+        let count: i64 = sqlx::query_scalar(
+            "
+                SELECT count(id) FROM quests
+                WHERE id NOT IN 
+                (SELECT quest_id as id FROM deactivated_quests)
+            ",
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|err| DBError::UnableToCountActiveQuestInstances(Box::new(err)))?;
+
+        Ok(count)
+    }
+
     async fn get_quests_by_creator_address(
         &self,
         creator_address: &str,
@@ -542,7 +557,7 @@ impl QuestsDatabase for Database {
         Ok(events)
     }
 
-    async fn remove_events(&self, quest_instance_id: &str) -> DBResult<()> {
+    async fn remove_events_from_quest_instance(&self, quest_instance_id: &str) -> DBResult<()> {
         sqlx::query("DELETE FROM events WHERE quest_instance_id = $1")
             .bind(parse_str_to_uuid(quest_instance_id)?)
             .execute(&self.pool)
@@ -553,11 +568,15 @@ impl QuestsDatabase for Database {
     }
 
     async fn remove_event(&self, event_id: &str) -> DBResult<()> {
-        sqlx::query("DELETE FROM events WHERE id = $1")
+        let query_result = sqlx::query("DELETE FROM events WHERE id = $1")
             .bind(parse_str_to_uuid(event_id)?)
             .execute(&self.pool)
             .await
             .map_err(|err| DBError::GetQuestEventsFailed(Box::new(err)))?;
+
+        if query_result.rows_affected() == 0 {
+            return Err(DBError::RowNotFound);
+        }
 
         Ok(())
     }

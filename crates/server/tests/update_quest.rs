@@ -11,7 +11,7 @@ use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
 async fn update_quest_should_be_200() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -124,7 +124,7 @@ async fn update_quest_should_be_200() {
 
 #[actix_web::test]
 async fn update_quest_should_be_400_uuid_bad_format() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
@@ -210,7 +210,7 @@ async fn update_quest_should_be_400_uuid_bad_format() {
 
 #[actix_web::test]
 async fn update_quest_should_be_400_quest_validation_error() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
@@ -261,7 +261,7 @@ async fn update_quest_should_be_400_quest_validation_error() {
 
 #[actix_web::test]
 async fn update_quest_should_be_401() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
 
     let quest_update = CreateQuestRequest {
@@ -330,7 +330,7 @@ async fn update_quest_should_be_401() {
 
 #[actix_web::test]
 async fn update_quest_should_be_403() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();

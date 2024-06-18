@@ -1,3 +1,4 @@
+mod common;
 use crate::common::database::create_test_db;
 use quests_db::{core::definitions::*, create_quests_db_component};
 use quests_message_broker::messages_queue::MessagesQueue;
@@ -12,8 +13,6 @@ use wiremock::{
     matchers::{body_json, method, path},
     Mock, MockServer, ResponseTemplate,
 };
-
-mod common;
 
 #[tokio::test]
 async fn can_process_events() {
@@ -98,6 +97,7 @@ async fn can_process_events() {
     let quest_instance_id = result.unwrap();
 
     let mut config = Config::new().expect("Can parse config");
+    config.redis_url = "127.0.0.1:6379/2".to_string();
     config.database_url = db_url;
     let event_processor = EventProcessor::from_config(&config)
         .await
@@ -221,7 +221,7 @@ async fn should_call_rewards_hook_when_user_completes_a_quest() {
     let quest_instance_id = db.start_quest(&quest_id, user_address).await.unwrap();
 
     let mut config = Config::new().expect("Can parse config");
-    config.redis_url = "127.0.0.1:6379/2".to_string();
+    config.redis_url = "127.0.0.1:6379/3".to_string();
     config.database_url = db_url;
     let event_processor = EventProcessor::from_config(&config)
         .await

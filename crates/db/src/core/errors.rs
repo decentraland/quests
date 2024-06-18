@@ -93,6 +93,9 @@ pub enum DBError {
     #[error("Unable to count active quest instances: {0}")]
     UnableToCountActiveQuestInstances(BoxDynError),
 
+    #[error("Unable to count active quests: {0}")]
+    UnableToCountActiveQuests(BoxDynError),
+
     #[error("Unable to check quest creator: {0}")]
     UnableToCheckQuestCreator(BoxDynError),
 

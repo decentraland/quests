@@ -1,13 +1,15 @@
 mod common;
 use actix_web::http::StatusCode;
-use actix_web::test::{call_service, init_service, TestRequest};
+use actix_web::test::{call_service, init_service, read_body_json, TestRequest};
 pub use common::*;
-use quests_db::core::definitions::{AddEvent, CreateQuest, QuestsDatabase};
+use quests_db::core::definitions::{CreateQuest, QuestsDatabase};
 use quests_db::create_quests_db_component;
 use quests_protocol::definitions::*;
+use quests_server::api::routes::quest_instances::GetQuestInstanceResponse;
+use uuid::Uuid;
 
 #[actix_web::test]
-async fn reset_quest_instance_should_be_204() {
+async fn get_quest_instance_should_be_200() {
     let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
@@ -30,29 +32,12 @@ async fn reset_quest_instance_should_be_204() {
         .unwrap();
 
     let quest_instance_id = db.start_quest(&id, "0xA").await.unwrap();
-    db.add_event(
-        &AddEvent {
-            id: uuid::Uuid::new_v4().to_string(),
-            user_address: "0xA",
-            event: vec![0],
-        },
-        &quest_instance_id,
-    )
-    .await
-    .unwrap();
-    db.complete_quest_instance(&quest_instance_id)
-        .await
-        .unwrap();
-    let is_instance_completed = db.is_completed_instance(&quest_instance_id).await.unwrap();
-    assert!(is_instance_completed);
-    let events = db.get_events(&quest_instance_id).await.unwrap();
-    assert_eq!(events.len(), 1);
 
-    let path = format!("/api/instances/{}/reset", quest_instance_id);
+    let path = format!("/api/instances/{}", quest_instance_id);
 
-    let headers = get_signed_headers(create_test_identity(), "patch", &path, "");
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "");
 
-    let req = TestRequest::patch()
+    let req = TestRequest::get()
         .uri(&path)
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
@@ -62,16 +47,14 @@ async fn reset_quest_instance_should_be_204() {
         .to_request();
 
     let response = call_service(&app, req).await;
-    assert_eq!(response.status().as_u16(), StatusCode::NO_CONTENT);
+    assert_eq!(response.status().as_u16(), StatusCode::OK);
 
-    let is_instance_still_completed = db.is_completed_instance(&quest_instance_id).await.unwrap();
-    assert!(!is_instance_still_completed);
-    let events = db.get_events(&quest_instance_id).await.unwrap();
-    assert_eq!(events.len(), 0)
+    let json: GetQuestInstanceResponse = read_body_json(response).await;
+    assert_eq!(json.instance.id, quest_instance_id)
 }
 
 #[actix_web::test]
-async fn reset_quest_instance_should_be_403() {
+async fn get_quest_instance_should_be_403() {
     let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
@@ -95,11 +78,11 @@ async fn reset_quest_instance_should_be_403() {
 
     let quest_instance_id = db.start_quest(&id, "0xA").await.unwrap();
 
-    let path = format!("/api/instances/{}/reset", quest_instance_id);
+    let path = format!("/api/instances/{}", quest_instance_id);
 
-    let headers = get_signed_headers(create_test_identity(), "patch", &path, "");
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "");
 
-    let req = TestRequest::patch()
+    let req = TestRequest::get()
         .uri(&path)
         .append_header(headers[0].clone())
         .append_header(headers[1].clone())
@@ -110,4 +93,32 @@ async fn reset_quest_instance_should_be_403() {
 
     let response = call_service(&app, req).await;
     assert_eq!(response.status().as_u16(), StatusCode::FORBIDDEN);
+}
+
+#[actix_web::test]
+async fn get_quest_instance_should_be_404() {
+    let config = get_configuration(None).await;
+    create_quests_db_component(&config.database_url, true)
+        .await
+        .unwrap();
+
+    let app = init_service(build_app(&config).await).await;
+
+    let random_uuid = Uuid::new_v4().to_string();
+
+    let path = format!("/api/instances/{}", random_uuid);
+
+    let headers = get_signed_headers(create_test_identity(), "get", &path, "");
+
+    let req = TestRequest::get()
+        .uri(&path)
+        .append_header(headers[0].clone())
+        .append_header(headers[1].clone())
+        .append_header(headers[2].clone())
+        .append_header(headers[3].clone())
+        .append_header(headers[4].clone())
+        .to_request();
+
+    let response = call_service(&app, req).await;
+    assert_eq!(response.status().as_u16(), StatusCode::NOT_FOUND);
 }

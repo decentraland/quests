@@ -17,10 +17,13 @@ use quests_server::api::get_app_router;
 use quests_server::configuration::Config;
 use quests_system::QUESTS_EVENTS_QUEUE_NAME;
 
-pub async fn get_configuration() -> Config {
+pub async fn get_configuration(redis_switch_db: Option<u8>) -> Config {
     let mut config = Config::new().expect("Couldn't read the configuration file");
     let new_url = create_test_db(&config.database_url).await;
     config.database_url = new_url;
+    if let Some(db_num) = redis_switch_db {
+        config.redis_url = format!("{}/{}", config.redis_url, db_num)
+    }
 
     config
 }
@@ -42,7 +45,7 @@ pub async fn build_app(
 
     let redis = Redis::new(&config.redis_url)
         .await
-        .expect("> tests > failed to initialize redis");
+        .unwrap_or_else(|_| panic!("> tests > failed to initialize redis {}", config.redis_url));
     let events_queue = RedisMessagesQueue::new(redis.into(), QUESTS_EVENTS_QUEUE_NAME);
 
     get_app_router(

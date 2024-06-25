@@ -10,7 +10,7 @@ use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
 async fn deactivate_quest_should_be_200() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -62,7 +62,7 @@ async fn deactivate_quest_should_be_200() {
 
 #[actix_web::test]
 async fn delete_quest_should_be_400() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
 
     let headers = get_signed_headers(create_test_identity(), "delete", "/api/quests/1aab", "{}");
 
@@ -86,7 +86,7 @@ async fn delete_quest_should_be_400() {
 
 #[actix_web::test]
 async fn delete_quest_should_be_401() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let req = TestRequest::delete().uri("/api/quests/1aab").to_request();
 
@@ -97,7 +97,7 @@ async fn delete_quest_should_be_401() {
 
 #[actix_web::test]
 async fn deactivate_quest_should_be_403() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();

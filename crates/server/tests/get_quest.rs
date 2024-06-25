@@ -10,7 +10,7 @@ use quests_server::api::routes::ErrorResponse;
 
 #[actix_web::test]
 async fn get_quest_with_defintiions_should_be_200() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -80,7 +80,7 @@ async fn get_quest_with_defintiions_should_be_200() {
 
 #[actix_web::test]
 async fn get_quest_without_defintiions_should_be_200() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -120,7 +120,7 @@ async fn get_quest_without_defintiions_should_be_200() {
 
 #[actix_web::test]
 async fn get_quest_should_be_400() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let req = TestRequest::get().uri("/api/quests/1aaa").to_request();
 
@@ -134,7 +134,7 @@ async fn get_quest_should_be_400() {
 
 #[actix_web::test]
 async fn get_quest_should_be_404() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let id = uuid::Uuid::new_v4().to_string();
 

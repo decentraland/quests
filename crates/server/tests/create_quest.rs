@@ -19,7 +19,7 @@ use std::collections::HashMap;
 
 #[actix_web::test]
 async fn create_quest_should_be_200_without_reward() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -73,7 +73,7 @@ async fn create_quest_should_be_200_without_reward() {
 
 #[actix_web::test]
 async fn create_quest_should_be_200_with_reward() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -143,7 +143,7 @@ async fn create_quest_should_be_200_with_reward() {
 
 #[actix_web::test]
 async fn create_quest_should_be_400_quest_validation_error_missing_definition() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),
@@ -185,7 +185,7 @@ async fn create_quest_should_be_400_quest_validation_error_missing_definition() 
 
 #[actix_web::test]
 async fn create_quest_should_be_400_quest_validation_error_rewards_webhook() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let Quest {
         name,
@@ -240,7 +240,7 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_webhook() {
 
 #[actix_web::test]
 async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let Quest {
         name,
@@ -356,7 +356,7 @@ async fn create_quest_should_be_400_quest_validation_error_rewards_items() {
 
 #[actix_web::test]
 async fn create_quest_should_be_401() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let app = init_service(build_app(&config).await).await;
     let quest_definition = CreateQuestRequest {
         name: "QUEST-1".to_string(),

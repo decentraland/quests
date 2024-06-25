@@ -14,7 +14,7 @@ pub struct GetQuestUpdatesResponse {
 /// Returns the IDs of the old quests
 #[utoipa::path(
     params(
-        ("quest_id" = String, description = "Quest ID")
+        ("quest_id" = String, description = "Quest UUID")
     ),
     responses(
         (status = 200, description = "IDs of the old quests", body = GetQuestUpdatesResponse),

@@ -17,6 +17,7 @@ pub struct GetQuestsQuery {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct GetCreatorQuestsResponse {
     pub quests: Vec<Quest>,
+    pub total: i64,
 }
 
 /// Get quests by creator id
@@ -47,23 +48,32 @@ pub async fn get_quests_by_creator_id(
     };
 
     match db
-        .get_quests_by_creator_id(
+        .get_quests_by_creator_address(
             &user_address.to_ascii_lowercase(),
             query.offset.unwrap_or(0),
             query.limit.unwrap_or(50),
         )
         .await
     {
-        Ok(stored_quests) => {
-            let mut quests = vec![];
-            for stored_quest in stored_quests {
-                match stored_quest.to_quest(is_owner) {
-                    Ok(quest) => quests.push(quest),
-                    Err(err) => return HttpResponse::from_error(err),
+        Ok(stored_quests) => match db
+            .count_quests_by_creator_address(&user_address.to_ascii_lowercase())
+            .await
+        {
+            Ok(total) => {
+                let mut quests = vec![];
+                for stored_quest in stored_quests {
+                    match stored_quest.to_quest(is_owner) {
+                        Ok(quest) => quests.push(quest),
+                        Err(err) => return HttpResponse::from_error(err),
+                    }
                 }
+                HttpResponse::Ok().json(GetCreatorQuestsResponse { quests, total })
             }
-            HttpResponse::Ok().json(GetCreatorQuestsResponse { quests })
-        }
+            Err(err) => {
+                log::error!("Error counting quests: {:?}", err);
+                HttpResponse::from_error(QuestError::from(err))
+            }
+        },
         Err(err) => {
             log::error!("Error getting quests: {:?}", err);
             HttpResponse::from_error(QuestError::from(err))

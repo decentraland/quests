@@ -17,7 +17,7 @@ use std::collections::HashMap;
 
 #[actix_web::test]
 async fn get_quest_rewards_should_be_200() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();
@@ -69,7 +69,7 @@ async fn get_quest_rewards_should_be_200() {
 
 #[actix_web::test]
 async fn quest_has_no_rewards() {
-    let config = get_configuration().await;
+    let config = get_configuration(None).await;
     let db = create_quests_db_component(&config.database_url, true)
         .await
         .unwrap();

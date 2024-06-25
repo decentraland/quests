@@ -21,7 +21,7 @@ pub struct GetQuestStatsResponse {
 /// Get a quest stats
 #[utoipa::path(
     params(
-        ("quest_id" = String, description = "Quest ID")
+        ("quest_id" = String, description = "Quest UUID")
     ),
     responses(
         (status = 200, description = "Quest Stats", body = GetQuestStatsResponse),

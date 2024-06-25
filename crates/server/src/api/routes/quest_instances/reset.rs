@@ -45,10 +45,12 @@ async fn reset_quest_instance_controller(
                 }
 
                 // remove events to reset quest instance state
-                db.remove_events(quest_instance_id).await.map_err(|err| {
-                    let err: QuestError = err.into();
-                    err
-                })?;
+                db.remove_events_from_quest_instance(quest_instance_id)
+                    .await
+                    .map_err(|err| {
+                        let err: QuestError = err.into();
+                        err
+                    })?;
 
                 db.remove_instance_from_completed_instances(quest_instance_id)
                     .await

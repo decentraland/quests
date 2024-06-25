@@ -39,8 +39,8 @@ pub async fn run_server(
 
 pub fn get_app_router(
     config: &Data<Config>,
-    db: &Data<Database>,
-    redis: &Data<RedisMessagesQueue>,
+    database: &Data<Database>,
+    events_queue: &Data<RedisMessagesQueue>,
     metrics_collector: &Data<HttpMetricsCollector>,
 ) -> App<
     impl ServiceFactory<
@@ -57,8 +57,8 @@ pub fn get_app_router(
         .app_data(json_extractor_config())
         .app_data(path_extractor_config())
         .app_data(config.clone())
-        .app_data(db.clone())
-        .app_data(redis.clone())
+        .app_data(database.clone())
+        .app_data(events_queue.clone())
         .app_data(metrics_collector.clone())
         .wrap(dcl_http_prom_metrics::metrics())
         .wrap(middlewares::metrics_token(&config.wkc_metrics_bearer_token))

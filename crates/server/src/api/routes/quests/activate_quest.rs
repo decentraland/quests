@@ -7,7 +7,7 @@ use quests_db::{core::definitions::QuestsDatabase, Database};
 /// Activates a quest by its ID
 #[utoipa::path(
     params(
-        ("quest_id" = String, description = "ID of the quest to activate")
+        ("quest_id" = String, description = "Quest UUID")
     ),
     responses(
         (status = 202, description = "Quest activated"),

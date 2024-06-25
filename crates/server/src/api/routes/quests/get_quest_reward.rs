@@ -31,7 +31,7 @@ pub struct GetQuestRewardsParams {
 /// Returns the quest rewards
 #[utoipa::path(
     params(
-        ("quest_id" = String, description = "ID of the Quest")
+        ("quest_id" = String, description = "Quest UUID")
     ),
     responses(
         (status = 200, description = "Quest Rewards", body = GetQuestRewardResponse),

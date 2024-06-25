@@ -7,7 +7,7 @@ use quests_db::{core::definitions::QuestsDatabase, Database};
 /// Deactivate a quest
 #[utoipa::path(
     params(
-        ("quest_id" = String, description = "ID of the quest to deactivate")
+        ("quest_id" = String, description = "Quest UUID")
     ),
     responses(
         (status = 202, description = "Quest deactivated"),

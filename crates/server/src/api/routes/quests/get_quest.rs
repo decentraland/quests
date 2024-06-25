@@ -15,7 +15,7 @@ pub struct GetQuestResponse {
 /// Returns the quest definition if the user is the creator of the quest (authentication required)
 #[utoipa::path(
     params(
-        ("quest_id" = String, description = "Quest ID")
+        ("quest_id" = String, description = "Quest UUID")
     ),
     responses(
         (status = 200, description = "Quest definition", body = GetQuestResponse),
